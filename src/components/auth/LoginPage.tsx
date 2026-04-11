@@ -52,11 +52,15 @@ export default function LoginPage() {
   const setUser = useAuthStore((s) => s.setUser);
   const navigate = useAppStore((s) => s.navigate);
 
-  // ── Init reCAPTCHA on mount ──
+  // ── Init reCAPTCHA on mount (delay helps with React strict mode double-invoke) ──
   useEffect(() => {
-    initRecaptcha('recaptcha-container');
+    const timer = setTimeout(() => {
+      initRecaptcha('recaptcha-container');
+    }, 100);
+
     return () => {
-      resetRecaptcha();
+      clearTimeout(timer);
+      resetRecaptcha(); // cleanup on unmount
     };
   }, []);
 

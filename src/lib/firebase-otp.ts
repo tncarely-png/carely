@@ -147,4 +147,8 @@ export function resetRecaptcha(): void {
   }
   window.recaptchaVerifier = undefined;
   confirmationResult = null;
+
+  // Also clear the div innerHTML manually — prevents "already rendered" error
+  const container = document.getElementById('recaptcha-container');
+  if (container) container.innerHTML = '';
 }
