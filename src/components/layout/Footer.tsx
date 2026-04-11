@@ -100,20 +100,20 @@ export default function Footer() {
                 </a>
               </li>
               <li>
-                <button
-                  onClick={() => navigate('privacy-policy')}
+                <a
+                  href="/privacy"
                   className="text-sm text-gray-300 hover:text-white transition-colors"
                 >
                   سياسة الخصوصية
-                </button>
+                </a>
               </li>
               <li>
-                <button
-                  onClick={() => navigate('terms-of-service')}
+                <a
+                  href="/terms"
                   className="text-sm text-gray-300 hover:text-white transition-colors"
                 >
                   شروط الاستخدام
-                </button>
+                </a>
               </li>
             </ul>
           </div>
@@ -164,19 +164,19 @@ export default function Footer() {
                 الصفحة الرئيسية
               </button>
               <span className="text-gray-600">|</span>
-              <button
-                onClick={() => navigate('privacy-policy')}
+              <a
+                href="/privacy"
                 className="text-xs text-gray-400 hover:text-white transition-colors"
               >
                 سياسة الخصوصية
-              </button>
+              </a>
               <span className="text-gray-600">|</span>
-              <button
-                onClick={() => navigate('terms-of-service')}
+              <a
+                href="/terms"
                 className="text-xs text-gray-400 hover:text-white transition-colors"
               >
                 شروط الاستخدام
-              </button>
+              </a>
             </nav>
           </div>
         </div>
