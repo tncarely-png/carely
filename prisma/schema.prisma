@@ -1,0 +1,81 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  phone        String?
+  address      String?
+  wilaya       String?
+  password     String
+  role         String   @default("customer")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  subscriptions Subscription[]
+  orders        Order[]
+}
+
+model Subscription {
+  id               String   @id @default(cuid())
+  userId           String
+  plan             String   @default("silver")
+  status           String   @default("pending")
+  qustodioEmail    String?
+  qustodioPassword String?
+  activationCode   String?
+  devicesCount     Int      @default(5)
+  startsAt         DateTime?
+  expiresAt        DateTime?
+  autoRenew        Boolean  @default(false)
+  notes            String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  user  User   @relation(fields: [userId], references: [id])
+  orders Order[]
+
+  licenseId String?
+  license   License? @relation(fields: [licenseId], references: [id])
+}
+
+model Order {
+  id             String   @id @default(cuid())
+  userId         String
+  subscriptionId String?
+  plan           String   @default("silver")
+  amountTnd      Float    @default(0)
+  paymentMethod  String   @default("cash")
+  paymentRef     String?
+  status         String   @default("pending")
+  paidAt         DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user         User         @relation(fields: [userId], references: [id])
+  subscription Subscription? @relation(fields: [subscriptionId], references: [id])
+}
+
+model License {
+  id                String    @id @default(cuid())
+  qustodioEmail     String    @unique
+  qustodioPassword  String
+  plan              String    @default("silver")
+  isAssigned        Boolean   @default(false)
+  assignedToUser    String?
+  assignedAt        DateTime?
+  expiresAt         DateTime?
+  purchasedFrom     String?
+  notes             String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  subscriptions Subscription[]
+}

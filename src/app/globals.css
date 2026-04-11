@@ -1,0 +1,162 @@
+@import url('https://fonts.googleapis.com/css2?family=Baloo+Bhaijaan+2:wght@400;500;600;700;800&display=swap');
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: 'Baloo Bhaijaan 2', sans-serif;
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-carely-green: #1a8449;
+  --color-carely-light: #d4f0e3;
+  --color-carely-mint: #f0faf5;
+  --color-carely-dark: #094825;
+  --color-carely-gold: #d4a017;
+  --color-carely-silver: #8e9eab;
+  --color-carely-gray: #4b5563;
+}
+
+:root {
+  --radius: 0.875rem;
+  --background: #f0faf5;
+  --foreground: #4b5563;
+  --card: #ffffff;
+  --card-foreground: #4b5563;
+  --popover: #ffffff;
+  --popover-foreground: #4b5563;
+  --primary: #1a8449;
+  --primary-foreground: #ffffff;
+  --secondary: #d4f0e3;
+  --secondary-foreground: #094825;
+  --muted: #f0faf5;
+  --muted-foreground: #4b5563;
+  --accent: #d4f0e3;
+  --accent-foreground: #094825;
+  --destructive: #ef4444;
+  --border: rgba(14, 80, 48, 0.12);
+  --input: rgba(14, 80, 48, 0.12);
+  --ring: #1a8449;
+  --chart-1: #1a8449;
+  --chart-2: #d4a017;
+  --chart-3: #8e9eab;
+  --chart-4: #094825;
+  --chart-5: #d4f0e3;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #4b5563;
+  --sidebar-primary: #1a8449;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #d4f0e3;
+  --sidebar-accent-foreground: #094825;
+  --sidebar-border: rgba(14, 80, 48, 0.12);
+  --sidebar-ring: #1a8449;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Baloo Bhaijaan 2', sans-serif;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    color: #094825;
+    font-weight: 800;
+  }
+}
+
+@layer utilities {
+  .carely-card {
+    background: #ffffff;
+    border-radius: 14px;
+    box-shadow: 0 4px 16px rgba(14, 80, 48, 0.10);
+    border: 1px solid rgba(14, 80, 48, 0.08);
+  }
+  .carely-card-featured {
+    background: #ffffff;
+    border-radius: 14px;
+    box-shadow: 0 8px 24px rgba(14, 80, 48, 0.15);
+    border: 2px solid #d4a017;
+  }
+  .carely-btn-primary {
+    background: #1a8449;
+    color: #ffffff;
+    font-weight: 700;
+    border-radius: 100px;
+    padding: 12px 32px;
+    transition: all 0.2s ease;
+  }
+  .carely-btn-primary:hover {
+    background: #156b3b;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(26, 132, 73, 0.3);
+  }
+  .carely-btn-outline {
+    background: transparent;
+    color: #1a8449;
+    font-weight: 700;
+    border-radius: 100px;
+    padding: 12px 32px;
+    border: 2px solid #1a8449;
+    transition: all 0.2s ease;
+  }
+  .carely-btn-outline:hover {
+    background: #1a8449;
+    color: #ffffff;
+  }
+  .carely-top-accent {
+    border-top: 3px solid #1a8449;
+  }
+  .carely-top-accent-gold {
+    border-top: 3px solid #d4a017;
+  }
+  .carely-scroll::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .carely-scroll::-webkit-scrollbar-track {
+    background: #f0faf5;
+    border-radius: 3px;
+  }
+  .carely-scroll::-webkit-scrollbar-thumb {
+    background: #d4f0e3;
+    border-radius: 3px;
+  }
+  .carely-scroll::-webkit-scrollbar-thumb:hover {
+    background: #1a8449;
+  }
+}

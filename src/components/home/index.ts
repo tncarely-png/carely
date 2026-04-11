@@ -1,0 +1,8 @@
+export { default as HeroSection } from './HeroSection'
+export { default as StatsBar } from './StatsBar'
+export { default as ProductCards } from './ProductCards'
+export { default as HowItWorks } from './HowItWorks'
+export { default as FeaturesGrid } from './FeaturesGrid'
+export { default as Testimonials } from './Testimonials'
+export { default as FaqAccordion } from './FaqAccordion'
+export { default as FinalCTA } from './FinalCTA'
