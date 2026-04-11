@@ -47,7 +47,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
           </div>
           <div className="flex-1 min-w-0">
             <p className="font-bold text-carely-dark text-sm truncate">{user?.name || 'مستخدم'}</p>
-            <p className="text-xs text-carely-gray truncate" dir="ltr">{user?.email || ''}</p>
+            <p className="text-xs text-carely-gray truncate" dir="ltr">{user?.phone || ''}</p>
           </div>
         </div>
       </div>

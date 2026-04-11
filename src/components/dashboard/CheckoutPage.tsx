@@ -148,10 +148,6 @@ export default function CheckoutPage() {
                   <Input value={user.name} readOnly className="bg-gray-50 h-10" />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-xs text-carely-gray">البريد الإلكتروني</Label>
-                  <Input value={user.email} readOnly className="bg-gray-50 h-10" dir="ltr" />
-                </div>
-                <div className="space-y-2">
                   <Label className="text-xs text-carely-gray">الهاتف</Label>
                   <Input value={user.phone || ''} readOnly className="bg-gray-50 h-10" dir="ltr" />
                 </div>

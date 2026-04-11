@@ -21,8 +21,8 @@ import { PLANS, SUBSCRIPTION_STATUS } from '@/lib/constants';
 interface UserRow {
   id: string;
   name: string;
-  email: string;
-  phone: string | null;
+  email: string | null;
+  phone: string;
   address: string | null;
   wilaya: string | null;
   role: string;
@@ -93,7 +93,7 @@ export default function AdminUsers() {
             <div className="relative flex-1">
               <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-carely-gray/40" />
               <Input
-                placeholder="بحث باسم أو إيميل أو هاتف"
+                placeholder="بحث بالاسم أو رقم الهاتف"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="pr-10 text-right rounded-xl border-carely-green/20 focus:border-carely-green"
@@ -173,7 +173,6 @@ export default function AdminUsers() {
                 <TableHeader>
                   <TableRow className="bg-carely-mint/50 hover:bg-carely-mint/50">
                     <TableHead className="font-bold text-carely-dark">الاسم</TableHead>
-                    <TableHead className="font-bold text-carely-dark">الإيميل</TableHead>
                     <TableHead className="font-bold text-carely-dark">الهاتف</TableHead>
                     <TableHead className="font-bold text-carely-dark">الولاية</TableHead>
                     <TableHead className="font-bold text-carely-dark">الباقة</TableHead>
@@ -186,8 +185,7 @@ export default function AdminUsers() {
                   {users.map((user) => (
                     <TableRow key={user.id} className="hover:bg-carely-mint/30 transition-colors">
                       <TableCell className="font-semibold text-carely-dark">{user.name}</TableCell>
-                      <TableCell className="text-sm text-carely-gray">{user.email}</TableCell>
-                      <TableCell className="text-sm text-carely-gray">{user.phone || '—'}</TableCell>
+                      <TableCell className="text-sm text-carely-gray" dir="ltr">{user.phone || '—'}</TableCell>
                       <TableCell className="text-sm text-carely-gray">{user.wilaya || '—'}</TableCell>
                       <TableCell>
                         {user.subscription ? (

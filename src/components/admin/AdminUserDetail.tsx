@@ -48,8 +48,8 @@ import { PLANS, SUBSCRIPTION_STATUS, ORDER_STATUS, getWhatsAppLink } from '@/lib
 interface UserData {
   id: string;
   name: string;
-  email: string;
-  phone: string | null;
+  email: string | null;
+  phone: string;
   address: string | null;
   wilaya: string | null;
   role: string;
@@ -330,15 +330,8 @@ export default function AdminUserDetail() {
               <p className="font-semibold text-carely-dark">{user.name}</p>
             </div>
             <div>
-              <Label className="text-xs text-carely-gray/60">الإيميل</Label>
-              <p className="font-semibold text-carely-dark flex items-center gap-1">
-                {user.email}
-                <CopyButton text={user.email} />
-              </p>
-            </div>
-            <div>
               <Label className="text-xs text-carely-gray/60">الهاتف</Label>
-              <p className="font-semibold text-carely-dark">{user.phone || '—'}</p>
+              <p className="font-semibold text-carely-dark" dir="ltr">{user.phone || '—'}</p>
             </div>
             <div>
               <Label className="text-xs text-carely-gray/60">العنوان</Label>

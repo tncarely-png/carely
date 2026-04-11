@@ -56,8 +56,8 @@ export const useAppStore = create<AppState>((set) => ({
 export interface AuthUser {
   id: string;
   name: string;
-  email: string;
-  phone: string | null;
+  email: string | null;
+  phone: string;
   address: string | null;
   wilaya: string | null;
   role: "customer" | "admin";

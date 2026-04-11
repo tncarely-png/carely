@@ -17,7 +17,6 @@ export async function GET(request: NextRequest) {
     if (search) {
       where.OR = [
         { name: { contains: search } },
-        { email: { contains: search } },
         { phone: { contains: search } },
       ];
     }

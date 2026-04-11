@@ -40,12 +40,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create new user
+    // Create new user (no email, no password — OTP-only auth)
     const user = await db.user.create({
       data: {
         name: name.trim(),
-        email: `${normalizedPhone.replace(/[^a-z0-9]/gi, '').toLowerCase()}@carely.local`,
-        password: 'otp-auth',
         phone: normalizedPhone,
         address: address?.trim() || null,
         wilaya: wilaya?.trim() || null,

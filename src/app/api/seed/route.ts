@@ -4,9 +4,9 @@ import { db } from '@/lib/db';
 // GET /api/seed — seed database with demo data
 export async function GET() {
   try {
-    // Check if admin already exists
-    const existingAdmin = await db.user.findUnique({
-      where: { email: 'admin@carely.tn' },
+    // Check if admin already exists (by phone)
+    const existingAdmin = await db.user.findFirst({
+      where: { phone: '+216 22 000 001' },
     });
     if (existingAdmin) {
       return NextResponse.json({
@@ -15,12 +15,11 @@ export async function GET() {
       });
     }
 
-    // Create admin user
+    // Create admin user (phone-based OTP auth)
     const admin = await db.user.create({
       data: {
         name: 'أدمن كيرلي',
-        email: 'admin@carely.tn',
-        password: 'admin123',
+        phone: '+216 22 000 001',
         role: 'admin',
       },
     });
@@ -30,8 +29,6 @@ export async function GET() {
       db.user.create({
         data: {
           name: 'أحمد بن علي',
-          email: 'ahmed@example.com',
-          password: 'customer123',
           phone: '+216 22 123 456',
           address: 'شارع الحبيب بورقيبة',
           wilaya: 'تونس',
@@ -41,8 +38,6 @@ export async function GET() {
       db.user.create({
         data: {
           name: 'سارة المنصوري',
-          email: 'sara@example.com',
-          password: 'customer123',
           phone: '+216 55 987 654',
           address: 'نهج الحرية',
           wilaya: 'صفاقس',
@@ -52,8 +47,6 @@ export async function GET() {
       db.user.create({
         data: {
           name: 'يوسف الحداد',
-          email: 'youssef@example.com',
-          password: 'customer123',
           phone: '+216 90 111 222',
           address: 'شارع محمد الخامس',
           wilaya: 'سوسة',
@@ -63,8 +56,6 @@ export async function GET() {
       db.user.create({
         data: {
           name: 'نور الهدى التريكي',
-          email: 'nour@example.com',
-          password: 'customer123',
           phone: '+216 23 456 789',
           address: 'نهج الاستقلال',
           wilaya: 'المنستير',
@@ -74,8 +65,6 @@ export async function GET() {
       db.user.create({
         data: {
           name: 'محمد الكافي',
-          email: 'mohamed.k@example.com',
-          password: 'customer123',
           phone: '+216 52 333 444',
           address: 'شارع 9 أفريل',
           wilaya: 'قفصة',
@@ -85,7 +74,7 @@ export async function GET() {
     ]);
 
     // Create 3 available licenses
-    const licenses = await Promise.all([
+    await Promise.all([
       db.license.create({
         data: {
           qustodioEmail: 'license-silver-1@carely.tn',
@@ -235,8 +224,8 @@ export async function GET() {
       message: 'Database seeded successfully',
       data: {
         adminId: admin.id,
+        adminPhone: admin.phone,
         customerIds: customers.map((c) => c.id),
-        licenseIds: licenses.map((l) => l.id),
       },
     });
   } catch (error) {
