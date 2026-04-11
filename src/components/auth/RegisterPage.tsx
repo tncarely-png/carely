@@ -87,7 +87,6 @@ export default function RegisterPage() {
     if (Object.keys(errs).length > 0) { setErrors(errs); return; }
 
     setLoading(true);
-    resetRecaptcha();
 
     try {
       const digits = form.phone.replace(/[^\d]/g, '');
@@ -101,7 +100,6 @@ export default function RegisterPage() {
     } catch (err: unknown) {
       const firebaseErr = err as { code?: string; message?: string };
       console.error('Firebase OTP error:', firebaseErr.code, firebaseErr.message);
-      resetRecaptcha();
 
       switch (firebaseErr.code) {
         case 'auth/invalid-phone-number':
@@ -126,7 +124,6 @@ export default function RegisterPage() {
   const handleResendOtp = async () => {
     setLoading(true);
     setError('');
-    resetRecaptcha();
     try {
       const digits = form.phone.replace(/[^\d]/g, '');
       const fullNumber = '+216' + digits;

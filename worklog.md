@@ -41,3 +41,23 @@ Stage Summary:
 - REQUIREMENT: User must add the sandbox/deployment domain to Firebase Console > Authentication > Settings > Authorized domains before real SMS will work
 - reCAPTCHA uses invisible mode — domain must be authorized in Firebase
 - Lint: 0 errors
+
+---
+Task ID: 3
+Agent: Main
+Task: Fix real SMS delivery after domain authorization in Firebase Console
+
+Work Log:
+- User added `carely.space.z.ai` to Firebase authorized domains
+- Rewrote `src/lib/firebase-auth.ts` — Added `initRecaptcha()` with explicit `await recaptchaVerifier.render()` to ensure reCAPTCHA widget is fully loaded before sending OTP
+- `sendPhoneOTP()` now calls `initRecaptcha()` internally, creating a fresh verifier each time with proper async initialization
+- Removed redundant `resetRecaptcha()` calls from LoginPage and RegisterPage (now handled internally by `initRecaptcha`)
+- Kept `resetRecaptcha()` for cleanup on unmount and when navigating back from OTP step
+- `firebase.ts` confirmed: `appVerificationDisabledForTesting = false` (real SMS mode)
+- Lint: 0 errors, dev server running clean
+
+Stage Summary:
+- Firebase Phone Auth is now configured to send real SMS (not test mode)
+- Domain `carely.space.z.ai` is authorized in Firebase Console
+- reCAPTCHA initializes explicitly with `await render()` for reliability
+- User can test with `+21626107128` — real SMS should be delivered

@@ -73,7 +73,6 @@ export default function LoginPage() {
 
     setLoading(true);
     setError('');
-    resetRecaptcha();
 
     try {
       const fullNumber = '+216' + digits;
@@ -86,7 +85,6 @@ export default function LoginPage() {
     } catch (err: unknown) {
       const firebaseErr = err as { code?: string; message?: string };
       console.error('Firebase OTP error:', firebaseErr.code, firebaseErr.message);
-      resetRecaptcha();
 
       switch (firebaseErr.code) {
         case 'auth/invalid-phone-number':
@@ -111,7 +109,6 @@ export default function LoginPage() {
   const handleResendOtp = async () => {
     setLoading(true);
     setError('');
-    resetRecaptcha();
 
     try {
       const digits = phone.replace(/[^\d]/g, '');

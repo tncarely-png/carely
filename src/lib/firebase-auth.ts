@@ -6,65 +6,82 @@ import {
 } from "firebase/auth";
 import { auth } from "./firebase";
 
-let recaptchaVerifier: ApplicationVerifier | null = null;
+let recaptchaVerifier: RecaptchaVerifier | null = null;
 
 /**
- * Render a visible reCAPTCHA widget in the given container.
- * Returns the verifier instance.
+ * Initialize a fresh invisible reCAPTCHA verifier in the given container.
+ * Explicitly awaits render() to ensure the widget is ready before use.
  */
-export function renderRecaptcha(containerId: string = "recaptcha-container"): ApplicationVerifier {
-  // Clear any existing
-  const existingEl = document.getElementById(containerId);
-  if (existingEl) existingEl.innerHTML = "";
+export async function initRecaptcha(
+  containerId: string = "recaptcha-container"
+): Promise<ApplicationVerifier> {
+  // Clean up any previous verifier
+  try {
+    if (recaptchaVerifier) {
+      recaptchaVerifier.clear();
+      recaptchaVerifier = null;
+    }
+  } catch {
+    recaptchaVerifier = null;
+  }
 
+  // Ensure the container element exists
+  const container = document.getElementById(containerId);
+  if (!container) {
+    throw new Error("reCAPTCHA container element not found in DOM");
+  }
+
+  // Create a new invisible verifier
   recaptchaVerifier = new RecaptchaVerifier(auth, containerId, {
-    size: "normal",
+    size: "invisible",
     callback: () => {
-      // reCAPTCHA solved successfully
+      // reCAPTCHA solved — Firebase will automatically proceed
     },
     "expired-callback": () => {
-      // Reset reCAPTCHA on expiry
+      // Token expired, reset so next attempt gets a fresh one
+      try {
+        recaptchaVerifier?.clear();
+      } catch {
+        /* ignore */
+      }
       recaptchaVerifier = null;
     },
   });
 
-  // Render the widget (visible)
-  (recaptchaVerifier as RecaptchaVerifier).render();
+  // Explicitly render and wait — this loads grecaptcha + creates the widget
+  await recaptchaVerifier.render();
 
   return recaptchaVerifier;
 }
 
 /**
- * Reset the reCAPTCHA verifier
+ * Reset the reCAPTCHA verifier (call before re-sending or when navigating away).
  */
 export function resetRecaptcha() {
-  if (recaptchaVerifier) {
-    try { (recaptchaVerifier as RecaptchaVerifier).clear(); } catch {}
-    recaptchaVerifier = null;
+  try {
+    if (recaptchaVerifier) {
+      recaptchaVerifier.clear();
+    }
+  } catch {
+    /* ignore */
   }
+  recaptchaVerifier = null;
+
+  // Also clear the container DOM
+  const container = document.getElementById("recaptcha-container");
+  if (container) container.innerHTML = "";
 }
 
 /**
  * Send OTP to a phone number via Firebase Phone Auth.
- * Uses a visible reCAPTCHA widget that the user must solve first.
+ * Creates a fresh invisible reCAPTCHA verifier each time.
  */
 export async function sendPhoneOTP(
   fullPhoneNumber: string,
   containerId: string = "recaptcha-container"
 ): Promise<ConfirmationResult> {
-  // Create a fresh verifier each time
-  const existingEl = document.getElementById(containerId);
-  if (existingEl) existingEl.innerHTML = "";
-
-  recaptchaVerifier = new RecaptchaVerifier(auth, containerId, {
-    size: "invisible",
-    callback: () => {},
-    "expired-callback": () => {
-      recaptchaVerifier = null;
-    },
-  });
-
-  const result = await signInWithPhoneNumber(auth, fullPhoneNumber, recaptchaVerifier);
+  const verifier = await initRecaptcha(containerId);
+  const result = await signInWithPhoneNumber(auth, fullPhoneNumber, verifier);
   return result;
 }
 
@@ -85,7 +102,7 @@ export async function verifyPhoneOTP(
 }
 
 /**
- * Sign out the current Firebase user
+ * Sign out the current Firebase user.
  */
 export async function signOutFirebase() {
   await auth.signOut();
