@@ -8,6 +8,12 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { InputOTP, InputOTPGroup, InputOTPSlot, InputOTPSeparator } from '@/components/ui/input-otp';
 import { Loader2, ArrowLeft, Smartphone, ShieldCheck, RefreshCw } from 'lucide-react';
+import {
+  sendPhoneOTP,
+  verifyPhoneOTP,
+  cleanRecaptcha,
+  type ConfirmationResult,
+} from '@/lib/firebase-auth';
 
 type Step = 'phone' | 'otp';
 
@@ -19,9 +25,11 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [cooldown, setCooldown] = useState(0);
   const [confirmedPhone, setConfirmedPhone] = useState('');
+  const [recaptchaReady, setRecaptchaReady] = useState(false);
   const hasTriggered = useRef(false);
+  const confirmationRef = useRef<ConfirmationResult | null>(null);
 
-  const { sendOtp, verifyOtp, otpLogin } = useAuthStore((s) => s);
+  const { firebaseLogin } = useAuthStore((s) => s);
   const navigate = useAppStore((s) => s.navigate);
 
   // Countdown timer
@@ -42,6 +50,11 @@ export default function LoginPage() {
     }
   }, [step]);
 
+  // Cleanup reCAPTCHA on unmount
+  useEffect(() => {
+    return () => { cleanRecaptcha(); };
+  }, []);
+
   const formatPhoneDisplay = (p: string) => {
     const digits = p.replace(/[^\d]/g, '');
     if (digits.length <= 2) return digits;
@@ -54,6 +67,35 @@ export default function LoginPage() {
     setError('');
   };
 
+  const handleFirebaseError = (err: unknown) => {
+    const fbErr = err as { code?: string; message?: string };
+    console.error('Firebase error:', fbErr.code, fbErr.message);
+    cleanRecaptcha();
+    setRecaptchaReady(false);
+
+    // Error -39: reCAPTCHA initialization failure
+    if (fbErr.message?.includes('-39') || fbErr.code?.includes('-39')) {
+      return 'مشكلة في تحميل التحقق الأمني. جرب تحمّل الصفحة من جديد.';
+    }
+    if (fbErr.code === 'auth/recaptcha-render-failed') {
+      return 'تحقق الأمان فشل في التحميل. حمّل الصفحة من جديد.';
+    }
+    if (fbErr.code === 'auth/invalid-phone-number') {
+      return 'رقم الهاتف غير صالح.';
+    }
+    if (fbErr.code === 'auth/too-many-requests') {
+      return 'محاولات كثيرة. استنى شوية قبل ما تجرب مرة أخرى.';
+    }
+    if (fbErr.code === 'auth/captcha-check-failed') {
+      return 'تحقق الأمان فشل. جرب تحمّل الصفحة مرة أخرى.';
+    }
+    if (fbErr.code === 'auth/unauthorized-domain') {
+      return 'الموقع غير مسجل في Firebase. لازم تضيف الدومين في Firebase Console.';
+    }
+
+    return fbErr.message || 'حصل مشكل في إرسال الكود. جرب مرة أخرى.';
+  };
+
   const handleSendOtp = async () => {
     const digits = phone.replace(/[^\d]/g, '');
     if (digits.length !== 8) { setError('أدخل رقم هاتف صحيح (8 أرقام)'); return; }
@@ -61,19 +103,19 @@ export default function LoginPage() {
 
     setLoading(true);
     setError('');
+    setRecaptchaReady(false);
 
-    const result = await sendOtp(digits);
-
-    if (result.success) {
+    try {
+      const fullNumber = '+216' + digits;
+      const confirmationResult = await sendPhoneOTP(fullNumber);
+      confirmationRef.current = confirmationResult;
       setConfirmedPhone('+216 ' + digits.slice(0, 2) + ' ' + digits.slice(2, 5) + ' ' + digits.slice(5, 8));
       setStep('otp');
       setCooldown(60);
       setOtp('');
-    } else {
-      if (result.cooldown) {
-        setCooldown(result.cooldown);
-      }
-      setError(result.error || 'حصل مشكل في إرسال الكود. جرب مرة أخرى.');
+      setRecaptchaReady(true);
+    } catch (err) {
+      setError(handleFirebaseError(err));
     }
     setLoading(false);
   };
@@ -81,65 +123,73 @@ export default function LoginPage() {
   const handleResendOtp = async () => {
     setLoading(true);
     setError('');
+    setRecaptchaReady(false);
 
-    const digits = phone.replace(/[^\d]/g, '');
-    const result = await sendOtp(digits);
-
-    if (result.success) {
+    try {
+      const digits = phone.replace(/[^\d]/g, '');
+      const fullNumber = '+216' + digits;
+      const confirmationResult = await sendPhoneOTP(fullNumber);
+      confirmationRef.current = confirmationResult;
       setCooldown(60);
-    } else {
-      if (result.cooldown) {
-        setCooldown(result.cooldown);
-      }
-      if (result.error && !result.error.includes('استنى')) {
-        setError(result.error);
+      setRecaptchaReady(true);
+    } catch (err) {
+      const fbErr = err as { code?: string };
+      if (fbErr.code !== 'auth/too-many-requests') {
+        setError(handleFirebaseError(err));
       }
     }
     setLoading(false);
   };
 
   const handleOtpComplete = useCallback(async (code: string) => {
-    if (loading || hasTriggered.current) return;
+    if (loading || hasTriggered.current || !confirmationRef.current) return;
     hasTriggered.current = true;
     setLoading(true);
     setError('');
 
-    const digits = phone.replace(/[^\d]/g, '');
+    try {
+      const result = await verifyPhoneOTP(confirmationRef.current, code);
+      const success = await firebaseLogin(result.idToken);
 
-    // Step 1: Verify OTP
-    const verifyResult = await verifyOtp(digits, code);
-
-    if (!verifyResult.success) {
-      setError(verifyResult.error || 'حصل مشكل في التحقق.');
+      if (success) {
+        const { useAuthStore: authStore } = await import('@/store');
+        const user = authStore.getState().user;
+        navigate(user?.role === 'admin' ? 'admin' : 'dashboard');
+      } else {
+        const authStore = useAuthStore.getState();
+        if (authStore.lastError?.includes('ما لقينا') || authStore.lastError?.includes('newUser')) {
+          setError('');
+          navigate('register');
+        } else {
+          setError(authStore.lastError || 'حصل مشكل. جرب مرة أخرى.');
+          setOtp('');
+          hasTriggered.current = false;
+        }
+      }
+    } catch (err) {
+      const fbErr = err as { code?: string };
+      if (fbErr.code === 'auth/invalid-verification-code') {
+        setError('الكود غالط. جرب مرة أخرى.');
+      } else if (fbErr.code === 'auth/code-expired') {
+        setError('الكود انتهى. أرسل كود جديد.');
+      } else {
+        setError('حصل مشكل في التحقق. جرب مرة أخرى.');
+      }
       setOtp('');
       hasTriggered.current = false;
-      setLoading(false);
-      return;
-    }
-
-    // Step 2: Login
-    const loginSuccess = await otpLogin(digits);
-
-    if (loginSuccess) {
-      const { useAuthStore: authStore } = await import('@/store');
-      const user = authStore.getState().user;
-      navigate(user?.role === 'admin' ? 'admin' : 'dashboard');
-    } else {
-      const authStore = useAuthStore.getState();
-      if (authStore.lastError?.includes('ما لقينا') || authStore.lastError?.includes('newUser')) {
-        setError('');
-        navigate('register');
-      } else {
-        setError(authStore.lastError || 'حصل مشكل. جرب مرة أخرى.');
-        setOtp('');
-        hasTriggered.current = false;
-      }
     }
     setLoading(false);
-  }, [loading, sendOtp, verifyOtp, otpLogin, phone, navigate]);
+  }, [loading, firebaseLogin, navigate]);
 
   return (
     <div className="min-h-screen bg-carely-mint flex items-center justify-center p-4" dir="rtl">
+      {/* reCAPTCHA container — VISIBLE widget, always in DOM */}
+      <div
+        id="recaptcha-container"
+        className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50"
+        style={{ display: 'block', minHeight: '78px' }}
+      />
+
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-6">
@@ -238,7 +288,7 @@ export default function LoginPage() {
                 {loading && <div className="flex justify-center mb-4"><Loader2 className="h-6 w-6 animate-spin text-carely-green" /></div>}
 
                 <div className="flex items-center justify-between mt-4">
-                  <button onClick={() => { setStep('phone'); setOtp(''); setError(''); }}
+                  <button onClick={() => { cleanRecaptcha(); setStep('phone'); setOtp(''); setError(''); setRecaptchaReady(false); }}
                     className="flex items-center gap-1 text-sm text-carely-gray hover:text-carely-dark transition-colors" disabled={loading}>
                     <ArrowLeft className="w-4 h-4" />تعديل الرقم
                   </button>

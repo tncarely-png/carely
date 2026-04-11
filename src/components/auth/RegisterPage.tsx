@@ -11,6 +11,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { InputOTP, InputOTPGroup, InputOTPSlot, InputOTPSeparator } from '@/components/ui/input-otp';
 import { Loader2, ArrowLeft, ShieldCheck, RefreshCw, Check } from 'lucide-react';
+import {
+  sendPhoneOTP,
+  verifyPhoneOTP,
+  cleanRecaptcha,
+  type ConfirmationResult,
+} from '@/lib/firebase-auth';
 
 type Step = 'info' | 'otp' | 'success';
 
@@ -24,8 +30,9 @@ export default function RegisterPage() {
   const [cooldown, setCooldown] = useState(0);
   const [confirmedPhone, setConfirmedPhone] = useState('');
   const hasTriggered = useRef(false);
+  const confirmationRef = useRef<ConfirmationResult | null>(null);
 
-  const { sendOtp, verifyOtp, otpRegister } = useAuthStore((s) => s);
+  const { firebaseRegister } = useAuthStore((s) => s);
   const navigate = useAppStore((s) => s.navigate);
 
   useEffect(() => {
@@ -43,6 +50,10 @@ export default function RegisterPage() {
       }, 100);
     }
   }, [step]);
+
+  useEffect(() => {
+    return () => { cleanRecaptcha(); };
+  }, []);
 
   const formatPhoneDisplay = (p: string) => {
     const digits = p.replace(/[^\d]/g, '');
@@ -70,23 +81,51 @@ export default function RegisterPage() {
     return errs;
   };
 
+  const handleFirebaseError = (err: unknown) => {
+    const fbErr = err as { code?: string; message?: string };
+    console.error('Firebase error:', fbErr.code, fbErr.message);
+    cleanRecaptcha();
+
+    if (fbErr.message?.includes('-39') || fbErr.code?.includes('-39')) {
+      return 'مشكلة في تحميل التحقق الأمني. جرب تحمّل الصفحة من جديد.';
+    }
+    if (fbErr.code === 'auth/recaptcha-render-failed') {
+      return 'تحقق الأمان فشل في التحميل. حمّل الصفحة من جديد.';
+    }
+    if (fbErr.code === 'auth/invalid-phone-number') {
+      return 'رقم الهاتف غير صالح.';
+    }
+    if (fbErr.code === 'auth/too-many-requests') {
+      return 'محاولات كثيرة. استنى شوية.';
+    }
+    if (fbErr.code === 'auth/captcha-check-failed') {
+      return 'تحقق الأمان فشل. جرب تحمّل الصفحة مرة أخرى.';
+    }
+    if (fbErr.code === 'auth/unauthorized-domain') {
+      return 'الموقع غير مسجل في Firebase.';
+    }
+
+    return fbErr.message || 'حصل مشكل في إرسال الكود. جرب مرة أخرى.';
+  };
+
   const handleSendOtp = async () => {
     setError('');
     const errs = validateInfo();
     if (Object.keys(errs).length > 0) { setErrors(errs); return; }
 
     setLoading(true);
-    const digits = form.phone.replace(/[^\d]/g, '');
-    const result = await sendOtp(digits);
 
-    if (result.success) {
+    try {
+      const digits = form.phone.replace(/[^\d]/g, '');
+      const fullNumber = '+216' + digits;
+      const confirmationResult = await sendPhoneOTP(fullNumber);
+      confirmationRef.current = confirmationResult;
       setConfirmedPhone('+216 ' + digits.slice(0, 2) + ' ' + digits.slice(2, 5) + ' ' + digits.slice(5, 8));
       setStep('otp');
       setCooldown(60);
       setOtp('');
-    } else {
-      if (result.cooldown) setCooldown(result.cooldown);
-      setError(result.error || 'حصل مشكل في إرسال الكود. جرب مرة أخرى.');
+    } catch (err) {
+      setError(handleFirebaseError(err));
     }
     setLoading(false);
   };
@@ -94,65 +133,76 @@ export default function RegisterPage() {
   const handleResendOtp = async () => {
     setLoading(true);
     setError('');
-    const digits = form.phone.replace(/[^\d]/g, '');
-    const result = await sendOtp(digits);
 
-    if (result.success) {
+    try {
+      const digits = form.phone.replace(/[^\d]/g, '');
+      const fullNumber = '+216' + digits;
+      const confirmationResult = await sendPhoneOTP(fullNumber);
+      confirmationRef.current = confirmationResult;
       setCooldown(60);
-    } else {
-      if (result.cooldown) setCooldown(result.cooldown);
-      if (result.error && !result.error.includes('استنى')) {
-        setError(result.error);
+    } catch (err) {
+      const fbErr = err as { code?: string };
+      if (fbErr.code !== 'auth/too-many-requests') {
+        setError(handleFirebaseError(err));
       }
     }
     setLoading(false);
   };
 
   const handleOtpComplete = useCallback(async (code: string) => {
-    if (loading || hasTriggered.current) return;
+    if (loading || hasTriggered.current || !confirmationRef.current) return;
     hasTriggered.current = true;
     setLoading(true);
     setError('');
 
-    const digits = form.phone.replace(/[^\d]/g, '');
+    try {
+      const result = await verifyPhoneOTP(confirmationRef.current, code);
 
-    // Step 1: Verify OTP
-    const verifyResult = await verifyOtp(digits, code);
+      const success = await firebaseRegister({
+        idToken: result.idToken,
+        name: form.name,
+        phone: form.phone.replace(/[^\d]/g, ''),
+        address: form.address,
+        wilaya: form.wilaya,
+      });
 
-    if (!verifyResult.success) {
-      setError(verifyResult.error || 'حصل مشكل في التحقق.');
-      setOtp('');
-      hasTriggered.current = false;
-      setLoading(false);
-      return;
-    }
-
-    // Step 2: Register
-    const success = await otpRegister({
-      name: form.name,
-      phone: digits,
-      address: form.address,
-      wilaya: form.wilaya,
-    });
-
-    if (success) {
-      setStep('success');
-      setTimeout(() => navigate('dashboard'), 1500);
-    } else {
-      const authStore = useAuthStore.getState();
-      if (authStore.lastError?.includes('بهاد الرقم فعلا')) {
-        setError('عندك حساب بهاد الرقم فعلا. سجل دخول.');
+      if (success) {
+        setStep('success');
+        setTimeout(() => navigate('dashboard'), 1500);
       } else {
-        setError(authStore.lastError || 'حصل مشكل أثناء التسجيل.');
+        const authStore = useAuthStore.getState();
+        if (authStore.lastError?.includes('بهاد الرقم فعلا')) {
+          setError('عندك حساب بهاد الرقم فعلا. سجل دخول.');
+        } else {
+          setError(authStore.lastError || 'حصل مشكل أثناء التسجيل.');
+        }
+        setOtp('');
+        hasTriggered.current = false;
+      }
+    } catch (err) {
+      const fbErr = err as { code?: string };
+      if (fbErr.code === 'auth/invalid-verification-code') {
+        setError('الكود غالط. جرب مرة أخرى.');
+      } else if (fbErr.code === 'auth/code-expired') {
+        setError('الكود انتهى. أرسل كود جديد.');
+      } else {
+        setError('حصل مشكل في التحقق. جرب مرة أخرى.');
       }
       setOtp('');
       hasTriggered.current = false;
     }
     setLoading(false);
-  }, [loading, sendOtp, verifyOtp, otpRegister, form, navigate]);
+  }, [loading, firebaseRegister, form, navigate]);
 
   return (
     <div className="min-h-screen bg-carely-mint flex items-center justify-center p-4 py-8" dir="rtl">
+      {/* reCAPTCHA container — VISIBLE, always in DOM */}
+      <div
+        id="recaptcha-container"
+        className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50"
+        style={{ display: 'block', minHeight: '78px' }}
+      />
+
       <div className="w-full max-w-lg">
         <div className="text-center mb-6">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-white rounded-2xl shadow-lg mb-3">
@@ -265,7 +315,7 @@ export default function RegisterPage() {
                 {loading && <div className="flex justify-center mb-4"><Loader2 className="h-6 w-6 animate-spin text-carely-green" /></div>}
 
                 <div className="flex items-center justify-between mt-4">
-                  <button onClick={() => { setStep('info'); setOtp(''); setError(''); }}
+                  <button onClick={() => { cleanRecaptcha(); setStep('info'); setOtp(''); setError(''); }}
                     className="flex items-center gap-1 text-sm text-carely-gray hover:text-carely-dark transition-colors" disabled={loading}>
                     <ArrowLeft className="w-4 h-4" />رجوع للمعلومات
                   </button>

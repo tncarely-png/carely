@@ -88,3 +88,35 @@ Stage Summary:
 - Server-side RapidAPI SMS-Verify3 sends real SMS — NO reCAPTCHA needed
 - Full OTP flow: Frontend → /api/auth/send-otp (sends SMS) → /api/auth/verify-otp → /api/auth/otp-login or /api/auth/otp-register
 - Real SMS tested and confirmed working with +21626107128
+
+---
+Task ID: 5
+Agent: Main
+Task: Re-add Firebase SMS OTP with visible reCAPTCHA fix for error -39
+
+Work Log:
+- Recreated `src/lib/firebase.ts` — Firebase app init with user's config, `appVerificationDisabledForTesting = false`
+- Recreated `src/lib/firebase-auth.ts` — Firebase Phone Auth helpers with VISIBLE reCAPTCHA widget (key fix for error -39):
+  - `getRecaptchaVerifier()` — Creates visible (size: "normal") reCAPTCHA widget, ensures container is `display: block` with `minHeight: 78px`
+  - `sendPhoneOTP()` — Cleans old verifier, creates fresh one, explicitly `await verifier.render()` before `signInWithPhoneNumber`
+  - `cleanRecaptcha()` — Full cleanup of verifier + container DOM
+  - `verifyPhoneOTP()` — Confirms OTP code, gets ID token
+  - `signOutFirebase()` — Sign out + cleanup
+- Recreated `src/app/api/auth/firebase-verify/route.ts` — Server-side Firebase token verification via Google Identity Toolkit API (`getAccountInfo`), handles login/register
+- Updated `src/store/index.ts` — `firebaseLogin(idToken)` and `firebaseRegister({idToken, name, phone, ...})` methods
+- Rewrote `src/components/auth/LoginPage.tsx` — Firebase Phone Auth flow:
+  - reCAPTCHA container is `fixed bottom-4 left-1/2` — always visible, always in DOM
+  - `handleFirebaseError()` catches error -39 specifically: "مشكلة في تحميل التحقق الأمني. جرب تحمّل الصفحة من جديد."
+  - Auto-cleanup on error (`cleanRecaptcha()`) for retry
+- Rewrote `src/components/auth/RegisterPage.tsx` — Same Firebase flow + name/wilaya fields
+- Deleted old server-side OTP routes: `send-otp`, `verify-otp`, `otp-login`, `otp-register`
+- `src/lib/sms.ts` kept as utility (still imported by nothing)
+- Lint: 0 errors
+
+Stage Summary:
+- Firebase Phone Auth re-added with VISIBLE reCAPTCHA widget (fixes error -39)
+- reCAPTCHA container always visible at bottom of page, not hidden
+- Fresh verifier created on every send attempt with explicit `await render()`
+- Error -39 handled with user-friendly Arabic message + auto-cleanup for retry
+- Domain `carely.space.z.ai` already authorized in Firebase Console
+- Dev server running, page loads, firebase-verify route works
