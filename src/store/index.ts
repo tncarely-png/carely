@@ -7,6 +7,8 @@ export type PageRoute =
   | "features"
   | "faq"
   | "contact"
+  | "privacy-policy"
+  | "terms-of-service"
   // Auth
   | "login"
   | "register"

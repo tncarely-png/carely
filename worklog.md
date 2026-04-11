@@ -52,3 +52,24 @@ Stage Summary:
 - Beautiful OTP input with auto-submit on 6 digits
 - Phone number is the primary account identifier
 - Existing seeded users work with OTP login (matched by phone number)
+
+---
+Task ID: 2
+Agent: Main Orchestrator
+Task: Add Privacy Policy, Terms of Service pages and footer links
+
+Work Log:
+- Added 'privacy-policy' and 'terms-of-service' to PageRoute type in store/index.ts
+- Created PrivacyPolicyPage.tsx with 9 sections of Arabic (Tunisian dialect) privacy policy content
+- Created TermsOfServicePage.tsx with 10 sections of Arabic (Tunisian dialect) terms of service content
+- Both legal pages have their own clean Navbar and Footer with 3 navigation links
+- Updated main Footer.tsx: renamed "دعم" column to "قانوني و دعم" with privacy + terms links
+- Added bottom bar to main footer with explicit links: الصفحة الرئيسية | سياسة الخصوصية | شروط الاستخدام
+- Added routes to page.tsx switch statement
+- ESLint: 0 errors, 1 pre-existing warning
+
+Stage Summary:
+- Privacy Policy page covers: data collection, usage, sharing, security, cookies, user rights, retention, updates, contact
+- Terms of Service covers: service description, registration, pricing, refunds, acceptable use, IP, liability, account termination, governing law, contact
+- All footer links navigate correctly using Zustand store routing
+- Each legal page has its own simplified navbar + footer for focused reading

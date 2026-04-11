@@ -42,6 +42,10 @@ import {
   FinalCTA,
 } from '@/components/home';
 
+// Legal
+import PrivacyPolicyPage from '@/components/legal/PrivacyPolicyPage';
+import TermsOfServicePage from '@/components/legal/TermsOfServicePage';
+
 // Layout
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
@@ -308,6 +312,8 @@ export default function Home() {
     case 'features': return <FeaturesPage />;
     case 'faq': return <FaqPage />;
     case 'contact': return <ContactPage />;
+    case 'privacy-policy': return <PrivacyPolicyPage />;
+    case 'terms-of-service': return <TermsOfServicePage />;
     case 'home':
     default: return <HomePage />;
   }

@@ -63,7 +63,7 @@ export default function Footer() {
                 { label: 'الرئيسية', page: 'home' as const },
                 { label: 'الأسعار', page: 'pricing' as const },
                 { label: 'المميزات', page: 'features' as const },
-                { label: 'FAQ', page: 'faq' as const },
+                { label: 'الأسئلة الشايعة', page: 'faq' as const },
               ].map((item) => (
                 <li key={item.page}>
                   <button
@@ -77,9 +77,9 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Col 3: Support */}
+          {/* Col 3: Legal & Support */}
           <div>
-            <h3 className="text-base font-bold mb-4 text-carely-light">دعم</h3>
+            <h3 className="text-base font-bold mb-4 text-carely-light">قانوني و دعم</h3>
             <ul className="flex flex-col gap-3">
               <li>
                 <button
@@ -101,10 +101,18 @@ export default function Footer() {
               </li>
               <li>
                 <button
-                  onClick={() => navigate('home')}
+                  onClick={() => navigate('privacy-policy')}
                   className="text-sm text-gray-300 hover:text-white transition-colors"
                 >
                   سياسة الخصوصية
+                </button>
+              </li>
+              <li>
+                <button
+                  onClick={() => navigate('terms-of-service')}
+                  className="text-sm text-gray-300 hover:text-white transition-colors"
+                >
+                  شروط الاستخدام
                 </button>
               </li>
             </ul>
@@ -143,10 +151,34 @@ export default function Footer() {
         </div>
 
         {/* Bottom bar */}
-        <div className="mt-10 pt-6 border-t border-white/10 text-center">
-          <p className="text-sm text-gray-400">
-            © 2025 Carely.tn — جميع الحقوق محفوظة
-          </p>
+        <div className="mt-10 pt-6 border-t border-white/10">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+            <p className="text-sm text-gray-400">
+              © 2025 Carely.tn — جميع الحقوق محفوظة
+            </p>
+            <nav className="flex items-center gap-6">
+              <button
+                onClick={() => navigate('home')}
+                className="text-xs text-gray-400 hover:text-white transition-colors"
+              >
+                الصفحة الرئيسية
+              </button>
+              <span className="text-gray-600">|</span>
+              <button
+                onClick={() => navigate('privacy-policy')}
+                className="text-xs text-gray-400 hover:text-white transition-colors"
+              >
+                سياسة الخصوصية
+              </button>
+              <span className="text-gray-600">|</span>
+              <button
+                onClick={() => navigate('terms-of-service')}
+                className="text-xs text-gray-400 hover:text-white transition-colors"
+              >
+                شروط الاستخدام
+              </button>
+            </nav>
+          </div>
         </div>
       </div>
     </footer>
