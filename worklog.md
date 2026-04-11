@@ -61,3 +61,30 @@ Stage Summary:
 - Domain `carely.space.z.ai` is authorized in Firebase Console
 - reCAPTCHA initializes explicitly with `await render()` for reliability
 - User can test with `+21626107128` — real SMS should be delivered
+
+---
+Task ID: 4
+Agent: Main
+Task: Replace Firebase Phone Auth with server-side RapidAPI SMS (reCAPTCHA doesn't work in sandbox)
+
+Work Log:
+- Firebase Phone Auth fundamentally broken in sandbox/proxy env (Caddy gateway iframe blocks invisible reCAPTCHA)
+- Abandoned Firebase Phone Auth entirely — removed `firebase.ts`, `firebase-auth.ts`, `firebase-verify/route.ts`
+- Created `src/lib/sms.ts` — Server-side SMS module with RapidAPI SMS-Verify3 (key: 87032edf23msh...), OTP store, cooldowns, phone normalization
+- Recreated `src/app/api/auth/send-otp/route.ts` — Server sends real SMS via RapidAPI, stores OTP in memory
+- Recreated `src/app/api/auth/verify-otp/route.ts` — Server verifies OTP code, max 5 attempts, 5-min TTL
+- Recreated `src/app/api/auth/otp-login/route.ts` — Login by phone after OTP verified
+- Recreated `src/app/api/auth/otp-register/route.ts` — Register new user after OTP verified
+- Rewrote `src/store/index.ts` — `sendOtp`, `verifyOtp`, `otpLogin`, `otpRegister` all call server APIs
+- Rewrote `src/components/auth/LoginPage.tsx` — Pure server-side OTP flow (no Firebase, no reCAPTCHA)
+- Rewrote `src/components/auth/RegisterPage.tsx` — Same pure server-side OTP flow
+- Zero Firebase imports remain anywhere in the project
+- Verified with curl: SMS sent to +216 26 107 128 successfully ✅
+- Verified OTP verification works ✅
+- Lint: 0 errors
+
+Stage Summary:
+- Firebase Phone Auth removed completely (reCAPTCHA incompatible with sandbox)
+- Server-side RapidAPI SMS-Verify3 sends real SMS — NO reCAPTCHA needed
+- Full OTP flow: Frontend → /api/auth/send-otp (sends SMS) → /api/auth/verify-otp → /api/auth/otp-login or /api/auth/otp-register
+- Real SMS tested and confirmed working with +21626107128
