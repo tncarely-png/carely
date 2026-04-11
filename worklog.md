@@ -189,3 +189,29 @@ Stage Summary:
 - File uploads handled as base64 (no separate upload API)
 - WhatsApp CTA integrated at every step
 - Order creation stores receipt image as base64 in receiptUrl field
+
+---
+Task ID: 6
+Agent: Main
+Task: Implement OTP v2 — Firebase invisible reCAPTCHA + login-only + server-side token verification
+
+Work Log:
+- Read all current project files to understand existing state
+- Created `src/lib/firebase.ts` — clean client-side Firebase init with getApps() hot-reload check
+- Created `src/lib/firebase-otp.ts` — NEW file with 5 functions: initRecaptcha (invisible), sendFirebaseOTP, verifyFirebaseOTP, resetRecaptcha, normalizePhone. Uses window.recaptchaVerifier, module-level confirmationResult, full Arabic error mapping
+- Created `src/lib/firebase-admin.ts` — server-side token verification via Google Identity Toolkit API. Includes normalizePhoneForDb and extractDigits helpers
+- Created `src/app/api/auth/otp-login/route.ts` — POST endpoint accepting {phone, idToken, action}. Verifies idToken server-side, finds/creates user. Returns isNewUser=true for new phones
+- Rewrote `src/components/auth/LoginPage.tsx` — login-only with invisible reCAPTCHA. 3-step flow: phone → OTP → profile (for new users). Uses initRecaptcha on mount, resetRecaptcha on error/resend/unmount. recaptcha-container div at top of JSX outside conditionals
+- Updated `src/store/index.ts` — removed firebaseLogin/firebaseRegister, simplified to otpLogin(phone, idToken). Removed sendOtp entirely (now direct Firebase client call in component)
+- Deleted old files: sms.ts, firebase-auth.ts, RegisterPage.tsx, firebase-verify route directory
+- Verified no remaining references to deleted files
+- ESLint: 0 errors (1 pre-existing font warning)
+- Dev server compiles and runs successfully
+
+Stage Summary:
+- OTP v2 system fully implemented per user spec
+- Invisible reCAPTCHA with proper init/reset lifecycle
+- Login-only flow: new users get inline profile form after OTP verification
+- Server-side token verification (cryptographic — client cannot fake idToken)
+- Clean separation: firebase.ts (client init) → firebase-otp.ts (client OTP) → firebase-admin.ts (server verify) → otp-login route
+- No RapidAPI dependency remaining

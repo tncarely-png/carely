@@ -9,21 +9,26 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from '@/components/ui/dialog';
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
-import { InputOTP, InputOTPGroup, InputOTPSlot, InputOTPSeparator } from '@/components/ui/input-otp';
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from '@/components/ui/select';
+import {
+  InputOTP,
+  InputOTPGroup,
+  InputOTPSlot,
+  InputOTPSeparator,
+} from '@/components/ui/input-otp';
 import { Loader2, ArrowLeft, Smartphone, ShieldCheck, RefreshCw, UserPlus } from 'lucide-react';
 import {
-  sendPhoneOTP,
-  verifyPhoneOTP,
-  cleanRecaptcha,
-  type ConfirmationResult,
-} from '@/lib/firebase-auth';
+  initRecaptcha,
+  sendFirebaseOTP,
+  verifyFirebaseOTP,
+  resetRecaptcha,
+  normalizePhone,
+} from '@/lib/firebase-otp';
 
 type Step = 'phone' | 'otp' | 'profile';
 
@@ -36,31 +41,33 @@ export default function LoginPage() {
   const [cooldown, setCooldown] = useState(0);
   const [confirmedPhone, setConfirmedPhone] = useState('');
 
-  // Captcha dialog state
-  const [captchaOpen, setCaptchaOpen] = useState(false);
-  const [captchaLoading, setCaptchaLoading] = useState(false);
-  const [captchaError, setCaptchaError] = useState('');
-
   // Profile form state
   const [profileForm, setProfileForm] = useState({ name: '', wilaya: '', address: '' });
   const [profileErrors, setProfileErrors] = useState<Record<string, string>>({});
 
   const hasTriggered = useRef(false);
-  const confirmationRef = useRef<ConfirmationResult | null>(null);
   const pendingIdTokenRef = useRef<string | null>(null);
   const pendingPhoneDigitsRef = useRef<string>('');
 
   const setUser = useAuthStore((s) => s.setUser);
   const navigate = useAppStore((s) => s.navigate);
 
-  // Countdown timer
+  // ── Init reCAPTCHA on mount ──
+  useEffect(() => {
+    initRecaptcha('recaptcha-container');
+    return () => {
+      resetRecaptcha();
+    };
+  }, []);
+
+  // ── Countdown timer ──
   useEffect(() => {
     if (cooldown <= 0) return;
     const timer = setInterval(() => setCooldown((c) => c - 1), 1000);
     return () => clearInterval(timer);
   }, [cooldown]);
 
-  // Auto-focus OTP
+  // ── Auto-focus OTP on step change ──
   useEffect(() => {
     if (step === 'otp') {
       hasTriggered.current = false;
@@ -71,38 +78,7 @@ export default function LoginPage() {
     }
   }, [step]);
 
-  // Cleanup reCAPTCHA on unmount
-  useEffect(() => {
-    return () => { cleanRecaptcha(); };
-  }, []);
-
-  const handleFirebaseError = (err: unknown) => {
-    const fbErr = err as { code?: string; message?: string };
-    console.error('Firebase error:', fbErr.code, fbErr.message);
-    cleanRecaptcha('recaptcha-container');
-
-    if (fbErr.message?.includes('-39') || fbErr.code?.includes('-39')) {
-      return 'مشكلة في تحميل التحقق الأمني. جرب تحمّل الصفحة من جديد.';
-    }
-    if (fbErr.code === 'auth/recaptcha-render-failed') {
-      return 'تحقق الأمان فشل في التحميل. حمّل الصفحة من جديد.';
-    }
-    if (fbErr.code === 'auth/invalid-phone-number') {
-      return 'رقم الهاتف غير صالح.';
-    }
-    if (fbErr.code === 'auth/too-many-requests') {
-      return 'محاولات كثيرة. استنى شوية قبل ما تجرب مرة أخرى.';
-    }
-    if (fbErr.code === 'auth/captcha-check-failed') {
-      return 'تحقق الأمان فشل. جرب تحمّل الصفحة مرة أخرى.';
-    }
-    if (fbErr.code === 'auth/unauthorized-domain') {
-      return 'الموقع غير مسجل في Firebase. لازم تضيف الدومين في Firebase Console.';
-    }
-
-    return fbErr.message || 'حصل مشكل في إرسال الكود. جرب مرة أخرى.';
-  };
-
+  // ── Phone formatting ──
   const formatPhoneDisplay = (p: string) => {
     const digits = p.replace(/[^\d]/g, '');
     if (digits.length <= 2) return digits;
@@ -115,69 +91,94 @@ export default function LoginPage() {
     setError('');
   };
 
-  // Send OTP — triggered via ref callback when reCAPTCHA container mounts in dialog
-  const triggerSendOtp = useCallback(async () => {
+  // ── Send OTP ──
+  const handleSendOtp = async () => {
     const digits = phone.replace(/[^\d]/g, '');
-    if (digits.length !== 8 || !/^[259]/.test(digits)) return;
+    if (digits.length !== 8 || !/^[259]/.test(digits)) {
+      setError('أدخل رقم هاتف صحيح (8 أرقام)');
+      return;
+    }
 
-    try {
-      const fullNumber = '+216' + digits;
-      const confirmationResult = await sendPhoneOTP(fullNumber, 'recaptcha-container');
-      confirmationRef.current = confirmationResult;
-      setConfirmedPhone('+216 ' + digits.slice(0, 2) + ' ' + digits.slice(2, 5) + ' ' + digits.slice(5, 8));
-      setCaptchaOpen(false);
-      setStep('otp');
+    setError('');
+    setLoading(true);
+
+    // Normalize to E.164: "+21626107128"
+    const e164 = normalizePhone(digits);
+
+    // Reset reCAPTCHA and re-init before sending
+    resetRecaptcha();
+    initRecaptcha('recaptcha-container');
+
+    // Small delay to let reCAPTCHA initialize
+    await new Promise((r) => setTimeout(r, 500));
+
+    const result = await sendFirebaseOTP(e164);
+
+    if (typeof result === 'string') {
+      // Error string returned
+      setError(result);
+      setLoading(false);
+      return;
+    }
+
+    // Success — ConfirmationResult returned
+    setConfirmedPhone('+216 ' + digits.slice(0, 2) + ' ' + digits.slice(2, 5) + ' ' + digits.slice(5, 8));
+    setStep('otp');
+    setCooldown(60);
+    setOtp('');
+    pendingPhoneDigitsRef.current = digits;
+    setLoading(false);
+  };
+
+  // ── Resend OTP ──
+  const handleResendOtp = async () => {
+    if (loading) return;
+    setLoading(true);
+    setError('');
+
+    const digits = pendingPhoneDigitsRef.current || phone.replace(/[^\d]/g, '');
+    const e164 = normalizePhone(digits);
+
+    // Must reset and re-init reCAPTCHA before resending
+    resetRecaptcha();
+    initRecaptcha('recaptcha-container');
+
+    await new Promise((r) => setTimeout(r, 500));
+
+    const result = await sendFirebaseOTP(e164);
+
+    if (typeof result === 'string') {
+      setError(result);
+    } else {
       setCooldown(60);
       setOtp('');
-      pendingPhoneDigitsRef.current = digits;
-    } catch (err) {
-      setCaptchaError(handleFirebaseError(err));
+      setError('');
     }
-    setCaptchaLoading(false);
+
     setLoading(false);
-  }, [phone]);
-
-  const captchaContainerRef = useCallback((node: HTMLDivElement | null) => {
-    if (node && captchaOpen) {
-      // Container just mounted in the dialog — trigger OTP after a short delay
-      setCaptchaLoading(true);
-      setCaptchaError('');
-      setTimeout(() => triggerSendOtp(), 300);
-    }
-  }, [captchaOpen, triggerSendOtp]);
-
-  const handleOpenCaptcha = () => {
-    const digits = phone.replace(/[^\d]/g, '');
-    if (digits.length !== 8) { setError('أدخل رقم هاتف صحيح (8 أرقام)'); return; }
-    if (!/^[259]/.test(digits)) { setError('رقم الهاتف لازم يبدا بـ 2 أو 5 أو 9'); return; }
-
-    setError('');
-    setLoading(true);
-    cleanRecaptcha('recaptcha-container');
-    setCaptchaOpen(true);
   };
 
-  const handleResendOtp = async () => {
-    setLoading(true);
-    setError('');
-    setCaptchaOpen(true);
-  };
-
+  // ── Verify OTP ──
   const handleOtpComplete = useCallback(async (code: string) => {
-    if (loading || hasTriggered.current || !confirmationRef.current) return;
+    if (loading || hasTriggered.current) return;
     hasTriggered.current = true;
     setLoading(true);
     setError('');
 
     try {
-      const result = await verifyPhoneOTP(confirmationRef.current, code);
-      pendingIdTokenRef.current = result.idToken;
+      // Call verifyFirebaseOTP — returns idToken
+      const idToken = await verifyFirebaseOTP(code);
+      pendingIdTokenRef.current = idToken;
 
-      // Call backend to check if user exists
-      const res = await fetch('/api/auth/firebase-verify', {
+      // Send idToken + phone to server
+      const res = await fetch('/api/auth/otp-login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ idToken: result.idToken, action: 'login' }),
+        body: JSON.stringify({
+          phone: pendingPhoneDigitsRef.current,
+          idToken,
+          action: 'login',
+        }),
       });
       const data = await res.json();
 
@@ -194,9 +195,12 @@ export default function LoginPage() {
         setError(data.error || 'حصل مشكل. جرب مرة أخرى.');
         setOtp('');
         hasTriggered.current = false;
+        // Reset reCAPTCHA on error so user can retry
+        resetRecaptcha();
+        initRecaptcha('recaptcha-container');
       }
     } catch (err) {
-      const fbErr = err as { code?: string };
+      const fbErr = err as { code?: string; message?: string };
       if (fbErr.code === 'auth/invalid-verification-code') {
         setError('الكود غالط. جرب مرة أخرى.');
       } else if (fbErr.code === 'auth/code-expired') {
@@ -206,35 +210,45 @@ export default function LoginPage() {
       }
       setOtp('');
       hasTriggered.current = false;
+      // Reset reCAPTCHA on error
+      resetRecaptcha();
+      initRecaptcha('recaptcha-container');
     }
     setLoading(false);
   }, [loading, setUser, navigate]);
 
+  // ── Profile form ──
   const updateProfileField = (field: string, value: string) => {
     setProfileForm((prev) => ({ ...prev, [field]: value }));
     if (profileErrors[field]) {
-      setProfileErrors((prev) => { const n = { ...prev }; delete n[field]; return n; });
+      setProfileErrors((prev) => {
+        const n = { ...prev };
+        delete n[field];
+        return n;
+      });
     }
   };
 
   const handleProfileSubmit = async () => {
     const errs: Record<string, string> = {};
     if (!profileForm.name.trim()) errs.name = 'الاسم لازم';
-
-    if (Object.keys(errs).length > 0) { setProfileErrors(errs); return; }
+    if (Object.keys(errs).length > 0) {
+      setProfileErrors(errs);
+      return;
+    }
 
     setLoading(true);
     setError('');
 
     try {
-      const res = await fetch('/api/auth/firebase-verify', {
+      const res = await fetch('/api/auth/otp-login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          phone: pendingPhoneDigitsRef.current,
           idToken: pendingIdTokenRef.current,
           action: 'register',
           name: profileForm.name.trim(),
-          phone: pendingPhoneDigitsRef.current,
           wilaya: profileForm.wilaya || undefined,
           address: profileForm.address || undefined,
         }),
@@ -254,66 +268,20 @@ export default function LoginPage() {
     }
   };
 
+  // ── Back to phone step ──
   const handleBackToPhone = () => {
-    cleanRecaptcha('recaptcha-container');
+    resetRecaptcha();
+    initRecaptcha('recaptcha-container');
     setStep('phone');
     setOtp('');
     setError('');
     setLoading(false);
   };
 
-  const handleCaptchaDialogClose = (open: boolean) => {
-    if (!open) {
-      cleanRecaptcha('recaptcha-container');
-      setCaptchaError('');
-      setCaptchaLoading(false);
-      setLoading(false);
-    }
-  };
-
   return (
     <div className="min-h-screen bg-carely-mint flex items-center justify-center p-4" dir="rtl">
-      {/* reCAPTCHA Dialog Modal */}
-      <Dialog open={captchaOpen} onOpenChange={handleCaptchaDialogClose}>
-        <DialogContent
-          className="sm:max-w-md"
-          onPointerDownOutside={(e) => e.preventDefault()}
-          onEscapeKeyDown={(e) => e.preventDefault()}
-          showCloseButton={!captchaLoading}
-        >
-          <DialogHeader className="text-center">
-            <DialogTitle className="text-xl font-bold text-carely-dark">
-              التحقق الأمني
-            </DialogTitle>
-            <DialogDescription className="text-sm text-carely-gray">
-              أكمل التحقق الأمني لإرسال كود التفعيل
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="flex flex-col items-center gap-4 py-4">
-            {captchaLoading && !captchaError && (
-              <div className="flex flex-col items-center gap-3">
-                <Loader2 className="h-8 w-8 animate-spin text-carely-green" />
-                <p className="text-sm text-carely-gray">جاري تحميل التحقق الأمني...</p>
-              </div>
-            )}
-
-            {captchaError && (
-              <div className="w-full bg-red-50 border border-red-200 text-red-700 rounded-xl p-4 text-sm text-center font-medium">
-                {captchaError}
-              </div>
-            )}
-
-            {/* reCAPTCHA container — rendered inside the Dialog */}
-            <div
-              ref={captchaContainerRef}
-              id="recaptcha-container"
-              className="flex justify-center"
-              style={{ display: 'block', minHeight: '78px' }}
-            />
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* reCAPTCHA container — REQUIRED, must exist in DOM, outside conditional rendering */}
+      <div id="recaptcha-container" />
 
       <div className="w-full max-w-md">
         {/* Logo */}
@@ -327,11 +295,12 @@ export default function LoginPage() {
 
         <Card className="carely-card p-6">
           <CardContent className="p-0">
-
-            {/* STEP 1: Phone */}
+            {/* ═══ STEP 1: Phone ═══ */}
             {step === 'phone' && (
               <>
-                <h2 className="text-xl font-bold text-carely-dark mb-2 text-center">تسجيل الدخول</h2>
+                <h2 className="text-xl font-bold text-carely-dark mb-2 text-center">
+                  تسجيل الدخول
+                </h2>
                 <p className="text-sm text-carely-gray text-center mb-6">
                   أدخل رقم هاتفك التونسي ونرسلك كود تفعيل
                 </p>
@@ -344,92 +313,171 @@ export default function LoginPage() {
 
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="phone" className="text-carely-dark font-semibold">رقم الهاتف</Label>
+                    <Label htmlFor="phone" className="text-carely-dark font-semibold">
+                      رقم الهاتف
+                    </Label>
                     <div className="flex items-center gap-2">
                       <div className="flex items-center gap-1 bg-carely-mint rounded-xl px-4 h-12 border border-carely-light shrink-0">
                         <span className="text-lg">🇹🇳</span>
                         <span className="text-sm font-bold text-carely-dark">+216</span>
                       </div>
-                      <Input id="phone" placeholder="2X XXX XXX" value={phone}
+                      <Input
+                        id="phone"
+                        placeholder="2X XXX XXX"
+                        value={phone}
                         onChange={(e) => handlePhoneChange(e.target.value)}
                         className="flex-1 h-12 text-lg tracking-widest text-center font-bold"
-                        dir="ltr" inputMode="numeric" autoFocus maxLength={11} />
+                        dir="ltr"
+                        inputMode="numeric"
+                        autoFocus
+                        maxLength={11}
+                      />
                     </div>
                   </div>
 
                   {error && (
-                    <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl p-3 text-sm text-center font-medium">{error}</div>
+                    <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl p-3 text-sm text-center font-medium">
+                      {error}
+                    </div>
                   )}
 
-                  <Button onClick={handleOpenCaptcha}
+                  <Button
+                    onClick={handleSendOtp}
                     disabled={loading || phone.replace(/[^\d]/g, '').length !== 8}
-                    className="carely-btn-primary w-full h-12 text-base disabled:opacity-50">
+                    className="carely-btn-primary w-full h-12 text-base disabled:opacity-50"
+                  >
                     {loading ? (
-                      <span className="flex items-center justify-center gap-2"><Loader2 className="h-5 w-5 animate-spin" />جاري الإرسال...</span>
+                      <span className="flex items-center justify-center gap-2">
+                        <Loader2 className="h-5 w-5 animate-spin" />
+                        جاري الإرسال...
+                      </span>
                     ) : (
-                      <><ShieldCheck className="w-5 h-5 ml-2" />إرسال كود التفعيل</>
+                      <>
+                        <ShieldCheck className="w-5 h-5 ml-2" />
+                        إرسال كود التفعيل
+                      </>
                     )}
                   </Button>
                 </div>
 
                 <p className="text-xs text-center text-carely-gray/60 mt-6">
                   بالدخول، أنت توافق على{' '}
-                  <a href="/terms" className="text-carely-green hover:underline">شروط الاستخدام</a>
-                  {' '}و{' '}
-                  <a href="/privacy" className="text-carely-green hover:underline">سياسة الخصوصية</a>
+                  <a href="/terms" className="text-carely-green hover:underline">
+                    شروط الاستخدام
+                  </a>{' '}
+                  و{' '}
+                  <a href="/privacy" className="text-carely-green hover:underline">
+                    سياسة الخصوصية
+                  </a>
                 </p>
               </>
             )}
 
-            {/* STEP 2: OTP */}
+            {/* ═══ STEP 2: OTP ═══ */}
             {step === 'otp' && (
               <>
-                <h2 className="text-xl font-bold text-carely-dark mb-2 text-center">تأكيد الرقم</h2>
-                <p className="text-sm text-carely-gray text-center mb-4">أدخل كود الـ 6 أرقام اللي وصلك على</p>
-                <p className="text-base font-bold text-carely-green text-center mb-6" dir="ltr">{confirmedPhone}</p>
+                <h2 className="text-xl font-bold text-carely-dark mb-2 text-center">
+                  تأكيد الرقم
+                </h2>
+                <p className="text-sm text-carely-gray text-center mb-4">
+                  أدخل كود الـ 6 أرقام اللي وصلك على
+                </p>
+                <p
+                  className="text-base font-bold text-carely-green text-center mb-6"
+                  dir="ltr"
+                >
+                  {confirmedPhone}
+                </p>
 
                 <div className="flex justify-center mb-6">
-                  <InputOTP value={otp} onChange={setOtp} onComplete={handleOtpComplete} maxLength={6}
-                    containerClassName="gap-2 justify-center" disabled={loading}>
+                  <InputOTP
+                    value={otp}
+                    onChange={setOtp}
+                    onComplete={handleOtpComplete}
+                    maxLength={6}
+                    containerClassName="gap-2 justify-center"
+                    disabled={loading}
+                  >
                     <InputOTPGroup>
-                      <InputOTPSlot index={0} className="w-12 h-14 text-xl font-bold rounded-xl border-2 border-carely-light focus:border-carely-green" />
-                      <InputOTPSlot index={1} className="w-12 h-14 text-xl font-bold rounded-xl border-2 border-carely-light focus:border-carely-green" />
-                      <InputOTPSlot index={2} className="w-12 h-14 text-xl font-bold rounded-xl border-2 border-carely-light focus:border-carely-green" />
+                      <InputOTPSlot
+                        index={0}
+                        className="w-12 h-14 text-xl font-bold rounded-xl border-2 border-carely-light focus:border-carely-green"
+                      />
+                      <InputOTPSlot
+                        index={1}
+                        className="w-12 h-14 text-xl font-bold rounded-xl border-2 border-carely-light focus:border-carely-green"
+                      />
+                      <InputOTPSlot
+                        index={2}
+                        className="w-12 h-14 text-xl font-bold rounded-xl border-2 border-carely-light focus:border-carely-green"
+                      />
                     </InputOTPGroup>
                     <InputOTPSeparator className="w-4" />
                     <InputOTPGroup>
-                      <InputOTPSlot index={3} className="w-12 h-14 text-xl font-bold rounded-xl border-2 border-carely-light focus:border-carely-green" />
-                      <InputOTPSlot index={4} className="w-12 h-14 text-xl font-bold rounded-xl border-2 border-carely-light focus:border-carely-green" />
-                      <InputOTPSlot index={5} className="w-12 h-14 text-xl font-bold rounded-xl border-2 border-carely-light focus:border-carely-green" />
+                      <InputOTPSlot
+                        index={3}
+                        className="w-12 h-14 text-xl font-bold rounded-xl border-2 border-carely-light focus:border-carely-green"
+                      />
+                      <InputOTPSlot
+                        index={4}
+                        className="w-12 h-14 text-xl font-bold rounded-xl border-2 border-carely-light focus:border-carely-green"
+                      />
+                      <InputOTPSlot
+                        index={5}
+                        className="w-12 h-14 text-xl font-bold rounded-xl border-2 border-carely-light focus:border-carely-green"
+                      />
                     </InputOTPGroup>
                   </InputOTP>
                 </div>
 
                 <p className="text-xs text-carely-gray text-center mb-4">
-                  {otp.length < 6 ? `${6 - otp.length} أرقام باقية...` : (loading ? 'جاري التحقق...' : 'جاري التحقق...')}
+                  {otp.length < 6
+                    ? `${6 - otp.length} أرقام باقية...`
+                    : loading
+                      ? 'جاري التحقق...'
+                      : 'جاري التحقق...'}
                 </p>
 
-                {error && <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl p-3 text-sm text-center font-medium mb-4">{error}</div>}
-                {loading && <div className="flex justify-center mb-4"><Loader2 className="h-6 w-6 animate-spin text-carely-green" /></div>}
+                {error && (
+                  <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl p-3 text-sm text-center font-medium mb-4">
+                    {error}
+                  </div>
+                )}
+                {loading && (
+                  <div className="flex justify-center mb-4">
+                    <Loader2 className="h-6 w-6 animate-spin text-carely-green" />
+                  </div>
+                )}
 
                 <div className="flex items-center justify-between mt-4">
-                  <button onClick={handleBackToPhone}
-                    className="flex items-center gap-1 text-sm text-carely-gray hover:text-carely-dark transition-colors" disabled={loading}>
-                    <ArrowLeft className="w-4 h-4" />تعديل الرقم
+                  <button
+                    onClick={handleBackToPhone}
+                    className="flex items-center gap-1 text-sm text-carely-gray hover:text-carely-dark transition-colors"
+                    disabled={loading}
+                  >
+                    <ArrowLeft className="w-4 h-4" />
+                    تعديل الرقم
                   </button>
                   {cooldown > 0 ? (
-                    <span className="text-sm text-carely-gray">أعد الإرسال بعد <span className="font-bold text-carely-dark">{cooldown}</span> ثانية</span>
+                    <span className="text-sm text-carely-gray">
+                      أعد الإرسال بعد{' '}
+                      <span className="font-bold text-carely-dark">{cooldown}</span> ثانية
+                    </span>
                   ) : (
-                    <button onClick={handleResendOtp} disabled={loading}
-                      className="flex items-center gap-1 text-sm text-carely-green font-bold hover:underline">
-                      <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />إعادة إرسال الكود
+                    <button
+                      onClick={handleResendOtp}
+                      disabled={loading}
+                      className="flex items-center gap-1 text-sm text-carely-green font-bold hover:underline"
+                    >
+                      <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                      إعادة إرسال الكود
                     </button>
                   )}
                 </div>
               </>
             )}
 
-            {/* STEP 3: Complete Profile (for new users) */}
+            {/* ═══ STEP 3: Complete Profile (new users only) ═══ */}
             {step === 'profile' && (
               <>
                 <div className="flex justify-center mb-4">
@@ -438,51 +486,91 @@ export default function LoginPage() {
                   </div>
                 </div>
 
-                <h2 className="text-xl font-bold text-carely-dark mb-2 text-center">أكمل بروفايلك</h2>
+                <h2 className="text-xl font-bold text-carely-dark mb-2 text-center">
+                  أكمل بروفايلك
+                </h2>
                 <p className="text-sm text-carely-gray text-center mb-6">
                   مرحبا بيك في Carely.tn! أدخل معلوماتك الأساسية
                 </p>
 
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="profile-name" className="text-carely-dark font-semibold">الاسم الكامل *</Label>
-                    <Input id="profile-name" placeholder="محمد بن علي" value={profileForm.name}
+                    <Label
+                      htmlFor="profile-name"
+                      className="text-carely-dark font-semibold"
+                    >
+                      الاسم الكامل *
+                    </Label>
+                    <Input
+                      id="profile-name"
+                      placeholder="محمد بن علي"
+                      value={profileForm.name}
                       onChange={(e) => updateProfileField('name', e.target.value)}
-                      className="w-full h-11" autoFocus />
-                    {profileErrors.name && <p className="text-red-500 text-xs">{profileErrors.name}</p>}
+                      className="w-full h-11"
+                      autoFocus
+                    />
+                    {profileErrors.name && (
+                      <p className="text-red-500 text-xs">{profileErrors.name}</p>
+                    )}
                   </div>
 
                   <div className="space-y-2">
                     <Label className="text-carely-dark font-semibold">
-                      الولاية <span className="text-carely-gray font-normal">(اختياري)</span>
+                      الولاية{' '}
+                      <span className="text-carely-gray font-normal">(اختياري)</span>
                     </Label>
-                    <Select value={profileForm.wilaya} onValueChange={(val) => updateProfileField('wilaya', val)}>
-                      <SelectTrigger className="w-full h-11"><SelectValue placeholder="اختار الولاية" /></SelectTrigger>
+                    <Select
+                      value={profileForm.wilaya}
+                      onValueChange={(val) => updateProfileField('wilaya', val)}
+                    >
+                      <SelectTrigger className="w-full h-11">
+                        <SelectValue placeholder="اختار الولاية" />
+                      </SelectTrigger>
                       <SelectContent className="max-h-60 overflow-y-auto carely-scroll">
-                        {WILAYAS.map((w) => <SelectItem key={w} value={w}>{w}</SelectItem>)}
+                        {WILAYAS.map((w) => (
+                          <SelectItem key={w} value={w}>
+                            {w}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
 
                   <div className="space-y-2">
                     <Label className="text-carely-dark font-semibold">
-                      العنوان <span className="text-carely-gray font-normal">(اختياري)</span>
+                      العنوان{' '}
+                      <span className="text-carely-gray font-normal">(اختياري)</span>
                     </Label>
-                    <Textarea placeholder="شارع الحبيب بورقيبة، تونس العاصمة" value={profileForm.address}
+                    <Textarea
+                      placeholder="شارع الحبيب بورقيبة، تونس العاصمة"
+                      value={profileForm.address}
                       onChange={(e) => updateProfileField('address', e.target.value)}
-                      className="w-full min-h-[70px]" rows={2} />
+                      className="w-full min-h-[70px]"
+                      rows={2}
+                    />
                   </div>
 
                   {error && (
-                    <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl p-3 text-sm text-center font-medium">{error}</div>
+                    <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl p-3 text-sm text-center font-medium">
+                      {error}
+                    </div>
                   )}
 
-                  <Button onClick={handleProfileSubmit} disabled={loading || !profileForm.name.trim()}
-                    className="carely-btn-primary w-full h-12 text-base disabled:opacity-50">
+                  <Button
+                    onClick={handleProfileSubmit}
+                    disabled={loading || !profileForm.name.trim()}
+                    className="carely-btn-primary w-full h-12 text-base disabled:opacity-50"
+                  >
                     {loading ? (
-                      <span className="flex items-center justify-center gap-2"><Loader2 className="h-5 w-5 animate-spin" />جاري التسجيل...</span>
+                      <span className="flex items-center justify-center gap-2">
+                        <Loader2 className="h-5 w-5 animate-spin" />
+                        جاري التسجيل...
+                      </span>
                     ) : (
-                      <><ShieldCheck className="w-5 h-5 ml-2" />إنشاء الحساب والمتابعة</>
+                      <>
+                        <ShieldCheck className="w-5 h-5 ml-2" />
+                        إنشاء الحساب والمتابعة
+                      </>
                     )}
                   </Button>
                 </div>

@@ -80,16 +80,14 @@ interface AuthState {
   lastError: string | null;
   setUser: (user: AuthUser | null) => void;
   setLoading: (loading: boolean) => void;
-  /** Firebase login: send ID token after phone verification */
-  firebaseLogin: (idToken: string) => Promise<boolean>;
-  /** Firebase register: send ID token + user info after phone verification */
-  firebaseRegister: (data: {
-    idToken: string;
-    name: string;
-    phone: string;
-    address?: string;
-    wilaya?: string;
-  }) => Promise<boolean>;
+  /** 
+   * OTP login: sends phone + Firebase idToken to server.
+   * The server verifies the idToken cryptographically and finds/creates the user.
+   * 
+   * Note: sendOtp is no longer in the store — it's a direct Firebase client call
+   * done in the LoginPage component using lib/firebase-otp.ts functions.
+   */
+  otpLogin: (phone: string, idToken: string) => Promise<boolean>;
   logout: () => void;
   updateProfile: (data: {
     name?: string;
@@ -107,12 +105,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   setUser: (user) => set({ user, isLoading: false, lastError: null }),
   setLoading: (isLoading) => set({ isLoading }),
 
-  firebaseLogin: async (idToken: string) => {
+  otpLogin: async (phone: string, idToken: string) => {
     try {
-      const res = await fetch("/api/auth/firebase-verify", {
+      const res = await fetch("/api/auth/otp-login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ idToken, action: "login" }),
+        body: JSON.stringify({ phone, idToken, action: "login" }),
       });
       const data = await res.json();
 
@@ -121,30 +119,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         return false;
       }
 
-      set({ user: data.user, isLoading: false, lastError: null });
-      return true;
-    } catch {
-      set({ lastError: "ما نقدرش نتواصل مع المخدم" });
-      return false;
-    }
-  },
-
-  firebaseRegister: async (data) => {
-    try {
-      const res = await fetch("/api/auth/firebase-verify", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...data, action: "register" }),
-      });
-      const resData = await res.json();
-
-      if (!res.ok) {
-        set({ lastError: resData.error || "حصل مشكل في التسجيل" });
-        return false;
+      if (data.success) {
+        set({ user: data.user, isLoading: false, lastError: null });
+        return true;
       }
 
-      set({ user: resData.user, isLoading: false, lastError: null });
-      return true;
+      return false;
     } catch {
       set({ lastError: "ما نقدرش نتواصل مع المخدم" });
       return false;

@@ -11,10 +11,6 @@ const firebaseConfig = {
   measurementId: "G-QMRGJKMX1D",
 };
 
+// getApps() check prevents re-initialization on hot reload
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
-const auth = getAuth(app);
-
-// Production mode — real SMS
-auth.settings.appVerificationDisabledForTesting = false;
-
-export { app, auth, firebaseConfig };
+export const auth = getAuth(app);
