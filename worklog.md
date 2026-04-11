@@ -25,3 +25,30 @@ Stage Summary:
 - RTL Arabic layout with Carely.tn green design system
 - Admin credentials: admin@carely.tn / admin123
 - All lint checks pass (0 errors, 1 font warning)
+
+---
+Task ID: otp-1
+Agent: Main Orchestrator
+Task: Replace email/password auth with OTP phone number authentication
+
+Work Log:
+- Created 4 new API routes: send-otp, verify-otp, otp-login, otp-register
+- Integrated RapidAPI SMS verification service (sms-verify3.p.rapidapi.com)
+- Implemented in-memory OTP store with globalThis for cross-route sharing
+- Phone normalization: supports Tunisian formats (8 digits, 216 prefix, +216 prefix)
+- Rate limiting: 60s cooldown between sends, 5 max attempts per OTP, 5min TTL
+- Development fallback: when SMS API fails, OTP code is shown in UI (amber dev hint)
+- Rewrote LoginPage.tsx: phone input with Tunisia flag/prefix → 6-digit OTP InputOTP → auto-verify on complete
+- Rewrote RegisterPage.tsx: name + phone + optional address/wilaya → OTP → auto-register on complete
+- 3-step registration flow with animated success screen
+- Updated Zustand auth store: replaced login/register with otpLogin/otpRegister methods
+- Removed changePassword from store and ProfilePage (replaced with Security info card)
+- All lint checks pass (0 errors)
+- Tested full OTP flow: send → get code → verify → login/register
+
+Stage Summary:
+- Auth now fully phone-based with OTP verification
+- RapidAPI SMS integration with dev fallback
+- Beautiful OTP input with auto-submit on 6 digits
+- Phone number is the primary account identifier
+- Existing seeded users work with OTP login (matched by phone number)

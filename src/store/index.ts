@@ -68,14 +68,14 @@ interface AuthState {
   isLoading: boolean;
   setUser: (user: AuthUser | null) => void;
   setLoading: (loading: boolean) => void;
-  login: (email: string, password: string) => Promise<boolean>;
-  register: (data: {
+  /** OTP-based login: verify OTP first, then call this with phone */
+  otpLogin: (phone: string) => Promise<boolean>;
+  /** OTP-based register: verify OTP first, then call this with user data */
+  otpRegister: (data: {
     name: string;
-    email: string;
-    password: string;
     phone: string;
-    address: string;
-    wilaya: string;
+    address?: string;
+    wilaya?: string;
   }) => Promise<boolean>;
   logout: () => void;
   updateProfile: (data: {
@@ -84,22 +84,21 @@ interface AuthState {
     address?: string;
     wilaya?: string;
   }) => Promise<boolean>;
-  changePassword: (oldPassword: string, newPassword: string) => Promise<boolean>;
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
-  isLoading: true,
+  isLoading: false,
 
   setUser: (user) => set({ user, isLoading: false }),
   setLoading: (isLoading) => set({ isLoading }),
 
-  login: async (email: string, password: string) => {
+  otpLogin: async (phone: string) => {
     try {
-      const res = await fetch("/api/auth/login", {
+      const res = await fetch("/api/auth/otp-login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ phone }),
       });
       if (!res.ok) return false;
       const data = await res.json();
@@ -110,9 +109,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 
-  register: async (data) => {
+  otpRegister: async (data) => {
     try {
-      const res = await fetch("/api/auth/register", {
+      const res = await fetch("/api/auth/otp-register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
@@ -142,19 +141,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const userData = await res.json();
       set({ user: { ...get().user!, ...userData } });
       return true;
-    } catch {
-      return false;
-    }
-  },
-
-  changePassword: async (oldPassword: string, newPassword: string) => {
-    try {
-      const res = await fetch("/api/auth/password", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ oldPassword, newPassword }),
-      });
-      return res.ok;
     } catch {
       return false;
     }
