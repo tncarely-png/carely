@@ -8,12 +8,6 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { InputOTP, InputOTPGroup, InputOTPSlot, InputOTPSeparator } from '@/components/ui/input-otp';
 import { Loader2, ArrowLeft, Smartphone, ShieldCheck, RefreshCw } from 'lucide-react';
-import {
-  sendPhoneOTP,
-  verifyPhoneOTP,
-  resetRecaptcha,
-  type ConfirmationResult,
-} from '@/lib/firebase-auth';
 
 type Step = 'phone' | 'otp';
 
@@ -26,9 +20,8 @@ export default function LoginPage() {
   const [cooldown, setCooldown] = useState(0);
   const [confirmedPhone, setConfirmedPhone] = useState('');
   const hasTriggered = useRef(false);
-  const confirmationRef = useRef<ConfirmationResult | null>(null);
 
-  const { firebaseLogin } = useAuthStore((s) => s);
+  const { sendOtp, verifyOtp, otpLogin } = useAuthStore((s) => s);
   const navigate = useAppStore((s) => s.navigate);
 
   // Countdown timer
@@ -48,11 +41,6 @@ export default function LoginPage() {
       }, 100);
     }
   }, [step]);
-
-  // Cleanup reCAPTCHA on unmount
-  useEffect(() => {
-    return () => { resetRecaptcha(); };
-  }, []);
 
   const formatPhoneDisplay = (p: string) => {
     const digits = p.replace(/[^\d]/g, '');
@@ -74,34 +62,18 @@ export default function LoginPage() {
     setLoading(true);
     setError('');
 
-    try {
-      const fullNumber = '+216' + digits;
-      const confirmationResult = await sendPhoneOTP(fullNumber);
-      confirmationRef.current = confirmationResult;
+    const result = await sendOtp(digits);
+
+    if (result.success) {
       setConfirmedPhone('+216 ' + digits.slice(0, 2) + ' ' + digits.slice(2, 5) + ' ' + digits.slice(5, 8));
       setStep('otp');
       setCooldown(60);
       setOtp('');
-    } catch (err: unknown) {
-      const firebaseErr = err as { code?: string; message?: string };
-      console.error('Firebase OTP error:', firebaseErr.code, firebaseErr.message);
-
-      switch (firebaseErr.code) {
-        case 'auth/invalid-phone-number':
-          setError('رقم الهاتف غير صالح.');
-          break;
-        case 'auth/too-many-requests':
-          setError('محاولات كثيرة. استنى شوية قبل ما تجرب مرة أخرى.');
-          break;
-        case 'auth/captcha-check-failed':
-          setError('تحقق الأمان فشل. حاول تحمّل الصفحة مرة أخرى.');
-          break;
-        case 'auth/unauthorized-domain':
-          setError('الموقع غير مسجل في Firebase. لازم تضيف الدومين في Firebase Console.');
-          break;
-        default:
-          setError(firebaseErr.message || 'حصل مشكل في إرسال الكود. جرب مرة أخرى.');
+    } else {
+      if (result.cooldown) {
+        setCooldown(result.cooldown);
       }
+      setError(result.error || 'حصل مشكل في إرسال الكود. جرب مرة أخرى.');
     }
     setLoading(false);
   };
@@ -110,68 +82,64 @@ export default function LoginPage() {
     setLoading(true);
     setError('');
 
-    try {
-      const digits = phone.replace(/[^\d]/g, '');
-      const fullNumber = '+216' + digits;
-      const confirmationResult = await sendPhoneOTP(fullNumber);
-      confirmationRef.current = confirmationResult;
+    const digits = phone.replace(/[^\d]/g, '');
+    const result = await sendOtp(digits);
+
+    if (result.success) {
       setCooldown(60);
-    } catch (err: unknown) {
-      const firebaseErr = err as { code?: string };
-      if (firebaseErr.code !== 'auth/too-many-requests') {
-        setError('حصل مشكل في إعادة الإرسال.');
+    } else {
+      if (result.cooldown) {
+        setCooldown(result.cooldown);
+      }
+      if (result.error && !result.error.includes('استنى')) {
+        setError(result.error);
       }
     }
     setLoading(false);
   };
 
   const handleOtpComplete = useCallback(async (code: string) => {
-    if (loading || hasTriggered.current || !confirmationRef.current) return;
+    if (loading || hasTriggered.current) return;
     hasTriggered.current = true;
     setLoading(true);
     setError('');
 
-    try {
-      const result = await verifyPhoneOTP(confirmationRef.current, code);
-      const success = await firebaseLogin(result.idToken);
+    const digits = phone.replace(/[^\d]/g, '');
 
-      if (success) {
-        const { useAuthStore: authStore } = await import('@/store');
-        const user = authStore.getState().user;
-        navigate(user?.role === 'admin' ? 'admin' : 'dashboard');
-      } else {
-        const authStore = useAuthStore.getState();
-        if (authStore.lastError?.includes('ما لقينا') || authStore.lastError?.includes('newUser')) {
-          setError('');
-          navigate('register');
-        } else {
-          setError(authStore.lastError || 'حصل مشكل. جرب مرة أخرى.');
-          setOtp('');
-          hasTriggered.current = false;
-        }
-      }
-    } catch (err: unknown) {
-      const firebaseErr = err as { code?: string };
-      console.error('Firebase verify error:', firebaseErr.code);
+    // Step 1: Verify OTP
+    const verifyResult = await verifyOtp(digits, code);
 
-      if (firebaseErr.code === 'auth/invalid-verification-code') {
-        setError('الكود غالط. جرب مرة أخرى.');
-      } else if (firebaseErr.code === 'auth/code-expired') {
-        setError('الكود انتهى. أرسل كود جديد.');
-      } else {
-        setError('حصل مشكل في التحقق. جرب مرة أخرى.');
-      }
+    if (!verifyResult.success) {
+      setError(verifyResult.error || 'حصل مشكل في التحقق.');
       setOtp('');
       hasTriggered.current = false;
+      setLoading(false);
+      return;
+    }
+
+    // Step 2: Login
+    const loginSuccess = await otpLogin(digits);
+
+    if (loginSuccess) {
+      const { useAuthStore: authStore } = await import('@/store');
+      const user = authStore.getState().user;
+      navigate(user?.role === 'admin' ? 'admin' : 'dashboard');
+    } else {
+      const authStore = useAuthStore.getState();
+      if (authStore.lastError?.includes('ما لقينا') || authStore.lastError?.includes('newUser')) {
+        setError('');
+        navigate('register');
+      } else {
+        setError(authStore.lastError || 'حصل مشكل. جرب مرة أخرى.');
+        setOtp('');
+        hasTriggered.current = false;
+      }
     }
     setLoading(false);
-  }, [loading, firebaseLogin, navigate]);
+  }, [loading, sendOtp, verifyOtp, otpLogin, phone, navigate]);
 
   return (
     <div className="min-h-screen bg-carely-mint flex items-center justify-center p-4" dir="rtl">
-      {/* reCAPTCHA container — Firebase renders invisible widget here */}
-      <div id="recaptcha-container" />
-
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-6">
@@ -270,7 +238,7 @@ export default function LoginPage() {
                 {loading && <div className="flex justify-center mb-4"><Loader2 className="h-6 w-6 animate-spin text-carely-green" /></div>}
 
                 <div className="flex items-center justify-between mt-4">
-                  <button onClick={() => { resetRecaptcha(); setStep('phone'); setOtp(''); setError(''); }}
+                  <button onClick={() => { setStep('phone'); setOtp(''); setError(''); }}
                     className="flex items-center gap-1 text-sm text-carely-gray hover:text-carely-dark transition-colors" disabled={loading}>
                     <ArrowLeft className="w-4 h-4" />تعديل الرقم
                   </button>
