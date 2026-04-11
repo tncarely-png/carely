@@ -11,12 +11,13 @@ export type PageRoute =
   | "terms-of-service"
   // Auth
   | "login"
-  | "register"
   // Client portal
   | "dashboard"
   | "dashboard-subscription"
   | "dashboard-orders"
   | "dashboard-profile"
+  // App pages
+  | "qustodio-app"
   // Checkout
   | "checkout"
   | "checkout-success"
@@ -33,10 +34,14 @@ export type PageRoute =
 interface AppState {
   currentPage: PageRoute;
   selectedPlan: "silver" | "gold" | null;
+  selectedPaymentMethod: "flouci" | "virement" | "ccp" | null;
+  selectedPlanName: string;
   selectedUserId: string | null;
   selectedSubscriptionId: string | null;
   navigate: (page: PageRoute) => void;
   setSelectedPlan: (plan: "silver" | "gold" | null) => void;
+  setSelectedPaymentMethod: (method: "flouci" | "virement" | "ccp" | null) => void;
+  setSelectedPlanName: (name: string) => void;
   setSelectedUserId: (id: string | null) => void;
   setSelectedSubscriptionId: (id: string | null) => void;
 }
@@ -44,6 +49,8 @@ interface AppState {
 export const useAppStore = create<AppState>((set) => ({
   currentPage: "home",
   selectedPlan: null,
+  selectedPaymentMethod: null,
+  selectedPlanName: "",
   selectedUserId: null,
   selectedSubscriptionId: null,
   navigate: (page) => {
@@ -51,6 +58,8 @@ export const useAppStore = create<AppState>((set) => ({
     window.scrollTo({ top: 0, behavior: "smooth" });
   },
   setSelectedPlan: (plan) => set({ selectedPlan: plan }),
+  setSelectedPaymentMethod: (method) => set({ selectedPaymentMethod: method }),
+  setSelectedPlanName: (name) => set({ selectedPlanName: name }),
   setSelectedUserId: (id) => set({ selectedUserId: id }),
   setSelectedSubscriptionId: (id) => set({ selectedSubscriptionId: id }),
 }));

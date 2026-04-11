@@ -1,96 +1,107 @@
 'use client';
 
-import { useAppStore, useAuthStore } from '@/store';
-import { getWhatsAppLink } from '@/lib/constants';
+import { useEffect } from 'react';
+import { useAppStore } from '@/store';
+import { PLANS, PAYMENT_METHODS, WHATSAPP_NUMBER } from '@/lib/constants';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { MessageCircle, LayoutDashboard } from 'lucide-react';
+import { MessageCircle, Clock, LayoutDashboard } from 'lucide-react';
 
 export default function CheckoutSuccessPage() {
   const navigate = useAppStore((s) => s.navigate);
-  const selectedPlan = useAppStore((s) => s.selectedPlan);
-  const user = useAuthStore((s) => s.user);
+  const selectedPlanKey = useAppStore((s) => s.selectedPlan);
+  const selectedPaymentMethod = useAppStore((s) => s.selectedPaymentMethod);
+  const selectedPlanName = useAppStore((s) => s.selectedPlanName);
+
+  // If user lands here directly without going through checkout, redirect
+  useEffect(() => {
+    if (!selectedPlanKey) {
+      navigate('checkout');
+    }
+  }, [selectedPlanKey, navigate]);
+
+  const plan = selectedPlanKey ? PLANS[selectedPlanKey] : null;
+  const pm = PAYMENT_METHODS.find((p) => p.id === selectedPaymentMethod);
+
+  const displayName = selectedPlanName || plan?.displayName || '—';
+
+  const waMessage = `مرحبا، عندي طلب في الانتظار`;
+
+  if (!selectedPlanKey) return null;
 
   return (
     <div className="flex items-center justify-center min-h-[60vh] p-4" dir="rtl">
-      <div className="w-full max-w-lg text-center space-y-6">
-        {/* Animated Checkmark */}
+      <div className="w-full max-w-md text-center space-y-6">
+        {/* Hourglass icon */}
         <div className="relative inline-flex items-center justify-center">
-          <div className="w-24 h-24 rounded-full bg-carely-green flex items-center justify-center animate-bounce-once">
-            <svg
-              className="w-12 h-12 text-white"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={3}
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-            </svg>
+          <div className="w-24 h-24 rounded-full bg-carely-green flex items-center justify-center">
+            <Clock className="h-10 w-10 text-white" />
           </div>
-          <div className="absolute inset-0 w-24 h-24 rounded-full bg-carely-green/20 animate-ping" />
         </div>
 
         {/* Title */}
         <h1 className="text-2xl md:text-3xl font-extrabold text-carely-dark">
-          شكرًا! طلبك وصلنا ✅
+          طلبك وصلنا! ✅
         </h1>
         <p className="text-carely-gray text-base leading-relaxed">
-          راح يتواصل معاك فريقنا على واتساب في أقل من ساعة لتفعيل اشتراكك
+          راح نراجع وصل الدفع بتاعك ونسلمك الحساب في أقل من 24 ساعة. نتواصل معاك على الواتساب
+          على الرقم اللي عطيتنا
         </p>
 
-        {/* Order Details Card */}
+        {/* Order Summary Card */}
         <Card className="carely-card carely-top-accent text-right">
           <CardContent className="p-5 space-y-3">
-            <h3 className="font-bold text-carely-dark text-sm">تفاصيل الطلب</h3>
+            <h3 className="font-bold text-carely-dark text-sm">ملخص الطلب</h3>
             <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-carely-gray">العميل</span>
-                <span className="font-semibold text-carely-dark">{user?.name || '—'}</span>
-              </div>
               <div className="flex justify-between">
                 <span className="text-carely-gray">الباقة</span>
                 <span className="font-semibold text-carely-dark">
-                  {selectedPlan ? { silver: '🥈 كيرلي سيلفر', gold: '🥇 كيرلي ڨولد' }[selectedPlan] : '—'}
+                  {plan ? `${plan.icon} ${displayName}` : '—'}
                 </span>
               </div>
               <div className="flex justify-between">
+                <span className="text-carely-gray">المبلغ</span>
+                <span className="font-semibold text-carely-green">
+                  {plan ? `${plan.priceTnd} دت` : '—'}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-carely-gray">طريقة الدفع</span>
+                <span className="font-semibold text-carely-dark">{pm?.name || '—'}</span>
+              </div>
+              <div className="flex justify-between">
                 <span className="text-carely-gray">الحالة</span>
-                <span className="font-semibold text-yellow-600">⏳ في الانتظار</span>
+                <span className="font-semibold text-yellow-600">في الانتظار ⏳</span>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Action Buttons */}
-        <div className="flex flex-col sm:flex-row gap-3 justify-center">
-          <Button asChild className="carely-btn-primary h-12 text-base">
-            <a href={getWhatsAppLink('مرحبا، أنا بعثت طلب اشتراك و حاب نعرف الحالة')} target="_blank" rel="noopener noreferrer">
-              <MessageCircle className="h-5 w-5 ml-2" />
-              تواصل معانا على واتساب
-            </a>
-          </Button>
-          <Button
-            className="carely-btn-outline h-12 text-base"
-            onClick={() => navigate('dashboard')}
+        {/* WhatsApp CTA */}
+        <Button asChild className="carely-btn-primary h-12 text-base w-full">
+          <a
+            href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(waMessage)}`}
+            target="_blank"
+            rel="noopener noreferrer"
           >
-            <LayoutDashboard className="h-5 w-5 ml-2" />
-            روح للداشبورد
-          </Button>
-        </div>
-      </div>
+            <MessageCircle className="h-5 w-5 ml-2" />
+            📲 تابع طلبك على واتساب
+          </a>
+        </Button>
 
-      {/* Custom animation style */}
-      <style jsx>{`
-        @keyframes bounce-once {
-          0% { transform: scale(0); opacity: 0; }
-          50% { transform: scale(1.2); }
-          70% { transform: scale(0.9); }
-          100% { transform: scale(1); opacity: 1; }
-        }
-        .animate-bounce-once {
-          animation: bounce-once 0.6s ease-out forwards;
-        }
-      `}</style>
+        {/* Dashboard link */}
+        <Button
+          className="carely-btn-outline h-11 text-sm w-full"
+          onClick={() => navigate('dashboard')}
+        >
+          <LayoutDashboard className="h-4 w-4 ml-1" />
+          روح للداشبورد
+        </Button>
+
+        <p className="text-xs text-carely-gray">
+          أي سؤال؟ تواصل معانا في أي وقت على واتساب 💬
+        </p>
+      </div>
     </div>
   );
 }

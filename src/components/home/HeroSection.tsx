@@ -2,17 +2,24 @@
 
 import { useAppStore } from '@/store'
 import { Button } from '@/components/ui/button'
-import { Shield, Check } from 'lucide-react'
+import { Check } from 'lucide-react'
 
 const TRUST_BADGES = [
-  'دفع آمن',
-  'تفعيل فوري',
-  'دعم بالتونسي',
-  '9 مليون عيلة تثق بـ Qustodio',
+  'حسابات أصلية 100%',
+  'دعم على الواتساب',
+  'دفع آمن بالدينار',
+  'تسليم سريع',
 ]
 
 export default function HeroSection() {
   const { navigate } = useAppStore()
+
+  const handleScrollToApps = () => {
+    const el = document.getElementById('app-cards-section')
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth' })
+    }
+  }
 
   return (
     <section className="relative overflow-hidden py-20 md:py-28">
@@ -25,21 +32,24 @@ export default function HeroSection() {
       <div className="absolute top-1/2 left-1/3 w-40 h-40 bg-carely-light/60 rounded-full blur-2xl" />
 
       <div className="relative mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 text-center">
-        {/* Shield icon */}
+        {/* Shopping bag icon */}
         <div className="mb-6 inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-carely-green/10">
-          <Shield className="size-8 text-carely-green" />
+          <span className="text-4xl">🛍️</span>
         </div>
 
         {/* Heading */}
         <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-carely-dark leading-tight mb-4">
-          حمي أولادك على النت
+          متجر التطبيقات المدفوعة للعيلة
           <br />
-          <span className="text-carely-green">مع Carely.tn</span>
+          <span className="text-carely-green">🛍️ Carely.tn</span>
         </h1>
 
         {/* Subtext */}
-        <p className="text-lg sm:text-xl text-carely-gray max-w-2xl mx-auto mb-8 leading-relaxed">
-          اشتري اشتراك Qustodio بالدينار التونسي — فعّل في دقيقتين — تابع من هاتفك
+        <p className="text-lg sm:text-xl text-carely-gray max-w-2xl mx-auto mb-2 leading-relaxed">
+          اشتري حسابات تطبيقات موثوقة بالدينار التونسي
+        </p>
+        <p className="text-base sm:text-lg text-carely-gray max-w-2xl mx-auto mb-8 leading-relaxed">
+          مع إرشاد كامل ودعم مباشر على الواتساب
         </p>
 
         {/* CTA Buttons */}
@@ -47,17 +57,17 @@ export default function HeroSection() {
           <Button
             size="lg"
             className="carely-btn-primary text-base px-8 py-3"
-            onClick={() => navigate('pricing')}
+            onClick={handleScrollToApps}
           >
-            اشتري الباقة الذهبية
+            شوف تطبيقاتنا
           </Button>
           <Button
             variant="outline"
             size="lg"
             className="carely-btn-outline text-base px-8 py-3"
-            onClick={() => navigate('features')}
+            onClick={() => navigate('contact')}
           >
-            تعرف أكثر
+            تواصل معانا
           </Button>
         </div>
 

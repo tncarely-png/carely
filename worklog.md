@@ -120,3 +120,72 @@ Stage Summary:
 - Error -39 handled with user-friendly Arabic message + auto-cleanup for retry
 - Domain `carely.space.z.ai` already authorized in Firebase Console
 - Dev server running, page loads, firebase-verify route works
+
+---
+Task ID: 2-a
+Agent: Database & SDK Setup
+Task: Set up Appwrite SDK, update Prisma schema, update constants
+
+Work Log:
+- Installed appwrite SDK via bun (v24.1.1)
+- Created src/lib/appwrite.ts with Client, Account, Databases, Storage configured for fra.cloud.appwrite.io
+- Added receiptUrl String? field to Order model in Prisma schema
+- Changed PAYMENT_METHOD default from "cash" to "flouci" in Prisma schema
+- Ran db:push to apply schema changes successfully
+- Updated WHATSAPP_NUMBER to 21626107128
+- Updated PAYMENT_METHODS to 3 methods (Flouci, Virement Bancaire, CCP) with descriptions
+- Updated PLANS display names to "Qustodio Silver" / "Qustodio Gold" with displayName field
+- Added STORE_DESCRIPTION and STORE_TAGLINE constants
+
+Stage Summary:
+- Appwrite SDK ready for use
+- DB schema updated with receiptUrl field and flouci default payment method
+- Constants updated for new store concept
+
+---
+Task ID: 3-a
+Agent: Homepage Redesign
+Task: Redesign homepage as store overview with app cards grid + Qustodio landing page
+
+Work Log:
+- Rewrote HeroSection with new store tagline ("متجر التطبيقات المدفوعة للعيلة") and CTAs (شوف تطبيقاتنا / تواصل معانا)
+- Added trust badges: حسابات أصلية 100%, دعم على الواتساب, دفع آمن بالدينار, تسليم سريع
+- Created AppCardsGrid (replaces ProductCards) with Qustodio card + "coming soon" placeholder
+- Qustodio card navigates to 'qustodio-app' route on click
+- Updated HowItWorks to 4 steps: اختار التطبيق, اختار الباقة, ادفع بالدينار, استلم حسابك
+- Updated StatsBar for store stats (تطبيق موثوق, دعم واتساب 24/7, دفع بالدينار, تسليم سريع)
+- Updated FinalCTA for store concept (اكتشف تطبيقاتنا اليوم 🛍️)
+- Created QustodioAppPage landing page with hero, pricing cards, features, FAQ, CTA
+- Added 'qustodio-app' route to PageRoute in store/index.ts
+- Wired up qustodio-app route in page.tsx with Navbar/Footer layout
+- Updated home/index.ts exports (AppCardsGrid replaces ProductCards)
+- Lint: 0 errors
+
+Stage Summary:
+- Homepage now shows store overview, not just Qustodio
+- App cards grid ready for future apps (placeholder card included)
+- Qustodio has its own landing page at qustodio-app route with pricing, features, FAQ, CTA
+- All text updated to new store concept
+
+---
+Task ID: 3-b
+Agent: Checkout Flow
+Task: Build new 4-step checkout with plan selection, payment, receipt upload, pending
+
+Work Log:
+- Rewrote CheckoutPage.tsx as 4-step wizard with step indicator
+- Step 1: Plan selection (Silver/Gold cards) with features, pricing, device count
+- Step 2: Payment method selection (Flouci, Virement, CCP) with details display
+- Step 3: Receipt upload (base64) + customer name/phone form + order summary
+- Step 4: Pending confirmation with WhatsApp CTA
+- Added selectedPaymentMethod and selectedPlanName to useAppStore
+- Updated orders API to accept receiptData (base64) + customerName + customerPhone
+- Rewrote CheckoutSuccessPage as "في الانتظار" page with order summary
+- WhatsApp help present on every step
+- Step indicator with green completed/current states and gray future steps
+
+Stage Summary:
+- 4-step checkout: Plan → Payment → Receipt → Pending
+- File uploads handled as base64 (no separate upload API)
+- WhatsApp CTA integrated at every step
+- Order creation stores receipt image as base64 in receiptUrl field

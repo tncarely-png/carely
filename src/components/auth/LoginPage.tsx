@@ -2,12 +2,22 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useAuthStore, useAppStore } from '@/store';
+import { WILAYAS } from '@/lib/constants';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { InputOTP, InputOTPGroup, InputOTPSlot, InputOTPSeparator } from '@/components/ui/input-otp';
-import { Loader2, ArrowLeft, Smartphone, ShieldCheck, RefreshCw } from 'lucide-react';
+import { Loader2, ArrowLeft, Smartphone, ShieldCheck, RefreshCw, UserPlus } from 'lucide-react';
 import {
   sendPhoneOTP,
   verifyPhoneOTP,
@@ -15,7 +25,7 @@ import {
   type ConfirmationResult,
 } from '@/lib/firebase-auth';
 
-type Step = 'phone' | 'otp';
+type Step = 'phone' | 'otp' | 'profile';
 
 export default function LoginPage() {
   const [step, setStep] = useState<Step>('phone');
@@ -25,11 +35,22 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [cooldown, setCooldown] = useState(0);
   const [confirmedPhone, setConfirmedPhone] = useState('');
-  const [recaptchaReady, setRecaptchaReady] = useState(false);
+
+  // Captcha dialog state
+  const [captchaOpen, setCaptchaOpen] = useState(false);
+  const [captchaLoading, setCaptchaLoading] = useState(false);
+  const [captchaError, setCaptchaError] = useState('');
+
+  // Profile form state
+  const [profileForm, setProfileForm] = useState({ name: '', wilaya: '', address: '' });
+  const [profileErrors, setProfileErrors] = useState<Record<string, string>>({});
+
   const hasTriggered = useRef(false);
   const confirmationRef = useRef<ConfirmationResult | null>(null);
+  const pendingIdTokenRef = useRef<string | null>(null);
+  const pendingPhoneDigitsRef = useRef<string>('');
 
-  const { firebaseLogin } = useAuthStore((s) => s);
+  const setUser = useAuthStore((s) => s.setUser);
   const navigate = useAppStore((s) => s.navigate);
 
   // Countdown timer
@@ -55,25 +76,11 @@ export default function LoginPage() {
     return () => { cleanRecaptcha(); };
   }, []);
 
-  const formatPhoneDisplay = (p: string) => {
-    const digits = p.replace(/[^\d]/g, '');
-    if (digits.length <= 2) return digits;
-    if (digits.length <= 5) return digits.slice(0, 2) + ' ' + digits.slice(2);
-    return digits.slice(0, 2) + ' ' + digits.slice(2, 5) + ' ' + digits.slice(5, 8);
-  };
-
-  const handlePhoneChange = (value: string) => {
-    setPhone(formatPhoneDisplay(value.replace(/[^\d]/g, '').slice(0, 8)));
-    setError('');
-  };
-
   const handleFirebaseError = (err: unknown) => {
     const fbErr = err as { code?: string; message?: string };
     console.error('Firebase error:', fbErr.code, fbErr.message);
-    cleanRecaptcha();
-    setRecaptchaReady(false);
+    cleanRecaptcha('recaptcha-container');
 
-    // Error -39: reCAPTCHA initialization failure
     if (fbErr.message?.includes('-39') || fbErr.code?.includes('-39')) {
       return 'مشكلة في تحميل التحقق الأمني. جرب تحمّل الصفحة من جديد.';
     }
@@ -96,49 +103,64 @@ export default function LoginPage() {
     return fbErr.message || 'حصل مشكل في إرسال الكود. جرب مرة أخرى.';
   };
 
-  const handleSendOtp = async () => {
+  const formatPhoneDisplay = (p: string) => {
+    const digits = p.replace(/[^\d]/g, '');
+    if (digits.length <= 2) return digits;
+    if (digits.length <= 5) return digits.slice(0, 2) + ' ' + digits.slice(2);
+    return digits.slice(0, 2) + ' ' + digits.slice(2, 5) + ' ' + digits.slice(5, 8);
+  };
+
+  const handlePhoneChange = (value: string) => {
+    setPhone(formatPhoneDisplay(value.replace(/[^\d]/g, '').slice(0, 8)));
+    setError('');
+  };
+
+  // Send OTP — triggered via ref callback when reCAPTCHA container mounts in dialog
+  const triggerSendOtp = useCallback(async () => {
+    const digits = phone.replace(/[^\d]/g, '');
+    if (digits.length !== 8 || !/^[259]/.test(digits)) return;
+
+    try {
+      const fullNumber = '+216' + digits;
+      const confirmationResult = await sendPhoneOTP(fullNumber, 'recaptcha-container');
+      confirmationRef.current = confirmationResult;
+      setConfirmedPhone('+216 ' + digits.slice(0, 2) + ' ' + digits.slice(2, 5) + ' ' + digits.slice(5, 8));
+      setCaptchaOpen(false);
+      setStep('otp');
+      setCooldown(60);
+      setOtp('');
+      pendingPhoneDigitsRef.current = digits;
+    } catch (err) {
+      setCaptchaError(handleFirebaseError(err));
+    }
+    setCaptchaLoading(false);
+    setLoading(false);
+  }, [phone]);
+
+  const captchaContainerRef = useCallback((node: HTMLDivElement | null) => {
+    if (node && captchaOpen) {
+      // Container just mounted in the dialog — trigger OTP after a short delay
+      setCaptchaLoading(true);
+      setCaptchaError('');
+      setTimeout(() => triggerSendOtp(), 300);
+    }
+  }, [captchaOpen, triggerSendOtp]);
+
+  const handleOpenCaptcha = () => {
     const digits = phone.replace(/[^\d]/g, '');
     if (digits.length !== 8) { setError('أدخل رقم هاتف صحيح (8 أرقام)'); return; }
     if (!/^[259]/.test(digits)) { setError('رقم الهاتف لازم يبدا بـ 2 أو 5 أو 9'); return; }
 
-    setLoading(true);
     setError('');
-    setRecaptchaReady(false);
-
-    try {
-      const fullNumber = '+216' + digits;
-      const confirmationResult = await sendPhoneOTP(fullNumber);
-      confirmationRef.current = confirmationResult;
-      setConfirmedPhone('+216 ' + digits.slice(0, 2) + ' ' + digits.slice(2, 5) + ' ' + digits.slice(5, 8));
-      setStep('otp');
-      setCooldown(60);
-      setOtp('');
-      setRecaptchaReady(true);
-    } catch (err) {
-      setError(handleFirebaseError(err));
-    }
-    setLoading(false);
+    setLoading(true);
+    cleanRecaptcha('recaptcha-container');
+    setCaptchaOpen(true);
   };
 
   const handleResendOtp = async () => {
     setLoading(true);
     setError('');
-    setRecaptchaReady(false);
-
-    try {
-      const digits = phone.replace(/[^\d]/g, '');
-      const fullNumber = '+216' + digits;
-      const confirmationResult = await sendPhoneOTP(fullNumber);
-      confirmationRef.current = confirmationResult;
-      setCooldown(60);
-      setRecaptchaReady(true);
-    } catch (err) {
-      const fbErr = err as { code?: string };
-      if (fbErr.code !== 'auth/too-many-requests') {
-        setError(handleFirebaseError(err));
-      }
-    }
-    setLoading(false);
+    setCaptchaOpen(true);
   };
 
   const handleOtpComplete = useCallback(async (code: string) => {
@@ -149,22 +171,29 @@ export default function LoginPage() {
 
     try {
       const result = await verifyPhoneOTP(confirmationRef.current, code);
-      const success = await firebaseLogin(result.idToken);
+      pendingIdTokenRef.current = result.idToken;
 
-      if (success) {
-        const { useAuthStore: authStore } = await import('@/store');
-        const user = authStore.getState().user;
-        navigate(user?.role === 'admin' ? 'admin' : 'dashboard');
+      // Call backend to check if user exists
+      const res = await fetch('/api/auth/firebase-verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idToken: result.idToken, action: 'login' }),
+      });
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        // Existing user — login successful
+        setUser(data.user);
+        navigate(data.user.role === 'admin' ? 'admin' : 'dashboard');
+      } else if (data.isNewUser) {
+        // New user — show profile completion step
+        setStep('profile');
+        setProfileForm({ name: '', wilaya: '', address: '' });
+        setProfileErrors({});
       } else {
-        const authStore = useAuthStore.getState();
-        if (authStore.lastError?.includes('ما لقينا') || authStore.lastError?.includes('newUser')) {
-          setError('');
-          navigate('register');
-        } else {
-          setError(authStore.lastError || 'حصل مشكل. جرب مرة أخرى.');
-          setOtp('');
-          hasTriggered.current = false;
-        }
+        setError(data.error || 'حصل مشكل. جرب مرة أخرى.');
+        setOtp('');
+        hasTriggered.current = false;
       }
     } catch (err) {
       const fbErr = err as { code?: string };
@@ -179,16 +208,112 @@ export default function LoginPage() {
       hasTriggered.current = false;
     }
     setLoading(false);
-  }, [loading, firebaseLogin, navigate]);
+  }, [loading, setUser, navigate]);
+
+  const updateProfileField = (field: string, value: string) => {
+    setProfileForm((prev) => ({ ...prev, [field]: value }));
+    if (profileErrors[field]) {
+      setProfileErrors((prev) => { const n = { ...prev }; delete n[field]; return n; });
+    }
+  };
+
+  const handleProfileSubmit = async () => {
+    const errs: Record<string, string> = {};
+    if (!profileForm.name.trim()) errs.name = 'الاسم لازم';
+
+    if (Object.keys(errs).length > 0) { setProfileErrors(errs); return; }
+
+    setLoading(true);
+    setError('');
+
+    try {
+      const res = await fetch('/api/auth/firebase-verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          idToken: pendingIdTokenRef.current,
+          action: 'register',
+          name: profileForm.name.trim(),
+          phone: pendingPhoneDigitsRef.current,
+          wilaya: profileForm.wilaya || undefined,
+          address: profileForm.address || undefined,
+        }),
+      });
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        setUser(data.user);
+        navigate(data.user.role === 'admin' ? 'admin' : 'dashboard');
+      } else {
+        setError(data.error || 'حصل مشكل أثناء التسجيل. جرب مرة أخرى.');
+        setLoading(false);
+      }
+    } catch {
+      setError('ما نقدرش نتواصل مع المخدم. جرب مرة أخرى.');
+      setLoading(false);
+    }
+  };
+
+  const handleBackToPhone = () => {
+    cleanRecaptcha('recaptcha-container');
+    setStep('phone');
+    setOtp('');
+    setError('');
+    setLoading(false);
+  };
+
+  const handleCaptchaDialogClose = (open: boolean) => {
+    if (!open) {
+      cleanRecaptcha('recaptcha-container');
+      setCaptchaError('');
+      setCaptchaLoading(false);
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-carely-mint flex items-center justify-center p-4" dir="rtl">
-      {/* reCAPTCHA container — VISIBLE widget, always in DOM */}
-      <div
-        id="recaptcha-container"
-        className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50"
-        style={{ display: 'block', minHeight: '78px' }}
-      />
+      {/* reCAPTCHA Dialog Modal */}
+      <Dialog open={captchaOpen} onOpenChange={handleCaptchaDialogClose}>
+        <DialogContent
+          className="sm:max-w-md"
+          onPointerDownOutside={(e) => e.preventDefault()}
+          onEscapeKeyDown={(e) => e.preventDefault()}
+          showCloseButton={!captchaLoading}
+        >
+          <DialogHeader className="text-center">
+            <DialogTitle className="text-xl font-bold text-carely-dark">
+              التحقق الأمني
+            </DialogTitle>
+            <DialogDescription className="text-sm text-carely-gray">
+              أكمل التحقق الأمني لإرسال كود التفعيل
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex flex-col items-center gap-4 py-4">
+            {captchaLoading && !captchaError && (
+              <div className="flex flex-col items-center gap-3">
+                <Loader2 className="h-8 w-8 animate-spin text-carely-green" />
+                <p className="text-sm text-carely-gray">جاري تحميل التحقق الأمني...</p>
+              </div>
+            )}
+
+            {captchaError && (
+              <div className="w-full bg-red-50 border border-red-200 text-red-700 rounded-xl p-4 text-sm text-center font-medium">
+                {captchaError}
+              </div>
+            )}
+
+            {/* reCAPTCHA container — rendered inside the Dialog */}
+            <div
+              ref={captchaContainerRef}
+              id="recaptcha-container"
+              className="flex justify-center"
+              style={{ display: 'block', minHeight: '78px' }}
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <div className="w-full max-w-md">
         {/* Logo */}
@@ -236,7 +361,7 @@ export default function LoginPage() {
                     <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl p-3 text-sm text-center font-medium">{error}</div>
                   )}
 
-                  <Button onClick={handleSendOtp}
+                  <Button onClick={handleOpenCaptcha}
                     disabled={loading || phone.replace(/[^\d]/g, '').length !== 8}
                     className="carely-btn-primary w-full h-12 text-base disabled:opacity-50">
                     {loading ? (
@@ -247,12 +372,12 @@ export default function LoginPage() {
                   </Button>
                 </div>
 
-                <div className="mt-6 text-center">
-                  <p className="text-sm text-carely-gray">
-                    ما عندكش حساب؟{' '}
-                    <button onClick={() => navigate('register')} className="text-carely-green font-bold hover:underline">سجل الآن</button>
-                  </p>
-                </div>
+                <p className="text-xs text-center text-carely-gray/60 mt-6">
+                  بالدخول، أنت توافق على{' '}
+                  <a href="/terms" className="text-carely-green hover:underline">شروط الاستخدام</a>
+                  {' '}و{' '}
+                  <a href="/privacy" className="text-carely-green hover:underline">سياسة الخصوصية</a>
+                </p>
               </>
             )}
 
@@ -288,7 +413,7 @@ export default function LoginPage() {
                 {loading && <div className="flex justify-center mb-4"><Loader2 className="h-6 w-6 animate-spin text-carely-green" /></div>}
 
                 <div className="flex items-center justify-between mt-4">
-                  <button onClick={() => { cleanRecaptcha(); setStep('phone'); setOtp(''); setError(''); setRecaptchaReady(false); }}
+                  <button onClick={handleBackToPhone}
                     className="flex items-center gap-1 text-sm text-carely-gray hover:text-carely-dark transition-colors" disabled={loading}>
                     <ArrowLeft className="w-4 h-4" />تعديل الرقم
                   </button>
@@ -303,15 +428,68 @@ export default function LoginPage() {
                 </div>
               </>
             )}
+
+            {/* STEP 3: Complete Profile (for new users) */}
+            {step === 'profile' && (
+              <>
+                <div className="flex justify-center mb-4">
+                  <div className="w-16 h-16 rounded-full bg-carely-light flex items-center justify-center">
+                    <UserPlus className="w-8 h-8 text-carely-green" />
+                  </div>
+                </div>
+
+                <h2 className="text-xl font-bold text-carely-dark mb-2 text-center">أكمل بروفايلك</h2>
+                <p className="text-sm text-carely-gray text-center mb-6">
+                  مرحبا بيك في Carely.tn! أدخل معلوماتك الأساسية
+                </p>
+
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="profile-name" className="text-carely-dark font-semibold">الاسم الكامل *</Label>
+                    <Input id="profile-name" placeholder="محمد بن علي" value={profileForm.name}
+                      onChange={(e) => updateProfileField('name', e.target.value)}
+                      className="w-full h-11" autoFocus />
+                    {profileErrors.name && <p className="text-red-500 text-xs">{profileErrors.name}</p>}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-carely-dark font-semibold">
+                      الولاية <span className="text-carely-gray font-normal">(اختياري)</span>
+                    </Label>
+                    <Select value={profileForm.wilaya} onValueChange={(val) => updateProfileField('wilaya', val)}>
+                      <SelectTrigger className="w-full h-11"><SelectValue placeholder="اختار الولاية" /></SelectTrigger>
+                      <SelectContent className="max-h-60 overflow-y-auto carely-scroll">
+                        {WILAYAS.map((w) => <SelectItem key={w} value={w}>{w}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-carely-dark font-semibold">
+                      العنوان <span className="text-carely-gray font-normal">(اختياري)</span>
+                    </Label>
+                    <Textarea placeholder="شارع الحبيب بورقيبة، تونس العاصمة" value={profileForm.address}
+                      onChange={(e) => updateProfileField('address', e.target.value)}
+                      className="w-full min-h-[70px]" rows={2} />
+                  </div>
+
+                  {error && (
+                    <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl p-3 text-sm text-center font-medium">{error}</div>
+                  )}
+
+                  <Button onClick={handleProfileSubmit} disabled={loading || !profileForm.name.trim()}
+                    className="carely-btn-primary w-full h-12 text-base disabled:opacity-50">
+                    {loading ? (
+                      <span className="flex items-center justify-center gap-2"><Loader2 className="h-5 w-5 animate-spin" />جاري التسجيل...</span>
+                    ) : (
+                      <><ShieldCheck className="w-5 h-5 ml-2" />إنشاء الحساب والمتابعة</>
+                    )}
+                  </Button>
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
-
-        <p className="text-xs text-center text-carely-gray/60 mt-4">
-          بالدخول، أنت توافق على{' '}
-          <a href="/terms" className="text-carely-green hover:underline">شروط الاستخدام</a>
-          {' '}و{' '}
-          <a href="/privacy" className="text-carely-green hover:underline">سياسة الخصوصية</a>
-        </p>
       </div>
     </div>
   );

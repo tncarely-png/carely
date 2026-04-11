@@ -22,11 +22,11 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { userId, plan, paymentMethod, paymentRef } = body;
+    const { plan, paymentMethod, receiptData, customerName, customerPhone } = body;
 
-    if (!userId || !plan || !paymentMethod) {
+    if (!plan || !paymentMethod) {
       return NextResponse.json(
-        { error: "userId, plan, and paymentMethod are required" },
+        { error: "plan and paymentMethod are required" },
         { status: 400 }
       );
     }
@@ -37,11 +37,11 @@ export async function POST(request: NextRequest) {
 
     const order = await db.order.create({
       data: {
-        userId,
+        userId: "guest",
         plan,
         amountTnd: planData.priceTnd,
         paymentMethod,
-        paymentRef: paymentRef || null,
+        receiptUrl: receiptData || null,
         status: "pending",
       },
     });

@@ -1,31 +1,31 @@
 'use client'
 
-import { Globe, Star, Zap, Flag } from 'lucide-react'
+import { Shield, MessageCircle, Banknote, Clock } from 'lucide-react'
 
 const STATS = [
   {
-    icon: Globe,
-    emoji: '🌍',
-    value: '9 مليون+',
-    label: 'عيلة تستخدم Qustodio',
+    icon: Shield,
+    emoji: '🛡️',
+    value: 'تطبيق واحد موثوق',
+    label: 'حسابات أصلية ومضمونة',
   },
   {
-    icon: Star,
-    emoji: '⭐',
-    value: '4.3',
-    label: 'تقييم التطبيق',
+    icon: MessageCircle,
+    emoji: '💬',
+    value: 'دعم واتساب',
+    label: '24/7 متاحين لكم',
   },
   {
-    icon: Zap,
+    icon: Banknote,
+    emoji: '💵',
+    value: 'دفع بالدينار',
+    label: 'التونسي فقط',
+  },
+  {
+    icon: Clock,
     emoji: '⚡',
-    value: 'تفعيل فوري',
-    label: 'بعد الدفع',
-  },
-  {
-    icon: Flag,
-    emoji: '🇹🇳',
-    value: 'دعم بالتونسي',
-    label: '100%',
+    value: 'تسليم سريع',
+    label: 'في أقل من 24 ساعة',
   },
 ]
 
@@ -45,7 +45,7 @@ export default function StatsBar() {
                   {stat.emoji}
                 </div>
                 <div className="min-w-0">
-                  <p className="text-lg sm:text-xl font-extrabold text-carely-dark leading-tight">
+                  <p className="text-base sm:text-lg font-extrabold text-carely-dark leading-tight">
                     {stat.value}
                   </p>
                   <p className="text-xs sm:text-sm text-carely-gray font-medium">

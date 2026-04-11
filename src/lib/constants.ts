@@ -8,7 +8,8 @@ export const WILAYAS = [
 export const PLANS = {
   silver: {
     id: "silver",
-    name: "Carely Silver",
+    name: "Qustodio Silver",
+    displayName: "Qustodio Silver",
     nameAr: "كيرلي سيلفر",
     icon: "🥈",
     devices: 5,
@@ -26,7 +27,8 @@ export const PLANS = {
   },
   gold: {
     id: "gold",
-    name: "Carely Gold",
+    name: "Qustodio Gold",
+    displayName: "Qustodio Gold",
     nameAr: "كيرلي ڨولد",
     icon: "🥇",
     devices: 10,
@@ -48,11 +50,9 @@ export const PLANS = {
 export type PlanType = keyof typeof PLANS;
 
 export const PAYMENT_METHODS = [
-  { id: "card", name: "Carte Bancaire", icon: "💳", nameAr: "كارت بنكي" },
-  { id: "flouci", name: "Flouci", icon: "📱", nameAr: "فلوسي" },
-  { id: "d17", name: "D17", icon: "📲", nameAr: "D17" },
-  { id: "transfer", name: "Virement", icon: "🏦", nameAr: "تحويل بنكي" },
-  { id: "cash", name: "Cash", icon: "💵", nameAr: "دفع عند الاستلام" },
+  { id: "flouci", name: "📱 Flouci", description: "حوّل على الرقم: 26107128" },
+  { id: "virement", name: "🏦 Virement Bancaire", description: "RIB: 0000000000000000" },
+  { id: "ccp", name: "📮 CCP", description: "CCP: 0000000000000000" },
 ] as const;
 
 export const SUBSCRIPTION_STATUS = {
@@ -69,8 +69,11 @@ export const ORDER_STATUS = {
   refunded: { label: "مسترجع", color: "bg-gray-100 text-gray-800" },
 } as const;
 
-export const WHATSAPP_NUMBER = "21600000000";
+export const WHATSAPP_NUMBER = "21626107128";
 export const CONTACT_EMAIL = "contact@carely.tn";
+
+export const STORE_DESCRIPTION = "نبيعو حسابات مدفوعة آمنة لتطبيقات العيلة — مع إرشاد ودعم على الواتساب";
+export const STORE_TAGLINE = "متجر التطبيقات المدفوعة للعيلة التونسية — حسابات آمنة مع دعم على الواتساب";
 
 export function getWhatsAppLink(message?: string) {
   const msg = message || "مرحبا، أريد الاستفسار عن اشتراك Carely.tn";

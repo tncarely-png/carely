@@ -1,28 +1,35 @@
 'use client'
 
-import { ShoppingCart, CreditCard, Mail, ArrowLeft } from 'lucide-react'
+import { Smartphone, Layers, CreditCard, MessageCircle, ArrowLeft } from 'lucide-react'
 
 const STEPS = [
   {
     number: 1,
-    icon: ShoppingCart,
-    emoji: '🛒',
-    title: 'اختار باقتك',
-    desc: 'Silver أو Gold — كلو يتفعل في دقائق',
+    icon: Smartphone,
+    emoji: '📱',
+    title: 'اختار التطبيق',
+    desc: 'اختار من تطبيقاتنا الموثوقة',
   },
   {
     number: 2,
-    icon: CreditCard,
-    emoji: '💳',
-    title: 'ادفع بأمان',
-    desc: 'فلوسي، D17، أو كارت بنكي',
+    icon: Layers,
+    emoji: '📦',
+    title: 'اختار الباقة',
+    desc: 'Silver أو Gold حسب احتياجك',
   },
   {
     number: 3,
-    icon: Mail,
-    emoji: '📧',
-    title: 'فعّل التطبيق',
-    desc: 'يوصلك كود التفعيل على إيميلك مباشرة',
+    icon: CreditCard,
+    emoji: '💳',
+    title: 'ادفع بالدينار',
+    desc: 'Flouci، حوال بنكي، أو CCP',
+  },
+  {
+    number: 4,
+    icon: MessageCircle,
+    emoji: '💬',
+    title: 'استلم حسابك',
+    desc: 'نتواصل معاك على واتساب في أقل من 24 ساعة',
   },
 ]
 
@@ -33,28 +40,28 @@ export default function HowItWorks() {
         {/* Title */}
         <div className="text-center mb-12">
           <h2 className="text-3xl sm:text-4xl font-extrabold text-carely-dark mb-3">
-            3 خطوات وأولادك محميين 🛡️
+            كيفاش يخدم؟
           </h2>
+          <p className="text-carely-gray text-base sm:text-lg">
+            4 خطوات بس وتكون جاهز
+          </p>
         </div>
 
         {/* Steps */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-4 relative">
-          {/* Connector line (desktop only) */}
-          <div className="hidden md:block absolute top-20 right-[20%] left-[20%] h-0.5 bg-carely-light" />
-
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 relative">
           {STEPS.map((step, idx) => {
             const Icon = step.icon
             return (
               <div key={step.number} className="relative flex flex-col items-center text-center">
                 {/* Number circle */}
                 <div className="relative z-10 mb-5">
-                  <div className="w-16 h-16 rounded-full bg-carely-green text-white flex items-center justify-center text-2xl font-extrabold shadow-lg">
+                  <div className="w-14 h-14 rounded-full bg-carely-green text-white flex items-center justify-center text-xl font-extrabold shadow-lg">
                     {step.number}
                   </div>
                 </div>
 
                 {/* Card */}
-                <div className="carely-card p-6 w-full max-w-xs">
+                <div className="carely-card p-5 w-full max-w-xs">
                   <div className="text-3xl mb-3">{step.emoji}</div>
                   <h3 className="text-lg font-extrabold text-carely-dark mb-2">
                     {step.title}
@@ -66,7 +73,7 @@ export default function HowItWorks() {
 
                 {/* Arrow (between steps, desktop only) */}
                 {idx < STEPS.length - 1 && (
-                  <div className="hidden md:flex absolute top-20 -left-5 translate-x-[-50%] z-20 text-carely-green">
+                  <div className="hidden lg:flex absolute top-7 -left-4 translate-x-[-50%] z-20 text-carely-green">
                     <ArrowLeft className="size-5" />
                   </div>
                 )}

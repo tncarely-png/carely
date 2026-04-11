@@ -17,17 +17,17 @@ export default function FinalCTA() {
 
       <div className="relative mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 text-center">
         <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white mb-4 leading-tight">
-          ابدأ تحمي عيلتك اليوم
+          اكتشف تطبيقاتنا اليوم 🛍️
         </h2>
         <p className="text-lg sm:text-xl text-white/80 mb-8 leading-relaxed">
-          أكثر من 500 عيلة تونسية تثق بـ Carely.tn
+          حسابات آمنة، دفع بالدينار، دعم واتساب
         </p>
         <Button
           size="lg"
           className="bg-white text-carely-green hover:bg-gray-100 font-bold rounded-full px-8 py-3 text-base shadow-lg hover:shadow-xl transition-all duration-200 hover:-translate-y-0.5"
-          onClick={() => navigate('pricing')}
+          onClick={() => navigate('home')}
         >
-          اشتري الآن — ابدأ من 89 دت
+          شوف التطبيقات
         </Button>
       </div>
     </section>

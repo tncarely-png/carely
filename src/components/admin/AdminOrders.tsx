@@ -6,8 +6,10 @@ import {
   RefreshCw,
   Eye,
   CheckCircle2,
-  DollarSign,
+ DollarSign,
   AlertTriangle,
+  Image,
+ Download,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';

@@ -53,8 +53,9 @@ model Order {
   subscriptionId String?
   plan           String   @default("silver")
   amountTnd      Float    @default(0)
-  paymentMethod  String   @default("cash")
+  paymentMethod  String   @default("flouci")
   paymentRef     String?
+  receiptUrl     String?
   status         String   @default("pending")
   paidAt         DateTime?
   createdAt      DateTime @default(now())

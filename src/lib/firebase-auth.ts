@@ -6,6 +6,7 @@ import {
 import { auth } from "./firebase";
 
 let recaptchaVerifier: RecaptchaVerifier | null = null;
+let currentContainerId: string = "recaptcha-container";
 
 /**
  * Get or create the reCAPTCHA verifier.
@@ -28,6 +29,8 @@ export function getRecaptchaVerifier(
   container.style.display = "block";
   container.style.minHeight = "78px";
 
+  currentContainerId = containerId;
+
   recaptchaVerifier = new RecaptchaVerifier(auth, containerId, {
     size: "normal",
     callback: () => {
@@ -45,7 +48,7 @@ export function getRecaptchaVerifier(
  * Clean up the reCAPTCHA verifier entirely.
  * Call this before creating a new one or on unmount.
  */
-export function cleanRecaptcha() {
+export function cleanRecaptcha(containerId?: string) {
   try {
     if (recaptchaVerifier) {
       recaptchaVerifier.clear();
@@ -55,7 +58,8 @@ export function cleanRecaptcha() {
   }
   recaptchaVerifier = null;
 
-  const container = document.getElementById("recaptcha-container");
+  const id = containerId || currentContainerId;
+  const container = document.getElementById(id);
   if (container) container.innerHTML = "";
 }
 
@@ -68,7 +72,7 @@ export async function sendPhoneOTP(
   containerId: string = "recaptcha-container"
 ): Promise<ConfirmationResult> {
   // Always start fresh
-  cleanRecaptcha();
+  cleanRecaptcha(containerId);
 
   const verifier = getRecaptchaVerifier(containerId);
 
@@ -77,7 +81,7 @@ export async function sendPhoneOTP(
     await verifier.render();
   } catch (renderErr) {
     console.error("reCAPTCHA render failed:", renderErr);
-    cleanRecaptcha();
+    cleanRecaptcha(containerId);
     throw Object.assign(new Error("تحقق الأمان فشل في التحميل. حمّل الصفحة من جديد."), {
       code: "auth/recaptcha-render-failed",
     });

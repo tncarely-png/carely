@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import { useAppStore, useAuthStore, type PageRoute } from '@/store';
 
 // Auth
-import { LoginPage, RegisterPage } from '@/components/auth';
+import { LoginPage } from '@/components/auth';
 
 // Dashboard
 import {
@@ -34,12 +34,13 @@ import {
 import {
   HeroSection,
   StatsBar,
-  ProductCards,
+  AppCardsGrid,
   HowItWorks,
   FeaturesGrid,
   Testimonials,
   FaqAccordion,
   FinalCTA,
+  QustodioAppPage,
 } from '@/components/home';
 
 // Legal
@@ -62,7 +63,7 @@ function HomePage() {
       <main className="flex-1">
         <HeroSection />
         <StatsBar />
-        <ProductCards />
+        <AppCardsGrid />
         <HowItWorks />
         <FeaturesGrid />
         <Testimonials />
@@ -89,7 +90,7 @@ function PricingPage() {
             <p className="text-center text-carely-gray text-lg mb-12">
               اختار الباقة المناسبة لعيلتك — كل الباقات تشمل سنة كاملة
             </p>
-            <ProductCards />
+            <AppCardsGrid />
           </div>
         </section>
         <FinalCTA />
@@ -282,7 +283,6 @@ export default function Home() {
 
   // Auth pages (full screen, no layout)
   if (currentPage === 'login') return <LoginPage />;
-  if (currentPage === 'register') return <RegisterPage />;
 
   // Checkout pages (standalone)
   if (currentPage === 'checkout') return <CheckoutPage />;
@@ -304,6 +304,20 @@ export default function Home() {
   ];
   if (adminPages.includes(currentPage)) {
     return <AdminRouter />;
+  }
+
+  // Qustodio app landing page (with Navbar/Footer layout)
+  if (currentPage === 'qustodio-app') {
+    return (
+      <>
+        <Navbar />
+        <main className="flex-1">
+          <QustodioAppPage />
+        </main>
+        <Footer />
+        <WhatsAppFAB />
+      </>
+    );
   }
 
   // Public pages
