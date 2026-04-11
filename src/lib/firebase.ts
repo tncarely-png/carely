@@ -15,7 +15,8 @@ const firebaseConfig = {
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
 const auth = getAuth(app);
 
-// Configure auth for phone auth
+// IMPORTANT: Must be false for real SMS to be sent.
+// The domain must be whitelisted in Firebase Console > Authentication > Settings > Authorized domains.
 auth.settings.appVerificationDisabledForTesting = false;
 
 export { app, auth, firebaseConfig };

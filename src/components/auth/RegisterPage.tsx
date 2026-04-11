@@ -51,11 +51,8 @@ export default function RegisterPage() {
     }
   }, [step]);
 
-  // Cleanup reCAPTCHA on unmount
   useEffect(() => {
-    return () => {
-      resetRecaptcha();
-    };
+    return () => { resetRecaptcha(); };
   }, []);
 
   const formatPhoneDisplay = (p: string) => {
@@ -102,14 +99,25 @@ export default function RegisterPage() {
       setCooldown(60);
       setOtp('');
     } catch (err: unknown) {
-      const firebaseErr = err as { code?: string };
+      const firebaseErr = err as { code?: string; message?: string };
+      console.error('Firebase OTP error:', firebaseErr.code, firebaseErr.message);
       resetRecaptcha();
-      if (firebaseErr.code === 'auth/invalid-phone-number') {
-        setError('رقم الهاتف غير صالح.');
-      } else if (firebaseErr.code === 'auth/too-many-requests') {
-        setError('محاولات كثيرة. استنى شوية.');
-      } else {
-        setError('حصل مشكل في إرسال الكود. جرب مرة أخرى.');
+
+      switch (firebaseErr.code) {
+        case 'auth/invalid-phone-number':
+          setError('رقم الهاتف غير صالح.');
+          break;
+        case 'auth/too-many-requests':
+          setError('محاولات كثيرة. استنى شوية.');
+          break;
+        case 'auth/captcha-check-failed':
+          setError('تحقق الأمان فشل. حاول تحمّل الصفحة مرة أخرى.');
+          break;
+        case 'auth/unauthorized-domain':
+          setError('الموقع غير مسجل في Firebase. لازم تضيف الدومين في Firebase Console.');
+          break;
+        default:
+          setError(firebaseErr.message || 'حصل مشكل في إرسال الكود. جرب مرة أخرى.');
       }
     }
     setLoading(false);
@@ -141,10 +149,8 @@ export default function RegisterPage() {
     setError('');
 
     try {
-      // Verify OTP with Firebase
       const result = await verifyPhoneOTP(confirmationRef.current, code);
 
-      // Register with our backend
       const success = await firebaseRegister({
         idToken: result.idToken,
         name: form.name,
@@ -183,7 +189,7 @@ export default function RegisterPage() {
 
   return (
     <div className="min-h-screen bg-carely-mint flex items-center justify-center p-4 py-8" dir="rtl">
-      {/* Hidden div for invisible reCAPTCHA */}
+      {/* reCAPTCHA container */}
       <div id="recaptcha-container" />
 
       <div className="w-full max-w-lg">

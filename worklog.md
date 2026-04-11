@@ -22,3 +22,22 @@ Stage Summary:
 - Backend only handles user lookup/creation after Firebase token verification
 - Invisible reCAPTCHA is used for anti-abuse
 - All old RapidAPI code removed
+
+---
+Task ID: 2
+Agent: Main
+Task: Fix Firebase Phone Auth to send real SMS
+
+Work Log:
+- Removed test mode (`appVerificationDisabledForTesting = false`) to enable real SMS
+- Fixed `firebase-auth.ts`: added `resetRecaptcha` export back, removed dev/test mode branching
+- Removed all `IS_FIREBASE_TEST_MODE` references from LoginPage and RegisterPage
+- Added detailed Firebase error code handling (invalid-phone, too-many-requests, captcha-check-failed, unauthorized-domain)
+- Removed dev-only test code banner
+- Production-ready code: requires domain to be whitelisted in Firebase Console
+
+Stage Summary:
+- Code is production-ready for real SMS via Firebase Phone Auth
+- REQUIREMENT: User must add the sandbox/deployment domain to Firebase Console > Authentication > Settings > Authorized domains before real SMS will work
+- reCAPTCHA uses invisible mode — domain must be authorized in Firebase
+- Lint: 0 errors

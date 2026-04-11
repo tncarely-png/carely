@@ -51,9 +51,7 @@ export default function LoginPage() {
 
   // Cleanup reCAPTCHA on unmount
   useEffect(() => {
-    return () => {
-      resetRecaptcha();
-    };
+    return () => { resetRecaptcha(); };
   }, []);
 
   const formatPhoneDisplay = (p: string) => {
@@ -75,6 +73,7 @@ export default function LoginPage() {
 
     setLoading(true);
     setError('');
+    resetRecaptcha();
 
     try {
       const fullNumber = '+216' + digits;
@@ -86,17 +85,24 @@ export default function LoginPage() {
       setOtp('');
     } catch (err: unknown) {
       const firebaseErr = err as { code?: string; message?: string };
-      console.error('Firebase OTP error:', firebaseErr);
+      console.error('Firebase OTP error:', firebaseErr.code, firebaseErr.message);
       resetRecaptcha();
 
-      if (firebaseErr.code === 'auth/invalid-phone-number') {
-        setError('رقم الهاتف غير صالح.');
-      } else if (firebaseErr.code === 'auth/too-many-requests') {
-        setError('محاولات كثيرة. استنى شوية قبل ما تجرب مرة أخرى.');
-      } else if (firebaseErr.code === 'auth/captcha-check-failed') {
-        setError('تحقق reCAPTCHA فشل. أعد تحميل الصفحة وجرب.');
-      } else {
-        setError('حصل مشكل في إرسال الكود. جرب مرة أخرى.');
+      switch (firebaseErr.code) {
+        case 'auth/invalid-phone-number':
+          setError('رقم الهاتف غير صالح.');
+          break;
+        case 'auth/too-many-requests':
+          setError('محاولات كثيرة. استنى شوية قبل ما تجرب مرة أخرى.');
+          break;
+        case 'auth/captcha-check-failed':
+          setError('تحقق الأمان فشل. حاول تحمّل الصفحة مرة أخرى.');
+          break;
+        case 'auth/unauthorized-domain':
+          setError('الموقع غير مسجل في Firebase. لازم تضيف الدومين في Firebase Console.');
+          break;
+        default:
+          setError(firebaseErr.message || 'حصل مشكل في إرسال الكود. جرب مرة أخرى.');
       }
     }
     setLoading(false);
@@ -129,10 +135,7 @@ export default function LoginPage() {
     setError('');
 
     try {
-      // Verify OTP with Firebase
       const result = await verifyPhoneOTP(confirmationRef.current, code);
-
-      // Send to our backend to find/create user
       const success = await firebaseLogin(result.idToken);
 
       if (success) {
@@ -140,10 +143,8 @@ export default function LoginPage() {
         const user = authStore.getState().user;
         navigate(user?.role === 'admin' ? 'admin' : 'dashboard');
       } else {
-        // Check if it's a new user
         const authStore = useAuthStore.getState();
         if (authStore.lastError?.includes('ما لقينا') || authStore.lastError?.includes('newUser')) {
-          // New user — redirect to register
           setError('');
           navigate('register');
         } else {
@@ -153,8 +154,8 @@ export default function LoginPage() {
         }
       }
     } catch (err: unknown) {
-      const firebaseErr = err as { code?: string; message?: string };
-      console.error('Firebase verify error:', firebaseErr);
+      const firebaseErr = err as { code?: string };
+      console.error('Firebase verify error:', firebaseErr.code);
 
       if (firebaseErr.code === 'auth/invalid-verification-code') {
         setError('الكود غالط. جرب مرة أخرى.');
@@ -171,7 +172,7 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-carely-mint flex items-center justify-center p-4" dir="rtl">
-      {/* Hidden div for invisible reCAPTCHA */}
+      {/* reCAPTCHA container — Firebase renders invisible widget here */}
       <div id="recaptcha-container" />
 
       <div className="w-full max-w-md">
