@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useAuthStore, useAppStore } from '@/store';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -8,56 +8,14 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { InputOTP, InputOTPGroup, InputOTPSlot, InputOTPSeparator } from '@/components/ui/input-otp';
 import { Loader2, ArrowLeft, Smartphone, ShieldCheck, RefreshCw } from 'lucide-react';
+import {
+  sendPhoneOTP,
+  verifyPhoneOTP,
+  resetRecaptcha,
+  type ConfirmationResult,
+} from '@/lib/firebase-auth';
 
 type Step = 'phone' | 'otp';
-
-async function verifyAndLogin(
-  phone: string,
-  otp: string,
-  otpLoginFn: (phone: string) => Promise<boolean>,
-  navigateFn: (page: 'admin' | 'dashboard' | 'register') => void,
-  setErrorFn: (msg: string) => void,
-  setLoadingFn: (loading: boolean) => void,
-  setOtpFn: (otp: string) => void,
-) {
-  setLoadingFn(true);
-  setErrorFn('');
-
-  try {
-    const verifyRes = await fetch('/api/auth/verify-otp', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ phone: phone.replace(/[^\d]/g, ''), code: otp }),
-    });
-
-    const verifyData = await verifyRes.json();
-
-    if (!verifyRes.ok) {
-      setErrorFn(verifyData.error || 'الكود غالط. جرب مرة أخرى.');
-      setOtpFn('');
-      return false;
-    }
-
-    const success = await otpLoginFn(phone.replace(/[^\d]/g, ''));
-
-    if (success) {
-      const { useAuthStore: authStore } = await import('@/store');
-      const user = authStore.getState().user;
-      navigateFn(user?.role === 'admin' ? 'admin' : 'dashboard');
-    } else {
-      setErrorFn('');
-      navigateFn('register');
-    }
-
-    return true;
-  } catch {
-    setErrorFn('حصل مشكل. جرب مرة أخرى.');
-    setOtpFn('');
-    return false;
-  } finally {
-    setLoadingFn(false);
-  }
-}
 
 export default function LoginPage() {
   const [step, setStep] = useState<Step>('phone');
@@ -65,12 +23,12 @@ export default function LoginPage() {
   const [otp, setOtp] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [devOtp, setDevOtp] = useState<string | undefined>();
   const [cooldown, setCooldown] = useState(0);
-  const [verifiedPhone, setVerifiedPhone] = useState('');
+  const [confirmedPhone, setConfirmedPhone] = useState('');
   const hasTriggered = useRef(false);
+  const confirmationRef = useRef<ConfirmationResult | null>(null);
 
-  const otpLogin = useAuthStore((s) => s.otpLogin);
+  const { firebaseLogin } = useAuthStore((s) => s);
   const navigate = useAppStore((s) => s.navigate);
 
   // Countdown timer
@@ -90,6 +48,13 @@ export default function LoginPage() {
       }, 100);
     }
   }, [step]);
+
+  // Cleanup reCAPTCHA on unmount
+  useEffect(() => {
+    return () => {
+      resetRecaptcha();
+    };
+  }, []);
 
   const formatPhoneDisplay = (p: string) => {
     const digits = p.replace(/[^\d]/g, '');
@@ -112,22 +77,27 @@ export default function LoginPage() {
     setError('');
 
     try {
-      const res = await fetch('/api/auth/send-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: digits }),
-      });
-      const data = await res.json();
-
-      if (!res.ok) { setError(data.error || 'حصل مشكل. جرب مرة أخرى.'); setLoading(false); return; }
-
-      setDevOtp(data.devOtp);
-      setVerifiedPhone(data.phone);
+      const fullNumber = '+216' + digits;
+      const confirmationResult = await sendPhoneOTP(fullNumber);
+      confirmationRef.current = confirmationResult;
+      setConfirmedPhone('+216 ' + digits.slice(0, 2) + ' ' + digits.slice(2, 5) + ' ' + digits.slice(5, 8));
       setStep('otp');
       setCooldown(60);
       setOtp('');
-    } catch {
-      setError('ما نقدرش نتواصل مع المخدم.');
+    } catch (err: unknown) {
+      const firebaseErr = err as { code?: string; message?: string };
+      console.error('Firebase OTP error:', firebaseErr);
+      resetRecaptcha();
+
+      if (firebaseErr.code === 'auth/invalid-phone-number') {
+        setError('رقم الهاتف غير صالح.');
+      } else if (firebaseErr.code === 'auth/too-many-requests') {
+        setError('محاولات كثيرة. استنى شوية قبل ما تجرب مرة أخرى.');
+      } else if (firebaseErr.code === 'auth/captcha-check-failed') {
+        setError('تحقق reCAPTCHA فشل. أعد تحميل الصفحة وجرب.');
+      } else {
+        setError('حصل مشكل في إرسال الكود. جرب مرة أخرى.');
+      }
     }
     setLoading(false);
   };
@@ -135,27 +105,75 @@ export default function LoginPage() {
   const handleResendOtp = async () => {
     setLoading(true);
     setError('');
+    resetRecaptcha();
+
     try {
-      const res = await fetch('/api/auth/send-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: phone.replace(/[^\d]/g, '') }),
-      });
-      const data = await res.json();
-      if (!res.ok) setError(data.error || 'حصل مشكل.');
-      else { setDevOtp(data.devOtp); setCooldown(60); }
-    } catch { setError('ما نقدرش نتواصل مع المخدم.'); }
+      const digits = phone.replace(/[^\d]/g, '');
+      const fullNumber = '+216' + digits;
+      const confirmationResult = await sendPhoneOTP(fullNumber);
+      confirmationRef.current = confirmationResult;
+      setCooldown(60);
+    } catch (err: unknown) {
+      const firebaseErr = err as { code?: string };
+      if (firebaseErr.code !== 'auth/too-many-requests') {
+        setError('حصل مشكل في إعادة الإرسال.');
+      }
+    }
     setLoading(false);
   };
 
-  const handleOtpComplete = (code: string) => {
-    if (loading || hasTriggered.current) return;
+  const handleOtpComplete = useCallback(async (code: string) => {
+    if (loading || hasTriggered.current || !confirmationRef.current) return;
     hasTriggered.current = true;
-    verifyAndLogin(phone, code, otpLogin, navigate, setError, setLoading, setOtp);
-  };
+    setLoading(true);
+    setError('');
+
+    try {
+      // Verify OTP with Firebase
+      const result = await verifyPhoneOTP(confirmationRef.current, code);
+
+      // Send to our backend to find/create user
+      const success = await firebaseLogin(result.idToken);
+
+      if (success) {
+        const { useAuthStore: authStore } = await import('@/store');
+        const user = authStore.getState().user;
+        navigate(user?.role === 'admin' ? 'admin' : 'dashboard');
+      } else {
+        // Check if it's a new user
+        const authStore = useAuthStore.getState();
+        if (authStore.lastError?.includes('ما لقينا') || authStore.lastError?.includes('newUser')) {
+          // New user — redirect to register
+          setError('');
+          navigate('register');
+        } else {
+          setError(authStore.lastError || 'حصل مشكل. جرب مرة أخرى.');
+          setOtp('');
+          hasTriggered.current = false;
+        }
+      }
+    } catch (err: unknown) {
+      const firebaseErr = err as { code?: string; message?: string };
+      console.error('Firebase verify error:', firebaseErr);
+
+      if (firebaseErr.code === 'auth/invalid-verification-code') {
+        setError('الكود غالط. جرب مرة أخرى.');
+      } else if (firebaseErr.code === 'auth/code-expired') {
+        setError('الكود انتهى. أرسل كود جديد.');
+      } else {
+        setError('حصل مشكل في التحقق. جرب مرة أخرى.');
+      }
+      setOtp('');
+      hasTriggered.current = false;
+    }
+    setLoading(false);
+  }, [loading, firebaseLogin, navigate]);
 
   return (
     <div className="min-h-screen bg-carely-mint flex items-center justify-center p-4" dir="rtl">
+      {/* Hidden div for invisible reCAPTCHA */}
+      <div id="recaptcha-container" />
+
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-6">
@@ -227,7 +245,7 @@ export default function LoginPage() {
               <>
                 <h2 className="text-xl font-bold text-carely-dark mb-2 text-center">تأكيد الرقم</h2>
                 <p className="text-sm text-carely-gray text-center mb-4">أدخل كود الـ 6 أرقام اللي وصلك على</p>
-                <p className="text-base font-bold text-carely-green text-center mb-6" dir="ltr">{verifiedPhone}</p>
+                <p className="text-base font-bold text-carely-green text-center mb-6" dir="ltr">{confirmedPhone}</p>
 
                 <div className="flex justify-center mb-6">
                   <InputOTP value={otp} onChange={setOtp} onComplete={handleOtpComplete} maxLength={6}
@@ -251,17 +269,10 @@ export default function LoginPage() {
                 </p>
 
                 {error && <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl p-3 text-sm text-center font-medium mb-4">{error}</div>}
-
-                {devOtp && (
-                  <div className="bg-amber-50 border border-amber-200 text-amber-800 rounded-xl p-3 text-sm text-center font-medium mb-4">
-                    🧪 كود التطوير: <span className="font-mono text-lg font-bold tracking-widest" dir="ltr">{devOtp}</span>
-                  </div>
-                )}
-
                 {loading && <div className="flex justify-center mb-4"><Loader2 className="h-6 w-6 animate-spin text-carely-green" /></div>}
 
                 <div className="flex items-center justify-between mt-4">
-                  <button onClick={() => { setStep('phone'); setOtp(''); setError(''); }}
+                  <button onClick={() => { resetRecaptcha(); setStep('phone'); setOtp(''); setError(''); }}
                     className="flex items-center gap-1 text-sm text-carely-gray hover:text-carely-dark transition-colors" disabled={loading}>
                     <ArrowLeft className="w-4 h-4" />تعديل الرقم
                   </button>
@@ -281,9 +292,9 @@ export default function LoginPage() {
 
         <p className="text-xs text-center text-carely-gray/60 mt-4">
           بالدخول، أنت توافق على{' '}
-          <span className="text-carely-green cursor-pointer hover:underline">شروط الاستخدام</span>
+          <a href="/terms" className="text-carely-green hover:underline">شروط الاستخدام</a>
           {' '}و{' '}
-          <span className="text-carely-green cursor-pointer hover:underline">سياسة الخصوصية</span>
+          <a href="/privacy" className="text-carely-green hover:underline">سياسة الخصوصية</a>
         </p>
       </div>
     </div>

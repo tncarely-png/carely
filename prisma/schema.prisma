@@ -15,6 +15,7 @@ model User {
   address      String?
   wilaya       String?
   password     String?
+  firebaseUid  String?  @unique
   role         String   @default("customer")
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt

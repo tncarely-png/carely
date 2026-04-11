@@ -68,12 +68,14 @@ export interface AuthUser {
 interface AuthState {
   user: AuthUser | null;
   isLoading: boolean;
+  lastError: string | null;
   setUser: (user: AuthUser | null) => void;
   setLoading: (loading: boolean) => void;
-  /** OTP-based login: verify OTP first, then call this with phone */
-  otpLogin: (phone: string) => Promise<boolean>;
-  /** OTP-based register: verify OTP first, then call this with user data */
-  otpRegister: (data: {
+  /** Firebase login: send ID token after phone verification */
+  firebaseLogin: (idToken: string) => Promise<boolean>;
+  /** Firebase register: send ID token + user info after phone verification */
+  firebaseRegister: (data: {
+    idToken: string;
     name: string;
     phone: string;
     address?: string;
@@ -91,44 +93,57 @@ interface AuthState {
 export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   isLoading: false,
+  lastError: null,
 
-  setUser: (user) => set({ user, isLoading: false }),
+  setUser: (user) => set({ user, isLoading: false, lastError: null }),
   setLoading: (isLoading) => set({ isLoading }),
 
-  otpLogin: async (phone: string) => {
+  firebaseLogin: async (idToken: string) => {
     try {
-      const res = await fetch("/api/auth/otp-login", {
+      const res = await fetch("/api/auth/firebase-verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone }),
+        body: JSON.stringify({ idToken, action: "login" }),
       });
-      if (!res.ok) return false;
       const data = await res.json();
-      set({ user: data.user, isLoading: false });
+
+      if (!res.ok) {
+        set({ lastError: data.error || "حصل مشكل في تسجيل الدخول" });
+        return false;
+      }
+
+      set({ user: data.user, isLoading: false, lastError: null });
       return true;
     } catch {
+      set({ lastError: "ما نقدرش نتواصل مع المخدم" });
       return false;
     }
   },
 
-  otpRegister: async (data) => {
+  firebaseRegister: async (data) => {
     try {
-      const res = await fetch("/api/auth/otp-register", {
+      const res = await fetch("/api/auth/firebase-verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: JSON.stringify({ ...data, action: "register" }),
       });
-      if (!res.ok) return false;
       const resData = await res.json();
-      set({ user: resData.user, isLoading: false });
+
+      if (!res.ok) {
+        set({ lastError: resData.error || "حصل مشكل في التسجيل" });
+        return false;
+      }
+
+      set({ user: resData.user, isLoading: false, lastError: null });
       return true;
     } catch {
+      set({ lastError: "ما نقدرش نتواصل مع المخدم" });
       return false;
     }
   },
 
   logout: () => {
-    set({ user: null, isLoading: false });
+    set({ user: null, isLoading: false, lastError: null });
     useAppStore.getState().navigate("home");
   },
 

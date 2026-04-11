@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useAuthStore, useAppStore } from '@/store';
 import { WILAYAS } from '@/lib/constants';
 import { Card, CardContent } from '@/components/ui/card';
@@ -11,6 +11,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { InputOTP, InputOTPGroup, InputOTPSlot, InputOTPSeparator } from '@/components/ui/input-otp';
 import { Loader2, ArrowLeft, ShieldCheck, RefreshCw, Check } from 'lucide-react';
+import {
+  sendPhoneOTP,
+  verifyPhoneOTP,
+  resetRecaptcha,
+  type ConfirmationResult,
+} from '@/lib/firebase-auth';
 
 type Step = 'info' | 'otp' | 'success';
 
@@ -21,12 +27,12 @@ export default function RegisterPage() {
   const [otp, setOtp] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [devOtp, setDevOtp] = useState<string | undefined>();
   const [cooldown, setCooldown] = useState(0);
-  const [verifiedPhone, setVerifiedPhone] = useState('');
+  const [confirmedPhone, setConfirmedPhone] = useState('');
   const hasTriggered = useRef(false);
+  const confirmationRef = useRef<ConfirmationResult | null>(null);
 
-  const otpRegister = useAuthStore((s) => s.otpRegister);
+  const { firebaseRegister } = useAuthStore((s) => s);
   const navigate = useAppStore((s) => s.navigate);
 
   useEffect(() => {
@@ -44,6 +50,13 @@ export default function RegisterPage() {
       }, 100);
     }
   }, [step]);
+
+  // Cleanup reCAPTCHA on unmount
+  useEffect(() => {
+    return () => {
+      resetRecaptcha();
+    };
+  }, []);
 
   const formatPhoneDisplay = (p: string) => {
     const digits = p.replace(/[^\d]/g, '');
@@ -77,59 +90,63 @@ export default function RegisterPage() {
     if (Object.keys(errs).length > 0) { setErrors(errs); return; }
 
     setLoading(true);
+    resetRecaptcha();
+
     try {
-      const res = await fetch('/api/auth/send-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: form.phone.replace(/[^\d]/g, '') }),
-      });
-      const data = await res.json();
-      if (!res.ok) { setError(data.error || 'حصل مشكل.'); setLoading(false); return; }
-      setDevOtp(data.devOtp);
-      setVerifiedPhone(data.phone);
+      const digits = form.phone.replace(/[^\d]/g, '');
+      const fullNumber = '+216' + digits;
+      const confirmationResult = await sendPhoneOTP(fullNumber);
+      confirmationRef.current = confirmationResult;
+      setConfirmedPhone('+216 ' + digits.slice(0, 2) + ' ' + digits.slice(2, 5) + ' ' + digits.slice(5, 8));
       setStep('otp');
       setCooldown(60);
       setOtp('');
-    } catch { setError('ما نقدرش نتواصل مع المخدم.'); }
+    } catch (err: unknown) {
+      const firebaseErr = err as { code?: string };
+      resetRecaptcha();
+      if (firebaseErr.code === 'auth/invalid-phone-number') {
+        setError('رقم الهاتف غير صالح.');
+      } else if (firebaseErr.code === 'auth/too-many-requests') {
+        setError('محاولات كثيرة. استنى شوية.');
+      } else {
+        setError('حصل مشكل في إرسال الكود. جرب مرة أخرى.');
+      }
+    }
     setLoading(false);
   };
 
   const handleResendOtp = async () => {
     setLoading(true);
     setError('');
+    resetRecaptcha();
     try {
-      const res = await fetch('/api/auth/send-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: form.phone.replace(/[^\d]/g, '') }),
-      });
-      const data = await res.json();
-      if (!res.ok) setError(data.error || 'حصل مشكل.');
-      else { setDevOtp(data.devOtp); setCooldown(60); }
-    } catch { setError('ما نقدرش نتواصل مع المخدم.'); }
+      const digits = form.phone.replace(/[^\d]/g, '');
+      const fullNumber = '+216' + digits;
+      const confirmationResult = await sendPhoneOTP(fullNumber);
+      confirmationRef.current = confirmationResult;
+      setCooldown(60);
+    } catch (err: unknown) {
+      const firebaseErr = err as { code?: string };
+      if (firebaseErr.code !== 'auth/too-many-requests') {
+        setError('حصل مشكل في إعادة الإرسال.');
+      }
+    }
     setLoading(false);
   };
 
-  const handleOtpComplete = async (code: string) => {
-    if (loading || hasTriggered.current) return;
+  const handleOtpComplete = useCallback(async (code: string) => {
+    if (loading || hasTriggered.current || !confirmationRef.current) return;
     hasTriggered.current = true;
     setLoading(true);
     setError('');
 
     try {
-      const verifyRes = await fetch('/api/auth/verify-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: form.phone.replace(/[^\d]/g, ''), code }),
-      });
-      const verifyData = await verifyRes.json();
-      if (!verifyRes.ok) {
-        setError(verifyData.error || 'الكود غالط.');
-        setOtp('');
-        return;
-      }
+      // Verify OTP with Firebase
+      const result = await verifyPhoneOTP(confirmationRef.current, code);
 
-      const success = await otpRegister({
+      // Register with our backend
+      const success = await firebaseRegister({
+        idToken: result.idToken,
         name: form.name,
         phone: form.phone.replace(/[^\d]/g, ''),
         address: form.address,
@@ -140,14 +157,35 @@ export default function RegisterPage() {
         setStep('success');
         setTimeout(() => navigate('dashboard'), 1500);
       } else {
-        setError('حصل مشكل أثناء التسجيل.');
+        const authStore = useAuthStore.getState();
+        if (authStore.lastError?.includes('بهاد الرقم فعلا')) {
+          setError('عندك حساب بهاد الرقم فعلا. سجل دخول.');
+        } else {
+          setError(authStore.lastError || 'حصل مشكل أثناء التسجيل.');
+        }
+        setOtp('');
+        hasTriggered.current = false;
       }
-    } catch { setError('حصل مشكل.'); }
+    } catch (err: unknown) {
+      const firebaseErr = err as { code?: string };
+      if (firebaseErr.code === 'auth/invalid-verification-code') {
+        setError('الكود غالط. جرب مرة أخرى.');
+      } else if (firebaseErr.code === 'auth/code-expired') {
+        setError('الكود انتهى. أرسل كود جديد.');
+      } else {
+        setError('حصل مشكل في التحقق. جرب مرة أخرى.');
+      }
+      setOtp('');
+      hasTriggered.current = false;
+    }
     setLoading(false);
-  };
+  }, [loading, firebaseRegister, form, navigate]);
 
   return (
     <div className="min-h-screen bg-carely-mint flex items-center justify-center p-4 py-8" dir="rtl">
+      {/* Hidden div for invisible reCAPTCHA */}
+      <div id="recaptcha-container" />
+
       <div className="w-full max-w-lg">
         <div className="text-center mb-6">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-white rounded-2xl shadow-lg mb-3">
@@ -233,7 +271,7 @@ export default function RegisterPage() {
               <>
                 <h2 className="text-xl font-bold text-carely-dark mb-2 text-center">تأكيد رقم الهاتف</h2>
                 <p className="text-sm text-carely-gray text-center mb-1">أدخل كود الـ 6 أرقام اللي وصلك على</p>
-                <p className="text-base font-bold text-carely-green text-center mb-6" dir="ltr">{verifiedPhone}</p>
+                <p className="text-base font-bold text-carely-green text-center mb-6" dir="ltr">{confirmedPhone}</p>
 
                 <div className="flex justify-center mb-6">
                   <InputOTP value={otp} onChange={setOtp} onComplete={handleOtpComplete} maxLength={6}
@@ -257,15 +295,10 @@ export default function RegisterPage() {
                 </p>
 
                 {error && <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl p-3 text-sm text-center font-medium mb-4">{error}</div>}
-                {devOtp && (
-                  <div className="bg-amber-50 border border-amber-200 text-amber-800 rounded-xl p-3 text-sm text-center font-medium mb-4">
-                    🧪 كود التطوير: <span className="font-mono text-lg font-bold tracking-widest" dir="ltr">{devOtp}</span>
-                  </div>
-                )}
                 {loading && <div className="flex justify-center mb-4"><Loader2 className="h-6 w-6 animate-spin text-carely-green" /></div>}
 
                 <div className="flex items-center justify-between mt-4">
-                  <button onClick={() => { setStep('info'); setOtp(''); setError(''); }}
+                  <button onClick={() => { resetRecaptcha(); setStep('info'); setOtp(''); setError(''); }}
                     className="flex items-center gap-1 text-sm text-carely-gray hover:text-carely-dark transition-colors" disabled={loading}>
                     <ArrowLeft className="w-4 h-4" />رجوع للمعلومات
                   </button>
