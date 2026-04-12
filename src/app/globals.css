@@ -88,10 +88,14 @@
 @layer base {
   * {
     @apply border-border outline-ring/50;
+    box-sizing: border-box;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground overflow-x-hidden;
     font-family: 'Baloo Bhaijaan 2', sans-serif;
+  }
+  html {
+    overflow-x: hidden;
   }
   h1, h2, h3, h4, h5, h6 {
     color: #094825;
@@ -158,5 +162,35 @@
   }
   .carely-scroll::-webkit-scrollbar-thumb:hover {
     background: #1a8449;
+  }
+
+  /* ═══════════════════════════════════════════
+     SuperAdmin (Black & White theme)
+     ═══════════════════════════════════════════ */
+  .sa-card {
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    border: 1px solid #e5e5e5;
+  }
+  .sa-btn-primary {
+    background: #000000;
+    color: #ffffff;
+    font-weight: 700;
+    border-radius: 8px;
+    padding: 10px 24px;
+    transition: all 0.2s ease;
+  }
+  .sa-btn-primary:hover {
+    background: #333333;
+  }
+  .sa-badge-active {
+    background: #000000;
+    color: #ffffff;
+  }
+  .sa-badge-inactive {
+    background: #ffffff;
+    color: #000000;
+    border: 1px solid #000000;
   }
 }

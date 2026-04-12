@@ -29,7 +29,15 @@ export type PageRoute =
   | "admin-subscription-detail"
   | "admin-orders"
   | "admin-licenses"
-  | "admin-license-new";
+  | "admin-license-new"
+  // SuperAdmin portal
+  | "superadmin-login"
+  | "superadmin"
+  | "superadmin-users"
+  | "superadmin-orders"
+  | "superadmin-licenses"
+  | "superadmin-whatsapp"
+  | "superadmin-settings";
 
 interface AppState {
   currentPage: PageRoute;

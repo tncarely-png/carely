@@ -72,8 +72,8 @@ export const ORDER_STATUS = {
 export const WHATSAPP_NUMBER = "21626107128";
 export const CONTACT_EMAIL = "contact@carely.tn";
 
-export const STORE_DESCRIPTION = "نبيعو حسابات مدفوعة آمنة لتطبيقات العيلة — مع إرشاد ودعم على الواتساب";
-export const STORE_TAGLINE = "متجر التطبيقات المدفوعة للعيلة التونسية — حسابات آمنة مع دعم على الواتساب";
+export const STORE_DESCRIPTION = "نبيعو حسابات مدفوعة آمنة لتطبيقات العيلة — من ولاية الكاف، مع إرشاد ودعم على الواتساب";
+export const STORE_TAGLINE = "متجر التطبيقات المدفوعة للعيلة التونسية — من ولاية الكاف، حسابات آمنة مع دعم على الواتساب";
 
 export function getWhatsAppLink(message?: string) {
   const msg = message || "مرحبا، أريد الاستفسار عن اشتراك Carely.tn";

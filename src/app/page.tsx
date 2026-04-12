@@ -30,6 +30,18 @@ import {
   AdminLicenseNew,
 } from '@/components/admin';
 
+// SuperAdmin
+import {
+  SuperAdminLoginPage,
+  SuperAdminLayout,
+  SuperAdminDashboard,
+  SuperAdminUsers,
+  SuperAdminOrders,
+  SuperAdminLicenses,
+  SuperAdminWhatsApp,
+  SuperAdminSettings,
+} from '@/components/superadmin';
+
 // Homepage
 import {
   HeroSection,
@@ -194,6 +206,19 @@ function ContactPage() {
                 </a>
               </div>
             </div>
+            {/* Location Card */}
+            <div className="carely-card p-8 mb-8 text-center">
+              <div className="w-16 h-16 bg-carely-light rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-3xl">📍</span>
+              </div>
+              <h3 className="text-xl font-bold text-carely-dark mb-2">موقعنا</h3>
+              <p className="text-carely-gray text-lg mb-1">
+                📍 نحنا من ولاية الكاف، تونس
+              </p>
+              <p className="text-carely-gray">
+                نخدمو على كامل تراب الجمهورية التونسية
+              </p>
+            </div>
             <div className="carely-card p-8">
               <h3 className="text-xl font-bold text-carely-dark mb-4">🛡️ ضمان رضا الزبون</h3>
               <p className="text-carely-gray text-lg">
@@ -270,6 +295,32 @@ function AdminRouter() {
 }
 
 // ═══════════════════════════════════════════
+// SUPERADMIN ROUTER
+// ═══════════════════════════════════════════
+
+function SuperAdminRouter() {
+  const currentPage = useAppStore((s) => s.currentPage);
+
+  const renderPage = () => {
+    switch (currentPage) {
+      case 'superadmin': return <SuperAdminDashboard />;
+      case 'superadmin-users': return <SuperAdminUsers />;
+      case 'superadmin-orders': return <SuperAdminOrders />;
+      case 'superadmin-licenses': return <SuperAdminLicenses />;
+      case 'superadmin-whatsapp': return <SuperAdminWhatsApp />;
+      case 'superadmin-settings': return <SuperAdminSettings />;
+      default: return <SuperAdminDashboard />;
+    }
+  };
+
+  return (
+    <SuperAdminLayout>
+      {renderPage()}
+    </SuperAdminLayout>
+  );
+}
+
+// ═══════════════════════════════════════════
 // MAIN PAGE ROUTER
 // ═══════════════════════════════════════════
 
@@ -280,6 +331,9 @@ export default function Home() {
   useEffect(() => {
     fetch('/api/seed').catch(() => {});
   }, []);
+
+  // SuperAdmin login (full screen, no layout)
+  if (currentPage === 'superadmin-login') return <SuperAdminLoginPage />;
 
   // Auth pages (full screen, no layout)
   if (currentPage === 'login') return <LoginPage />;
@@ -304,6 +358,15 @@ export default function Home() {
   ];
   if (adminPages.includes(currentPage)) {
     return <AdminRouter />;
+  }
+
+  // SuperAdmin pages
+  const superAdminPages: PageRoute[] = [
+    'superadmin', 'superadmin-users', 'superadmin-orders',
+    'superadmin-licenses', 'superadmin-whatsapp', 'superadmin-settings',
+  ];
+  if (superAdminPages.includes(currentPage)) {
+    return <SuperAdminRouter />;
   }
 
   // Qustodio app landing page (with Navbar/Footer layout)

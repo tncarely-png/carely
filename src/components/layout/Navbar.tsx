@@ -33,8 +33,8 @@ export default function Navbar() {
           scrolled ? 'shadow-md' : ''
         } border-b-2 border-carely-green`}
       >
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="flex h-16 items-center justify-between">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 overflow-hidden">
+          <div className="flex h-16 items-center justify-between gap-2">
             {/* Left: Nav Links (RTL - start side) */}
             <nav className="hidden md:flex items-center gap-6">
               {NAV_LINKS.map((link) => (
@@ -124,8 +124,8 @@ export default function Navbar() {
             </div>
 
             {/* Right: Logo (RTL - end side) */}
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-4 shrink-0">
+              <div className="flex items-center gap-1.5 sm:gap-3">
                 {user ? (
                   <div className="hidden sm:flex items-center gap-3">
                     <span className="text-sm text-carely-gray">
@@ -145,7 +145,7 @@ export default function Navbar() {
                   <Button
                     variant="outline"
                     size="sm"
-                    className="border-carely-green text-carely-green hover:bg-carely-green hover:text-white rounded-full"
+                    className="border-carely-green text-carely-green hover:bg-carely-green hover:text-white rounded-full hidden sm:inline-flex"
                     onClick={() => navigate('login')}
                   >
                     سجل دخول

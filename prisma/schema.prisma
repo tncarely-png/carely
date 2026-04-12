@@ -81,3 +81,11 @@ model License {
 
   subscriptions Subscription[]
 }
+
+model Settings {
+  id        String   @id @default("default")
+  key       String   @unique
+  value     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

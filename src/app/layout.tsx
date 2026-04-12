@@ -22,7 +22,7 @@ export default function RootLayout({
         />
       </head>
       <body
-        className="antialiased bg-carely-mint text-carely-gray min-h-screen flex flex-col"
+        className="antialiased bg-carely-mint text-carely-gray min-h-screen flex flex-col overflow-x-hidden"
         style={{ fontFamily: "'Baloo Bhaijaan 2', sans-serif" }}
       >
         {children}

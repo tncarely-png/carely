@@ -73,7 +73,7 @@ const FEATURES = [
 export default function FeaturesGrid() {
   return (
     <section className="py-16 md:py-20">
-      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 overflow-hidden">
         {/* Title */}
         <div className="text-center mb-10">
           <h2 className="text-3xl sm:text-4xl font-extrabold text-carely-dark mb-3">

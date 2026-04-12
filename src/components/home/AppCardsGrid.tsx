@@ -24,8 +24,8 @@ const APPS: AppCard[] = [
   },
   {
     emoji: '🔜',
-    name: 'تطبيق جديد قريبًا',
-    description: 'نحضرو لكم أحسن التطبيقات',
+    name: 'قريبًا...',
+    description: 'تطبيق جديد',
     price: '',
     action: 'coming-soon',
   },
@@ -40,7 +40,7 @@ export default function AppCardsGrid() {
         {/* Title */}
         <div className="text-center mb-10">
           <h2 className="text-3xl sm:text-4xl font-extrabold text-carely-dark mb-3">
-            تطبيقاتنا
+            تطبيقاتنا الحالية
           </h2>
           <p className="text-carely-gray text-base sm:text-lg">
             اختار التطبيق المناسب لعيلتك

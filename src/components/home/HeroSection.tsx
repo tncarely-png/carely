@@ -38,18 +38,18 @@ export default function HeroSection() {
         </div>
 
         {/* Heading */}
-        <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-carely-dark leading-tight mb-4">
-          متجر التطبيقات المدفوعة للعيلة
+        <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold text-carely-dark leading-tight mb-4">
+          متجر Carely.tn 🛍️
           <br />
-          <span className="text-carely-green">🛍️ Carely.tn</span>
+          <span className="text-carely-green">حسابات تطبيقات العيلة المدفوعة</span>
         </h1>
 
         {/* Subtext */}
-        <p className="text-lg sm:text-xl text-carely-gray max-w-2xl mx-auto mb-2 leading-relaxed">
-          اشتري حسابات تطبيقات موثوقة بالدينار التونسي
+        <p className="text-base sm:text-lg md:text-xl text-carely-gray max-w-2xl mx-auto mb-2 leading-relaxed">
+          اشتري، فعّل، واستمتع — مع دعم مباشر على الواتساب
         </p>
-        <p className="text-base sm:text-lg text-carely-gray max-w-2xl mx-auto mb-8 leading-relaxed">
-          مع إرشاد كامل ودعم مباشر على الواتساب
+        <p className="text-sm sm:text-base md:text-lg text-carely-gray max-w-2xl mx-auto mb-8 leading-relaxed">
+          من ولاية الكاف، نخدمو كامل تونس 🇹🇳
         </p>
 
         {/* CTA Buttons */}

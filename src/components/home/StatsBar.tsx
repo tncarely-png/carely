@@ -32,7 +32,7 @@ const STATS = [
 export default function StatsBar() {
   return (
     <section className="py-12 bg-white">
-      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 overflow-hidden">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           {STATS.map((stat) => {
             const Icon = stat.icon
