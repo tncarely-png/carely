@@ -127,3 +127,27 @@ Stage Summary:
 - GitHub Actions CI/CD configured
 - Dev server works with in-memory D1
 - Lint: 0 errors
+
+---
+Task ID: cf-setup
+Agent: Main
+Task: Create Cloudflare D1/KV/R2 resources and configure wrangler.toml
+
+Work Log:
+- Verified CF API token (active, account: Tncarely@gmail.com)
+- Set CLOUDFLARE_ACCOUNT_ID=913a913e28af5e890082509cb783586c to bypass user details permission
+- Created D1 database: carely-db (ID: 4ce1b942-b175-4592-8eb7-705cdd2a8ede) in APAC region
+- Created KV namespace: carely-kv (ID: 7ae342ee1b1043498ae0853122b961c9)
+- Created R2 bucket: carely-uploads (Standard storage class)
+- Updated wrangler.toml with real D1 database_id and KV namespace id
+- Applied 0001_initial.sql migration remotely (11 queries, 6 tables, 2 agents seeded)
+- Verified all tables exist and WhatsApp agents seeded correctly
+- Pushed commit 9adf3f6 to GitHub main branch
+
+Stage Summary:
+- All CF infrastructure resources created and configured
+- D1 database ready with schema + seed data (6 tables, 2 agents)
+- KV namespace ready for session/OTP storage
+- R2 bucket ready for receipt uploads
+- wrangler.toml committed and pushed to GitHub
+- Next step: Connect CF Pages to GitHub repo and deploy
