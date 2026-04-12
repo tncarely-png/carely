@@ -5,9 +5,9 @@
   "scripts": {
     "dev": "next dev -p 3000 2>&1 | tee dev.log",
     "build": "next build",
-    "build:cf": "bunx @opennextjs/cloudflare build",
-    "preview": "bunx @opennextjs/cloudflare preview",
-    "deploy": "bunx @opennextjs/cloudflare deploy",
+    "build:cf": "npx opennextjs-cloudflare build",
+    "preview": "npx opennextjs-cloudflare preview",
+    "deploy": "npx opennextjs-cloudflare deploy",
     "start": "NODE_ENV=production bun .next/standalone/server.js 2>&1 | tee server.log",
     "lint": "eslint .",
     "db:generate": "bunx drizzle-kit generate",
