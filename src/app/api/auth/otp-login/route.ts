@@ -1,20 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { verifyIdToken, normalizePhoneForDb, extractDigits } from "@/lib/firebase-admin";
+import { verifyIdToken, normalizePhoneForDb } from "@/lib/firebase-admin";
 
 /**
  * POST /api/auth/otp-login
  * Body: { idToken: string, action?: "login" | "register", name?, address?, wilaya? }
  * 
  * IMPORTANT: Phone number comes from the Firebase token, NOT from the client body.
- * Firebase guarantees the phone is correct (E.164: "+21626107128") because it
- * sent the SMS and verified the OTP. The client cannot spoof this.
+ * Firebase guarantees the phone is correct (E.164) because it sent the SMS and
+ * verified the OTP. The client cannot spoof this.
  * 
- * Flow:
- * 1. Verify the Firebase idToken server-side → get phone from token
- * 2. Normalize phone for DB lookup (handles E.164, digits, formatted)
- * 3. Login: find user → return user. Not found → isNewUser=true
- * 4. Register: create user with name/address/wilaya
+ * All phones in DB are stored as: "+216 XX XXX XXXX" (consistent format)
  */
 export async function POST(request: NextRequest) {
   try {
@@ -37,25 +33,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // ✅ Phone comes from Firebase token — guaranteed correct, E.164: "+21626107128"
-    // We don't trust the client phone. Firebase sent the SMS and verified the OTP.
-    const firebasePhone = firebaseUser.phoneNumber; // raw E.164 from Firebase
-    const dbPhone = normalizePhoneForDb(firebasePhone); // formatted for DB: "+216 26 107 128"
-    const digits = extractDigits(firebasePhone); // raw digits: "26107128"
+    // Normalize Firebase phone to DB format: "+216 XX XXX XXXX"
+    const dbPhone = normalizePhoneForDb(firebaseUser.phoneNumber);
 
-    console.log("[otp-login] Firebase phone:", firebasePhone, "→ DB phone:", dbPhone);
+    console.log("[otp-login] Firebase phone:", firebaseUser.phoneNumber, "→ DB phone:", dbPhone, "| action:", action);
 
     // ── LOGIN ──
     if (action === "login") {
-      // Search by all possible phone formats stored in DB
       const user = await db.user.findFirst({
-        where: {
-          OR: [
-            { phone: dbPhone },
-            { phone: digits },
-            { phone: firebasePhone },
-          ],
-        },
+        where: { phone: dbPhone },
       });
 
       if (!user) {
@@ -90,15 +76,9 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // Check if user already exists (by any phone format)
+      // Check if user already exists
       const existingUser = await db.user.findFirst({
-        where: {
-          OR: [
-            { phone: dbPhone },
-            { phone: digits },
-            { phone: firebasePhone },
-          ],
-        },
+        where: { phone: dbPhone },
       });
 
       if (existingUser) {
@@ -114,7 +94,7 @@ export async function POST(request: NextRequest) {
         });
       }
 
-      // Create new user — use normalized phone from Firebase token
+      // Create new user
       const user = await db.user.create({
         data: {
           name: name.trim(),
@@ -127,6 +107,8 @@ export async function POST(request: NextRequest) {
       });
 
       const { password: _, ...userWithoutPassword } = user;
+
+      console.log("[otp-login] New user created:", user.id, user.name, user.phone);
 
       return NextResponse.json(
         { success: true, user: userWithoutPassword },

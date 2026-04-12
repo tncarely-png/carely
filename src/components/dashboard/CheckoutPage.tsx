@@ -54,8 +54,6 @@ export default function CheckoutPage() {
   const [selectedPayment, setSelectedPayment] = useState<'flouci' | 'virement' | 'ccp' | null>(null);
   const [receiptFile, setReceiptFile] = useState<string | null>(null);
   const [receiptName, setReceiptName] = useState('');
-  const [customerName, setCustomerName] = useState('');
-  const [customerPhone, setCustomerPhone] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -128,11 +126,7 @@ export default function CheckoutPage() {
   };
 
   const handleSubmit = async () => {
-    if (!selectedPlanKey || !selectedPayment) return;
-    if (!customerName.trim() || !customerPhone.trim()) {
-      setError('لازم تملا كل الخانات');
-      return;
-    }
+    if (!selectedPlanKey || !selectedPayment || !user) return;
     if (!receiptFile) {
       setError('لازم ترفع صورة الوصل');
       return;
@@ -145,11 +139,10 @@ export default function CheckoutPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          userId: user.id,
           plan: selectedPlanKey,
           paymentMethod: selectedPayment,
           receiptData: receiptFile,
-          customerName: customerName.trim(),
-          customerPhone: customerPhone.trim(),
         }),
       });
 
@@ -488,38 +481,23 @@ export default function CheckoutPage() {
         )}
       </div>
 
-      {/* Customer Info Form */}
+      {/* Customer Info (auto-filled from account) */}
       <Card className="carely-card">
         <CardContent className="p-5 space-y-4">
           <h3 className="font-bold text-carely-dark text-sm">بياناتك</h3>
 
-          <div className="space-y-2">
-            <Label htmlFor="customerName" className="text-sm text-carely-gray font-semibold">
-              الاسم الكامل <span className="text-red-500">*</span>
-            </Label>
-            <Input
-              id="customerName"
-              value={customerName}
-              onChange={(e) => setCustomerName(e.target.value)}
-              placeholder="أدخل اسمك الكامل"
-              className="h-11"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="customerPhone" className="text-sm text-carely-gray font-semibold">
-              رقم الهاتف <span className="text-red-500">*</span>
-            </Label>
-            <Input
-              id="customerPhone"
-              value={customerPhone}
-              onChange={(e) => setCustomerPhone(e.target.value)}
-              placeholder="رقم الهاتف (واتساب)"
-              className="h-11"
-              dir="ltr"
-              type="tel"
-            />
-          </div>
+          {user && (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-sm">
+                <span className="text-carely-gray">👤 الاسم:</span>
+                <span className="font-semibold text-carely-dark">{user.name}</span>
+              </div>
+              <div className="flex items-center gap-2 text-sm">
+                <span className="text-carely-gray">📱 الهاتف:</span>
+                <span className="font-semibold text-carely-dark" dir="ltr">{user.phone}</span>
+              </div>
+            </div>
+          )}
 
           {/* Order Summary */}
           {selectedPlan && (
@@ -582,7 +560,7 @@ export default function CheckoutPage() {
         <Button
           className="carely-btn-primary h-12 text-base px-8 w-full sm:w-auto disabled:opacity-60"
           onClick={handleSubmit}
-          disabled={loading || !customerName.trim() || !customerPhone.trim() || !receiptFile}
+          disabled={loading || !receiptFile}
         >
           {loading ? (
             <span className="flex items-center justify-center gap-2">
@@ -601,8 +579,8 @@ export default function CheckoutPage() {
 
   // ─── STEP 4: Pending Confirmation ──────────────────────────
   const StepPending = () => {
-    const waMessage = customerName
-      ? `مرحبا، اسمي ${customerName}، عندي طلب في الانتظار`
+    const waMessage = user?.name
+      ? `مرحبا، أنا ${user.name}، عندي طلب في الانتظار`
       : 'مرحبا، عندي طلب في الانتظار';
 
     return (

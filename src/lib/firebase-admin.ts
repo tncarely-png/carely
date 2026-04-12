@@ -69,29 +69,23 @@ export async function verifyIdToken(idToken: string): Promise<FirebaseVerifiedUs
 }
 
 /**
- * Normalize a phone number for database lookup.
- * Handles various formats and returns a consistent display format.
+ * Normalize a phone number for database storage and lookup.
+ * ALWAYS returns "+216 XX XXX XXXX" format for consistency.
+ * Handles: "+21626107128", "21626107128", "26107128", "+216 26 107 128"
  */
 export function normalizePhoneForDb(phone: string): string {
   let cleaned = phone.replace(/[^\d]/g, "");
 
-  // 8 digits starting with 2/5/9 → Tunisian local → add +216
+  // Strip leading 216 or 00216 if present
+  if (cleaned.startsWith("00216")) cleaned = cleaned.slice(5);
+  else if (cleaned.startsWith("216")) cleaned = cleaned.slice(3);
+
+  // Now cleaned should be 8 Tunisian digits: "26107128"
   if (cleaned.length === 8 && /^[259]/.test(cleaned)) {
     return "+216 " + cleaned.slice(0, 2) + " " + cleaned.slice(2, 5) + " " + cleaned.slice(5, 8);
   }
-  // 10 digits starting with 216
-  if (cleaned.length === 10 && cleaned.startsWith("216")) {
-    const local = cleaned.slice(3);
-    return "+216 " + local.slice(0, 2) + " " + local.slice(2, 5) + " " + local.slice(5, 8);
-  }
-  // +216XXXXXXXX (12 digits with +)
-  if (cleaned.startsWith("216") && cleaned.length === 12) {
-    const local = cleaned.slice(3);
-    return "+216 " + local.slice(0, 2) + " " + local.slice(2, 5) + " " + local.slice(5, 8);
-  }
-  // Already +216 XX XXX XXXX (with spaces)
-  if (phone.startsWith("+216")) return phone;
 
+  // Fallback: return original
   return phone;
 }
 
