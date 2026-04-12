@@ -174,12 +174,11 @@ export default function LoginPage() {
       const idToken = await verifyFirebaseOTP(code);
       pendingIdTokenRef.current = idToken;
 
-      // Send idToken + phone to server
+      // Send idToken to server — server gets phone from Firebase token, not from us
       const res = await fetch('/api/auth/otp-login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          phone: pendingPhoneDigitsRef.current,
           idToken,
           action: 'login',
         }),
@@ -249,7 +248,6 @@ export default function LoginPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          phone: pendingPhoneDigitsRef.current,
           idToken: pendingIdTokenRef.current,
           action: 'register',
           name: profileForm.name.trim(),
