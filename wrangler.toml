@@ -1,0 +1,19 @@
+name = "carely-tn"
+compatibility_date = "2025-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "carely-db"
+database_id = "REPLACE_AFTER_CREATE"
+
+[[kv_namespaces]]
+binding = "KV"
+id = "REPLACE_AFTER_CREATE"
+
+[[r2_buckets]]
+binding = "R2"
+bucket_name = "carely-uploads"
+
+[vars]
+NEXT_PUBLIC_FIREBASE_PROJECT_ID = "carely-9e601"

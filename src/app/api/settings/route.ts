@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { getCfContext } from '@/lib/cf-context';
+import { eq } from 'drizzle-orm';
+import { settings } from '@/db/schema';
 
 export async function GET(request: NextRequest) {
   try {
+    const { db } = getCfContext();
     const key = request.nextUrl.searchParams.get('key');
 
     if (!key) {
@@ -12,9 +15,9 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const setting = await db.settings.findUnique({
-      where: { key },
-    });
+    const setting = await db.select().from(settings)
+      .where(eq(settings.key, key))
+      .get();
 
     if (!setting) {
       return NextResponse.json({ key, value: null });
@@ -32,6 +35,7 @@ export async function GET(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
+    const { db } = getCfContext();
     const body = await request.json();
     const { key, value } = body;
 
@@ -42,13 +46,26 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const setting = await db.settings.upsert({
-      where: { key },
-      create: { key, value: String(value) },
-      update: { value: String(value) },
+    const now = new Date().toISOString();
+
+    // Upsert: insert on conflict do update
+    await db.insert(settings).values({
+      key,
+      value: String(value),
+      createdAt: now,
+      updatedAt: now,
+    }).onConflictDoUpdate({
+      target: settings.key,
+      set: {
+        value: String(value),
+        updatedAt: now,
+      },
     });
 
-    return NextResponse.json({ success: true, setting });
+    return NextResponse.json({
+      success: true,
+      setting: { key, value: String(value), createdAt: now, updatedAt: now },
+    });
   } catch (error) {
     console.error('[settings] PUT Error:', error);
     return NextResponse.json(

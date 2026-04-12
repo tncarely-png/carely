@@ -1,30 +1,46 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/db";
+import { getCfContext } from "@/lib/cf-context";
+import { eq, desc } from "drizzle-orm";
+import { orders, users, subscriptions } from "@/db/schema";
 import { PLANS } from "@/lib/constants";
 
 export async function GET(request: NextRequest) {
   try {
+    const { db } = getCfContext();
     const userId = request.nextUrl.searchParams.get("userId");
     if (!userId) {
       return NextResponse.json({ error: "userId is required" }, { status: 400 });
     }
 
-    const orders = await db.order.findMany({
-      where: { userId },
-      orderBy: { createdAt: "desc" },
-      include: {
+    const result = await db
+      .select({
+        order: orders,
         subscription: {
-          select: {
-            id: true,
-            status: true,
-            startsAt: true,
-            expiresAt: true,
-          },
+          id: subscriptions.id,
+          status: subscriptions.status,
+          startsAt: subscriptions.startsAt,
+          expiresAt: subscriptions.expiresAt,
         },
-      },
-    });
+        user: {
+          id: users.id,
+          name: users.name,
+          email: users.email,
+        },
+      })
+      .from(orders)
+      .leftJoin(users, eq(orders.userId, users.id))
+      .leftJoin(subscriptions, eq(orders.subscriptionId, subscriptions.id))
+      .where(eq(orders.userId, userId))
+      .orderBy(desc(orders.createdAt))
+      .all();
 
-    return NextResponse.json({ orders });
+    const mappedOrders = result.map((row) => ({
+      ...row.order,
+      subscription: row.subscription?.id ? row.subscription : null,
+      user: row.user?.id ? row.user : null,
+    }));
+
+    return NextResponse.json({ orders: mappedOrders });
   } catch (error) {
     console.error("[orders GET] Error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
@@ -33,6 +49,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const { db } = getCfContext();
     const body = await request.json();
     const { userId, plan, paymentMethod, receiptData } = body;
 
@@ -45,9 +62,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify the user exists
-    const user = await db.user.findUnique({
-      where: { id: userId },
-    });
+    const user = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, userId))
+      .get();
 
     if (!user) {
       return NextResponse.json(
@@ -67,37 +86,62 @@ export async function POST(request: NextRequest) {
 
     const amountTnd = planConfig.priceTnd;
     const devicesCount = planConfig.devices;
+    const now = new Date().toISOString();
+    const orderId = crypto.randomUUID();
+    const subscriptionId = crypto.randomUUID();
 
     // Create the order linked to the real user
-    const order = await db.order.create({
-      data: {
-        userId: user.id,
-        plan,
-        amountTnd,
-        paymentMethod,
-        receiptUrl: receiptData || null, // base64 receipt image
-        status: "pending",
-      },
+    await db.insert(orders).values({
+      id: orderId,
+      userId: user.id,
+      plan,
+      amountTnd,
+      paymentMethod,
+      receiptUrl: receiptData || null,
+      status: "pending",
+      createdAt: now,
+      updatedAt: now,
     });
 
     // Create a pending subscription linked to this order
-    const subscription = await db.subscription.create({
-      data: {
-        userId: user.id,
-        plan,
-        status: "pending",
-        devicesCount,
-        orderId: order.id,
-      },
+    await db.insert(subscriptions).values({
+      id: subscriptionId,
+      userId: user.id,
+      plan,
+      status: "pending",
+      devicesCount,
+      createdAt: now,
+      updatedAt: now,
     });
 
     // Link subscription to order
-    await db.order.update({
-      where: { id: order.id },
-      data: { subscriptionId: subscription.id },
-    });
+    await db
+      .update(orders)
+      .set({ subscriptionId, updatedAt: now })
+      .where(eq(orders.id, orderId));
 
-    console.log("[orders POST] Order created:", order.id, "for user:", user.id, "plan:", plan, "amount:", amountTnd);
+    console.log(
+      "[orders POST] Order created:",
+      orderId,
+      "for user:",
+      user.id,
+      "plan:",
+      plan,
+      "amount:",
+      amountTnd
+    );
+
+    // Fetch the created records to return them
+    const order = await db
+      .select()
+      .from(orders)
+      .where(eq(orders.id, orderId))
+      .get();
+    const subscription = await db
+      .select()
+      .from(subscriptions)
+      .where(eq(subscriptions.id, subscriptionId))
+      .get();
 
     return NextResponse.json({ success: true, order, subscription });
   } catch (error) {

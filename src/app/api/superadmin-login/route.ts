@@ -1,11 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-
-// In-memory session store (resets on server restart — fine for single-instance)
-const sessions = new Map<string, { email: string; createdAt: number }>();
+import { validateSuperAdminSession, createSuperAdminSession } from '@/lib/session';
 
 const SUPERADMIN_EMAIL = process.env.SUPERADMIN_EMAIL || 'admin@carely.tn';
 const SUPERADMIN_PASSWORD = process.env.SUPERADMIN_PASSWORD || 'carely2025';
-const SESSION_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 export async function POST(request: NextRequest) {
   try {
@@ -26,16 +23,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Clean expired sessions
-    const now = Date.now();
-    for (const [token, session] of sessions.entries()) {
-      if (now - session.createdAt > SESSION_TTL_MS) {
-        sessions.delete(token);
-      }
-    }
-
-    const token = `superadmin-session-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-    sessions.set(token, { email, createdAt: now });
+    const token = await createSuperAdminSession(email);
 
     return NextResponse.json({
       success: true,
@@ -57,13 +45,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ valid: false }, { status: 401 });
   }
 
-  const session = sessions.get(token);
+  const session = await validateSuperAdminSession(token);
   if (!session) {
-    return NextResponse.json({ valid: false }, { status: 401 });
-  }
-
-  if (Date.now() - session.createdAt > SESSION_TTL_MS) {
-    sessions.delete(token);
     return NextResponse.json({ valid: false }, { status: 401 });
   }
 
@@ -71,6 +54,6 @@ export async function GET(request: NextRequest) {
 }
 
 export async function DELETE() {
-  // No real logout endpoint needed — client just discards token
+  // Client discards token — KV handles auto-expiry
   return NextResponse.json({ success: true });
 }

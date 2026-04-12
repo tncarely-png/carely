@@ -1,86 +1,116 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
-
-const AGENTS = {
-  maram: {
-    name: 'Maram',
-    phone: '+21652013035',
-    title: 'الوكيلة الأولى',
-    emoji: '👩',
-  },
-  chafik: {
-    name: 'Chafik',
-    phone: '+21650496159',
-    title: 'الوكيل الثاني',
-    emoji: '👨',
-  },
-} as const;
-
-type AgentKey = keyof typeof AGENTS;
-
-function getActiveAgentFromDb(): AgentKey {
-  // Default to maram if no setting found
-  return 'maram';
-}
+import { getCfContext } from '@/lib/cf-context';
+import { eq, sql, desc } from 'drizzle-orm';
+import { whatsappAgents } from '@/db/schema';
 
 export async function GET() {
   try {
-    const setting = await db.settings.findUnique({
-      where: { key: 'active_whatsapp_agent' },
-    });
+    const { db, kv } = getCfContext();
 
-    const activeAgentKey = (setting?.value || 'maram') as AgentKey;
-    const agent = AGENTS[activeAgentKey];
+    // Fetch all agents from DB
+    const allAgents = await db.select().from(whatsappAgents)
+      .orderBy(desc(whatsappAgents.isActive))
+      .all();
 
-    if (!agent) {
-      // Fallback to maram if invalid
-      return NextResponse.json({
-        ...AGENTS.maram,
-        active: true,
-      });
+    // Find the active agent from DB
+    const activeAgent = allAgents.find(a => a.isActive === true);
+
+    // Try to get active agent from KV cache for fast reads
+    let kvActiveAgent = null;
+    try {
+      const cached = await kv.get('active_whatsapp_agent');
+      if (cached) {
+        kvActiveAgent = JSON.parse(cached);
+      }
+    } catch {
+      // KV read failed — fall back to DB result
     }
 
-    return NextResponse.json({
+    // If DB has active agent but KV doesn't, sync KV
+    if (activeAgent && !kvActiveAgent) {
+      try {
+        await kv.put('active_whatsapp_agent', JSON.stringify(activeAgent));
+      } catch {
+        // KV write failed — non-critical
+      }
+    }
+
+    // If DB has no active agent but KV does, use KV
+    const finalActive = activeAgent || kvActiveAgent;
+
+    // Mark which agent is active
+    const agentsWithStatus = allAgents.map(agent => ({
       ...agent,
-      key: activeAgentKey,
-      active: true,
-    });
-  } catch {
+      active: agent.id === finalActive?.id,
+    }));
+
     return NextResponse.json({
-      ...AGENTS.maram,
-      key: 'maram',
-      active: true,
+      agents: agentsWithStatus,
+      activeAgent: finalActive || agentsWithStatus[0] || null,
     });
+  } catch (error) {
+    console.error('[whatsapp-agent] GET Error:', error);
+    return NextResponse.json(
+      { error: 'فشل تحميل الوكلاء' },
+      { status: 500 }
+    );
   }
 }
 
 export async function PUT(request: NextRequest) {
   try {
+    const { db, kv } = getCfContext();
     const body = await request.json();
-    const { agent } = body;
+    const { agentId } = body;
 
-    if (agent !== 'maram' && agent !== 'chafik') {
+    if (!agentId) {
       return NextResponse.json(
-        { error: 'وكيل غير صالح. اختار maram أو chafik' },
+        { error: 'معرف الوكيل مطلوب' },
         { status: 400 }
       );
     }
 
-    await db.settings.upsert({
-      where: { key: 'active_whatsapp_agent' },
-      create: { key: 'active_whatsapp_agent', value: agent },
-      update: { value: agent },
-    });
+    // Verify agent exists
+    const agent = await db.select().from(whatsappAgents)
+      .where(eq(whatsappAgents.id, agentId))
+      .get();
 
-    const selectedAgent = AGENTS[agent as AgentKey];
+    if (!agent) {
+      return NextResponse.json(
+        { error: 'وكيل غير موجود' },
+        { status: 404 }
+      );
+    }
+
+    // Set all agents to inactive
+    await db.update(whatsappAgents)
+      .set({ isActive: false })
+      .run();
+
+    // Set selected agent to active
+    await db.update(whatsappAgents)
+      .set({ isActive: true })
+      .where(eq(whatsappAgents.id, agentId))
+      .run();
+
+    // Update KV cache
+    const activeAgent = {
+      ...agent,
+      isActive: true,
+    };
+
+    try {
+      await kv.put('active_whatsapp_agent', JSON.stringify(activeAgent));
+    } catch {
+      // KV write failed — non-critical
+    }
 
     return NextResponse.json({
       success: true,
-      ...selectedAgent,
-      key: agent,
+      agent: activeAgent,
     });
   } catch (error) {
-    console.error('[whatsapp-agent] Error:', error);
+    console.error('[whatsapp-agent] PUT Error:', error);
     return NextResponse.json(
       { error: 'فشل تحديث الوكيل' },
       { status: 500 }

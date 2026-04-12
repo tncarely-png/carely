@@ -1,15 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/db";
-import { verifyIdToken, normalizePhoneForDb } from "@/lib/firebase-admin";
+import { getCfContext } from "@/lib/cf-context";
+import { eq } from "drizzle-orm";
+import { users } from "@/db/schema";
+import { verifyIdToken, normalizePhoneForDb } from "@/lib/verify-firebase-token";
 
 /**
  * POST /api/auth/otp-login
  * Body: { idToken: string, action?: "login" | "register", name?, address?, wilaya? }
- * 
+ *
  * IMPORTANT: Phone number comes from the Firebase token, NOT from the client body.
  * Firebase guarantees the phone is correct (E.164) because it sent the SMS and
  * verified the OTP. The client cannot spoof this.
- * 
+ *
  * All phones in DB are stored as: "+216 XX XXX XXXX" (consistent format)
  */
 export async function POST(request: NextRequest) {
@@ -38,11 +40,11 @@ export async function POST(request: NextRequest) {
 
     console.log("[otp-login] Firebase phone:", firebaseUser.phoneNumber, "→ DB phone:", dbPhone, "| action:", action);
 
+    const { db } = getCfContext();
+
     // ── LOGIN ──
     if (action === "login") {
-      const user = await db.user.findFirst({
-        where: { phone: dbPhone },
-      });
+      const user = await db.select().from(users).where(eq(users.phone, dbPhone)).get();
 
       if (!user) {
         // New user — tell client to show profile form
@@ -54,10 +56,7 @@ export async function POST(request: NextRequest) {
       }
 
       // Update Firebase UID
-      await db.user.update({
-        where: { id: user.id },
-        data: { firebaseUid: firebaseUser.uid },
-      });
+      await db.update(users).set({ firebaseUid: firebaseUser.uid }).where(eq(users.id, user.id));
 
       const { password: _, ...userWithoutPassword } = user;
 
@@ -76,17 +75,14 @@ export async function POST(request: NextRequest) {
         );
       }
 
+      const now = new Date().toISOString();
+
       // Check if user already exists
-      const existingUser = await db.user.findFirst({
-        where: { phone: dbPhone },
-      });
+      const existingUser = await db.select().from(users).where(eq(users.phone, dbPhone)).get();
 
       if (existingUser) {
         // User already exists — log them in instead
-        await db.user.update({
-          where: { id: existingUser.id },
-          data: { firebaseUid: firebaseUser.uid },
-        });
+        await db.update(users).set({ firebaseUid: firebaseUser.uid }).where(eq(users.id, existingUser.id));
         const { password: _, ...userWithoutPassword } = existingUser;
         return NextResponse.json({
           success: true,
@@ -95,20 +91,23 @@ export async function POST(request: NextRequest) {
       }
 
       // Create new user
-      const user = await db.user.create({
-        data: {
-          name: name.trim(),
-          phone: dbPhone,
-          address: address?.trim() || null,
-          wilaya: wilaya?.trim() || null,
-          role: "customer",
-          firebaseUid: firebaseUser.uid,
-        },
+      const newUserId = crypto.randomUUID();
+      await db.insert(users).values({
+        id: newUserId,
+        name: name.trim(),
+        phone: dbPhone,
+        address: address?.trim() || null,
+        wilaya: wilaya?.trim() || null,
+        role: "customer",
+        firebaseUid: firebaseUser.uid,
+        createdAt: now,
+        updatedAt: now,
       });
 
-      const { password: _, ...userWithoutPassword } = user;
+      const newUser = await db.select().from(users).where(eq(users.id, newUserId)).get();
+      const { password: _, ...userWithoutPassword } = newUser!;
 
-      console.log("[otp-login] New user created:", user.id, user.name, user.phone);
+      console.log("[otp-login] New user created:", newUser!.id, newUser!.name, newUser!.phone);
 
       return NextResponse.json(
         { success: true, user: userWithoutPassword },

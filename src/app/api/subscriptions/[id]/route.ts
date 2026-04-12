@@ -1,5 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { NextRequest, NextResponse } from "next/server";
+import { getCfContext } from "@/lib/cf-context";
+import { eq } from "drizzle-orm";
+import { subscriptions, users, licenses } from "@/db/schema";
 
 // GET /api/subscriptions/[id] — single subscription with user info
 export async function GET(
@@ -8,31 +10,49 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
+    const { db } = getCfContext();
 
-    const subscription = await db.subscription.findUnique({
-      where: { id },
-      include: {
+    const result = await db
+      .select({
+        subscription: subscriptions,
         user: {
-          select: { id: true, name: true, email: true, phone: true, address: true, wilaya: true },
+          id: users.id,
+          name: users.name,
+          email: users.email,
+          phone: users.phone,
+          address: users.address,
+          wilaya: users.wilaya,
         },
         license: {
-          select: { id: true, qustodioEmail: true, plan: true },
+          id: licenses.id,
+          qustodioEmail: licenses.qustodioEmail,
+          plan: licenses.plan,
         },
-      },
-    });
+      })
+      .from(subscriptions)
+      .leftJoin(users, eq(subscriptions.userId, users.id))
+      .leftJoin(licenses, eq(subscriptions.licenseId, licenses.id))
+      .where(eq(subscriptions.id, id))
+      .get();
 
-    if (!subscription) {
+    if (!result) {
       return NextResponse.json(
-        { success: false, error: 'Subscription not found' },
+        { success: false, error: "Subscription not found" },
         { status: 404 }
       );
     }
 
-    return NextResponse.json({ success: true, data: subscription });
+    const data = {
+      ...result.subscription,
+      user: result.user?.id ? result.user : null,
+      license: result.license?.id ? result.license : null,
+    };
+
+    return NextResponse.json({ success: true, data });
   } catch (error) {
-    console.error('GET /api/subscriptions/[id] error:', error);
+    console.error("GET /api/subscriptions/[id] error:", error);
     return NextResponse.json(
-      { success: false, error: 'Failed to fetch subscription' },
+      { success: false, error: "Failed to fetch subscription" },
       { status: 500 }
     );
   }
@@ -45,65 +65,96 @@ export async function PUT(
 ) {
   try {
     const { id } = await params;
+    const { db } = getCfContext();
     const body = await request.json();
 
-    const existing = await db.subscription.findUnique({ where: { id } });
+    const existing = await db
+      .select()
+      .from(subscriptions)
+      .where(eq(subscriptions.id, id))
+      .get();
+
     if (!existing) {
       return NextResponse.json(
-        { success: false, error: 'Subscription not found' },
+        { success: false, error: "Subscription not found" },
         { status: 404 }
       );
     }
 
-    const updateData: Record<string, unknown> = {};
+    const updateFields: Record<string, unknown> = { updatedAt: new Date().toISOString() };
 
     if (body.plan !== undefined) {
-      if (!['silver', 'gold'].includes(body.plan)) {
+      if (!["silver", "gold"].includes(body.plan)) {
         return NextResponse.json(
-          { success: false, error: 'plan must be silver or gold' },
+          { success: false, error: "plan must be silver or gold" },
           { status: 400 }
         );
       }
-      updateData.plan = body.plan;
+      updateFields.plan = body.plan;
     }
 
     if (body.status !== undefined) {
-      const validStatuses = ['active', 'expired', 'pending', 'cancelled'];
+      const validStatuses = ["active", "expired", "pending", "cancelled"];
       if (!validStatuses.includes(body.status)) {
         return NextResponse.json(
-          { success: false, error: 'Invalid status value' },
+          { success: false, error: "Invalid status value" },
           { status: 400 }
         );
       }
-      updateData.status = body.status;
+      updateFields.status = body.status;
     }
 
-    if (body.qustodioEmail !== undefined) updateData.qustodioEmail = body.qustodioEmail || null;
-    if (body.qustodioPassword !== undefined) updateData.qustodioPassword = body.qustodioPassword || null;
-    if (body.activationCode !== undefined) updateData.activationCode = body.activationCode || null;
-    if (body.startsAt !== undefined) updateData.startsAt = body.startsAt ? new Date(body.startsAt) : null;
-    if (body.expiresAt !== undefined) updateData.expiresAt = body.expiresAt ? new Date(body.expiresAt) : null;
-    if (body.notes !== undefined) updateData.notes = body.notes || null;
-    if (body.autoRenew !== undefined) updateData.autoRenew = Boolean(body.autoRenew);
+    if (body.qustodioEmail !== undefined)
+      updateFields.qustodioEmail = body.qustodioEmail || null;
+    if (body.qustodioPassword !== undefined)
+      updateFields.qustodioPassword = body.qustodioPassword || null;
+    if (body.activationCode !== undefined)
+      updateFields.activationCode = body.activationCode || null;
+    if (body.startsAt !== undefined)
+      updateFields.startsAt = body.startsAt ? new Date(body.startsAt).toISOString() : null;
+    if (body.expiresAt !== undefined)
+      updateFields.expiresAt = body.expiresAt ? new Date(body.expiresAt).toISOString() : null;
+    if (body.notes !== undefined) updateFields.notes = body.notes || null;
+    if (body.autoRenew !== undefined) updateFields.autoRenew = Boolean(body.autoRenew);
 
-    const subscription = await db.subscription.update({
-      where: { id },
-      data: updateData,
-      include: {
+    await db
+      .update(subscriptions)
+      .set(updateFields)
+      .where(eq(subscriptions.id, id));
+
+    // Fetch the updated subscription with user and license info
+    const result = await db
+      .select({
+        subscription: subscriptions,
         user: {
-          select: { id: true, name: true, email: true },
+          id: users.id,
+          name: users.name,
+          email: users.email,
         },
         license: {
-          select: { id: true, qustodioEmail: true },
+          id: licenses.id,
+          qustodioEmail: licenses.qustodioEmail,
         },
-      },
-    });
+      })
+      .from(subscriptions)
+      .leftJoin(users, eq(subscriptions.userId, users.id))
+      .leftJoin(licenses, eq(subscriptions.licenseId, licenses.id))
+      .where(eq(subscriptions.id, id))
+      .get();
 
-    return NextResponse.json({ success: true, data: subscription });
+    const data = result
+      ? {
+          ...result.subscription,
+          user: result.user?.id ? result.user : null,
+          license: result.license?.id ? result.license : null,
+        }
+      : null;
+
+    return NextResponse.json({ success: true, data });
   } catch (error) {
-    console.error('PUT /api/subscriptions/[id] error:', error);
+    console.error("PUT /api/subscriptions/[id] error:", error);
     return NextResponse.json(
-      { success: false, error: 'Failed to update subscription' },
+      { success: false, error: "Failed to update subscription" },
       { status: 500 }
     );
   }

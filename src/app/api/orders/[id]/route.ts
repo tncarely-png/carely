@@ -1,5 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { NextRequest, NextResponse } from "next/server";
+import { getCfContext } from "@/lib/cf-context";
+import { eq } from "drizzle-orm";
+import { orders, users, subscriptions } from "@/db/schema";
 
 // GET /api/orders/[id] — get single order with user info
 export async function GET(
@@ -8,37 +10,49 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
+    const { db } = getCfContext();
 
-    const order = await db.order.findUnique({
-      where: { id },
-      include: {
+    const result = await db
+      .select({
+        order: orders,
         user: {
-          select: { id: true, name: true, email: true, phone: true },
+          id: users.id,
+          name: users.name,
+          email: users.email,
+          phone: users.phone,
         },
         subscription: {
-          select: {
-            id: true,
-            status: true,
-            plan: true,
-            startsAt: true,
-            expiresAt: true,
-          },
+          id: subscriptions.id,
+          status: subscriptions.status,
+          plan: subscriptions.plan,
+          startsAt: subscriptions.startsAt,
+          expiresAt: subscriptions.expiresAt,
         },
-      },
-    });
+      })
+      .from(orders)
+      .leftJoin(users, eq(orders.userId, users.id))
+      .leftJoin(subscriptions, eq(orders.subscriptionId, subscriptions.id))
+      .where(eq(orders.id, id))
+      .get();
 
-    if (!order) {
+    if (!result) {
       return NextResponse.json(
-        { success: false, error: 'Order not found' },
+        { success: false, error: "Order not found" },
         { status: 404 }
       );
     }
 
-    return NextResponse.json({ success: true, data: order });
+    const data = {
+      ...result.order,
+      user: result.user?.id ? result.user : null,
+      subscription: result.subscription?.id ? result.subscription : null,
+    };
+
+    return NextResponse.json({ success: true, data });
   } catch (error) {
-    console.error('GET /api/orders/[id] error:', error);
+    console.error("GET /api/orders/[id] error:", error);
     return NextResponse.json(
-      { success: false, error: 'Failed to fetch order' },
+      { success: false, error: "Failed to fetch order" },
       { status: 500 }
     );
   }
@@ -51,51 +65,69 @@ export async function PUT(
 ) {
   try {
     const { id } = await params;
+    const { db } = getCfContext();
     const body = await request.json();
     const { status, paymentRef, paidAt } = body;
 
-    const existing = await db.order.findUnique({ where: { id } });
+    const existing = await db
+      .select()
+      .from(orders)
+      .where(eq(orders.id, id))
+      .get();
+
     if (!existing) {
       return NextResponse.json(
-        { success: false, error: 'Order not found' },
+        { success: false, error: "Order not found" },
         { status: 404 }
       );
     }
 
     // Build update data
-    const updateData: Record<string, unknown> = {};
+    const updateFields: Record<string, unknown> = { updatedAt: new Date().toISOString() };
+
     if (status !== undefined) {
-      const validStatuses = ['pending', 'paid', 'failed', 'refunded'];
+      const validStatuses = ["pending", "paid", "failed", "refunded"];
       if (!validStatuses.includes(status)) {
         return NextResponse.json(
-          { success: false, error: 'Invalid status value' },
+          { success: false, error: "Invalid status value" },
           { status: 400 }
         );
       }
-      updateData.status = status;
+      updateFields.status = status;
     }
-    if (paymentRef !== undefined) updateData.paymentRef = paymentRef || null;
+    if (paymentRef !== undefined) updateFields.paymentRef = paymentRef || null;
     if (paidAt !== undefined) {
-      updateData.paidAt = paidAt ? new Date(paidAt) : null;
+      updateFields.paidAt = paidAt ? new Date(paidAt).toISOString() : null;
     }
 
-    const order = await db.order.update({
-      where: { id },
-      data: updateData,
-      include: {
+    await db.update(orders).set(updateFields).where(eq(orders.id, id));
+
+    // Fetch the updated order with user info
+    const result = await db
+      .select({
+        order: orders,
         user: {
-          select: { id: true, name: true, email: true },
+          id: users.id,
+          name: users.name,
+          email: users.email,
         },
-      },
-    });
+      })
+      .from(orders)
+      .leftJoin(users, eq(orders.userId, users.id))
+      .where(eq(orders.id, id))
+      .get();
+
+    const order = result
+      ? { ...result.order, user: result.user?.id ? result.user : null }
+      : null;
 
     // If status changed to "paid" and subscriptionId exists, activate subscription
-    if (status === 'paid' && existing.subscriptionId) {
+    if (status === "paid" && existing.subscriptionId) {
       try {
-        await db.subscription.update({
-          where: { id: existing.subscriptionId },
-          data: { status: 'active' },
-        });
+        await db
+          .update(subscriptions)
+          .set({ status: "active", updatedAt: new Date().toISOString() })
+          .where(eq(subscriptions.id, existing.subscriptionId));
       } catch {
         // Subscription might not exist, non-blocking
       }
@@ -103,9 +135,9 @@ export async function PUT(
 
     return NextResponse.json({ success: true, data: order });
   } catch (error) {
-    console.error('PUT /api/orders/[id] error:', error);
+    console.error("PUT /api/orders/[id] error:", error);
     return NextResponse.json(
-      { success: false, error: 'Failed to update order' },
+      { success: false, error: "Failed to update order" },
       { status: 500 }
     );
   }
