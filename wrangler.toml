@@ -22,3 +22,6 @@ bucket_name = "carely-uploads"
 
 [vars]
 NEXT_PUBLIC_FIREBASE_PROJECT_ID = "carely-9e601"
+# SUPERADMIN_PIN is set as a secret in CF Dashboard (not here for security)
+# Default fallback in code: 53577426
+# To set: wrangler secret put SUPERADMIN_PIN

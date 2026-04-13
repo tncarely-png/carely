@@ -33,6 +33,7 @@ import {
 // SuperAdmin
 import {
   SuperAdminLoginPage,
+  SuperAdminPinGate,
   SuperAdminLayout,
   SuperAdminDashboard,
   SuperAdminUsers,
@@ -333,6 +334,24 @@ export default function Home() {
   useEffect(() => {
     fetch('/api/seed').catch(() => {});
   }, []);
+
+  // Detect /superadmin URL path → show PIN gate or skip if already verified
+  const isSuperAdminPath = typeof window !== 'undefined'
+    && window.location.pathname.replace(/\/+$/, '') === '/superadmin';
+  const pinAlreadyOk = typeof window !== 'undefined'
+    && sessionStorage.getItem('sa_pin_ok') === '1';
+
+  useEffect(() => {
+    if (!isSuperAdminPath) return;
+    if (pinAlreadyOk) {
+      useAppStore.getState().navigate('superadmin-login');
+    } else {
+      useAppStore.getState().navigate('superadmin-pin-gate');
+    }
+  }, []);
+
+  // PIN gate (full screen, no layout)
+  if (currentPage === 'superadmin-pin-gate') return <SuperAdminPinGate />;
 
   // SuperAdmin login (full screen, no layout)
   if (currentPage === 'superadmin-login') return <SuperAdminLoginPage />;

@@ -31,6 +31,7 @@ export type PageRoute =
   | "admin-licenses"
   | "admin-license-new"
   // SuperAdmin portal
+  | "superadmin-pin-gate"
   | "superadmin-login"
   | "superadmin"
   | "superadmin-users"

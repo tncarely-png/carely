@@ -1,4 +1,5 @@
 export { default as SuperAdminLoginPage } from './SuperAdminLoginPage';
+export { default as SuperAdminPinGate } from './SuperAdminPinGate';
 export { default as SuperAdminLayout } from './SuperAdminLayout';
 export { default as SuperAdminDashboard } from './SuperAdminDashboard';
 export { default as SuperAdminUsers } from './SuperAdminUsers';
