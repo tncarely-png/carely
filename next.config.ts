@@ -12,6 +12,16 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: true,
   },
   reactStrictMode: false,
+
+  // Cloudflare Workers doesn't support native Node.js binaries (sharp)
+  images: {
+    unoptimized: true,
+  },
+
+  // Don't bundle Node.js-only packages for edge runtime
+  experimental: {
+    serverComponentsExternalPackages: ["sharp"],
+  },
 };
 
 export default nextConfig;

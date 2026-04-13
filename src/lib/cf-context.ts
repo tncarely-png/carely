@@ -20,13 +20,19 @@ interface CfContext {
 }
 
 export function getCfContext(): CfContext {
-  const ctx = getCloudflareContext({ async: false });
-  const env = ctx.env as unknown as CfBindings;
+  try {
+    const ctx = getCloudflareContext({ async: false });
+    const env = ctx.env as unknown as CfBindings;
 
-  return {
-    db: getDb(env.DB),
-    kv: env.KV,
-    r2: env.R2,
-    env: ctx.env as CfContext["env"],
-  };
+    return {
+      db: getDb(env.DB),
+      kv: env.KV,
+      r2: env.R2,
+      env: ctx.env as CfContext["env"],
+    };
+  } catch {
+    throw new Error(
+      "CF context not available. Use 'bun run preview' for local development, not 'bun run dev'."
+    );
+  }
 }
