@@ -96,7 +96,7 @@ export default function AppCardsGrid() {
           /* Cards Grid */
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 lg:gap-8">
             {products.map((product) => {
-              const isComingSoon = !product.route || product.slug === 'coming-soon'
+              const isComingSoon = product.slug === 'coming-soon'
               return (
                 <div
                   key={product.id}
@@ -154,12 +154,8 @@ export default function AppCardsGrid() {
                       onClick={() => {
                         if (product.externalUrl) {
                           window.open(product.externalUrl, '_blank')
-                        } else if (product.route) {
-                          // If product has a known SPA route, use it
-                          setSelectedProductId(product.id)
-                          navigate(product.route as any)
                         } else {
-                          // Always navigate to product detail page
+                          // Always go to product detail page
                           setSelectedProductId(product.id)
                           navigate('product-detail')
                         }
