@@ -39,6 +39,7 @@ export const products = sqliteTable("products", {
   currency: text("currency").default("TND"),
   priceLabel: text("price_label"),
   features: text("features"), // JSON array of feature strings
+  landingSections: text("landing_sections"), // JSON — full landing page sections
   isActive: integer("is_active", { mode: "boolean" }).default(true),
   sortOrder: integer("sort_order").default(0),
   route: text("route"), // SPA route to navigate to

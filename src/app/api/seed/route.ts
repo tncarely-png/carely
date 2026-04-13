@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS products (
   id text PRIMARY KEY NOT NULL, name text NOT NULL, name_ar text NOT NULL, slug text NOT NULL,
   description text, description_ar text, emoji text DEFAULT '📦', image_url text,
   price real NOT NULL DEFAULT 0, currency text DEFAULT 'TND', price_label text,
-  features text, is_active integer DEFAULT 1, sort_order integer DEFAULT 0,
+  features text, landing_sections text, is_active integer DEFAULT 1, sort_order integer DEFAULT 0,
   route text, external_url text, created_at text NOT NULL, updated_at text NOT NULL
 );
 CREATE UNIQUE INDEX IF NOT EXISTS products_slug_unique ON products (slug);
@@ -167,6 +167,58 @@ export async function GET() {
           'تقارير أسبوعية',
           'دعم فني بالتونسي',
           'تفعيل فوري بعد الدفع',
+        ]),
+        landingSections: JSON.stringify([
+          {
+            type: 'hero',
+            emoji: '🛡️',
+            title: 'Qustodio',
+            subtitle: 'أفضل تطبيق حماية أطفال في العالم',
+            description: 'حجب المواقع، مراقبة الشاشة، تتبع الموقع، وتقارير يومية — كلو من هاتفك',
+            price: 89,
+            priceLabel: 'من 89 دت / سنة',
+            ctaText: 'اشتري الآن',
+          },
+          {
+            type: 'features',
+            title: 'كل اللي تحتاجيه تحمي عيلتك',
+            items: [
+              { icon: '🛡️', text: 'حجب المواقع غير اللائقة تلقائياً' },
+              { icon: '⏰', text: 'تحديد وقت الشاشة اليومي' },
+              { icon: '📱', text: 'مراقبة واتساب وانستغرام' },
+              { icon: '📍', text: 'تتبع الموقع الجغرافي' },
+              { icon: '📊', text: 'تقارير يومية مفصلة' },
+              { icon: '📞', text: 'حجب مكالمات وجهات اتصال' },
+              { icon: '🔍', text: 'مراقبة يوتيوب ومرشّحات البحث' },
+              { icon: '🎮', text: 'تحكم في التطبيقات والألعاب' },
+            ],
+          },
+          {
+            type: 'how-it-works',
+            title: 'كيف تشتغل؟',
+            steps: [
+              { icon: '1️⃣', title: 'اختار الباقة', text: 'Silver أو Gold حسب عدد الأجهزة' },
+              { icon: '2️⃣', title: 'ادفع بسهولة', text: 'Flouci، حوالة بنكية، أو CCP' },
+              { icon: '3️⃣', title: 'نفعّلك الحساب', text: 'خلال 30 دقيقة على الواتساب' },
+              { icon: '4️⃣', title: 'استمتع بالحماية', text: 'ركّب على أجهزة الأولاد وهدو بالك' },
+            ],
+          },
+          {
+            type: 'trust-badges',
+            items: [
+              { icon: '⚡', text: 'تفعيل فوري' },
+              { icon: '🛡️', text: 'ضمان 7 أيام' },
+              { icon: '💬', text: 'دعم بالتونسي' },
+              { icon: '🇹🇳', text: 'من تونس' },
+            ],
+          },
+          {
+            type: 'cta',
+            title: 'ابدأ حماية عيلتك اليوم 🛡️',
+            subtitle: 'أكثر من 500 عيلة تونسية تثق بـ Carely.tn',
+            ctaText: 'اشتري الآن',
+            ctaSubtext: 'تواصل معانا',
+          },
         ]),
         isActive: true,
         sortOrder: 1,

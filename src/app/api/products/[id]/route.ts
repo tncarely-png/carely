@@ -3,6 +3,14 @@ import { getCfContext } from '@/lib/cf-context';
 import { eq } from 'drizzle-orm';
 import { products } from '@/db/schema';
 
+function parseProduct(p: Record<string, unknown>) {
+  return {
+    ...p,
+    features: p.features ? JSON.parse(p.features as string) : [],
+    landingSections: p.landingSections ? JSON.parse(p.landingSections as string) : [],
+  };
+}
+
 // GET /api/products/[id] — get single product
 export async function GET(
   _request: NextRequest,
@@ -23,10 +31,7 @@ export async function GET(
       );
     }
 
-    return NextResponse.json({
-      success: true,
-      data: { ...product, features: product.features ? JSON.parse(product.features) : [] },
-    });
+    return NextResponse.json({ success: true, data: parseProduct(product) });
   } catch (error) {
     console.error('[products GET by id] Error:', error);
     return NextResponse.json(
@@ -47,7 +52,7 @@ export async function PUT(
     const body = await request.json();
     const {
       name, nameAr, slug, description, descriptionAr,
-      emoji, imageUrl, price, priceLabel, features,
+      emoji, imageUrl, price, priceLabel, features, landingSections,
       isActive, sortOrder, route, externalUrl,
     } = body;
 
@@ -89,6 +94,7 @@ export async function PUT(
     if (price !== undefined) updateFields.price = price;
     if (priceLabel !== undefined) updateFields.priceLabel = priceLabel || null;
     if (features !== undefined) updateFields.features = features ? JSON.stringify(features) : null;
+    if (landingSections !== undefined) updateFields.landingSections = landingSections ? JSON.stringify(landingSections) : null;
     if (isActive !== undefined) updateFields.isActive = isActive;
     if (sortOrder !== undefined) updateFields.sortOrder = sortOrder;
     if (route !== undefined) updateFields.route = route || null;
@@ -102,7 +108,7 @@ export async function PUT(
 
     return NextResponse.json({
       success: true,
-      data: updated ? { ...updated, features: updated.features ? JSON.parse(updated.features) : [] } : null,
+      data: updated ? parseProduct(updated) : null,
     });
   } catch (error) {
     console.error('[products PUT] Error:', error);

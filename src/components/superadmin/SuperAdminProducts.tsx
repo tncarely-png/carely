@@ -28,6 +28,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import SectionEditor from './SectionEditor';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -57,6 +58,7 @@ interface Product {
   sortOrder: number;
   route: string | null;
   externalUrl: string | null;
+  landingSections: Record<string, unknown>[];
   createdAt: string;
   updatedAt: string;
 }
@@ -76,6 +78,7 @@ interface ProductFormData {
   sortOrder: number;
   route: string;
   externalUrl: string;
+  landingSections: Record<string, unknown>[];
 }
 
 const EMPTY_FORM: ProductFormData = {
@@ -93,6 +96,7 @@ const EMPTY_FORM: ProductFormData = {
   sortOrder: 0,
   route: '',
   externalUrl: '',
+  landingSections: [],
 };
 
 function slugify(text: string): string {
@@ -155,6 +159,7 @@ export default function SuperAdminProducts() {
       sortOrder: product.sortOrder,
       route: product.route || '',
       externalUrl: product.externalUrl || '',
+      landingSections: (product as any).landingSections || [],
     });
     setDialogOpen(true);
   };
@@ -702,6 +707,20 @@ export default function SuperAdminProducts() {
                   </div>
                 ))}
               </div>
+            </div>
+
+            {/* Landing Page Sections */}
+            <div>
+              <Label className="block text-sm font-bold mb-2" style={{ color: '#000000' }}>
+                أقسام صفحة المنتج
+              </Label>
+              <p className="text-xs mb-3" style={{ color: '#888888' }}>
+                أضف أقسام لصفحة الهبوط: Hero، المميزات، كيف تشتغل، إلخ
+              </p>
+              <SectionEditor
+                sections={form.landingSections as any[]}
+                onChange={(sections) => setForm(prev => ({ ...prev, landingSections: sections }))}
+              />
             </div>
 
             {/* Submit */}

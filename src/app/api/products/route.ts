@@ -1,7 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCfContext } from '@/lib/cf-context';
-import { eq, desc } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { products } from '@/db/schema';
+
+function parseProduct(p: Record<string, unknown>) {
+  return {
+    ...p,
+    features: p.features ? JSON.parse(p.features as string) : [],
+    landingSections: p.landingSections ? JSON.parse(p.landingSections as string) : [],
+  };
+}
 
 // GET /api/products — list all products (active only by default)
 export async function GET(request: NextRequest) {
@@ -10,23 +18,13 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const includeInactive = searchParams.get('all') === 'true';
 
-    const conditions = [];
-    if (!includeInactive) {
-      conditions.push(eq(products.isActive, true));
-    }
-
     let query = db.select().from(products);
-    if (conditions.length > 0) {
-      query = query.where(conditions[0]) as typeof query;
+    if (!includeInactive) {
+      query = query.where(eq(products.isActive, true)) as typeof query;
     }
 
     const result = await query.orderBy(products.sortOrder).all();
-
-    // Parse features JSON
-    const formatted = result.map(p => ({
-      ...p,
-      features: p.features ? JSON.parse(p.features) : [],
-    }));
+    const formatted = result.map(parseProduct);
 
     return NextResponse.json({ success: true, data: formatted });
   } catch (error) {
@@ -45,7 +43,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const {
       name, nameAr, slug, description, descriptionAr,
-      emoji, imageUrl, price, priceLabel, features,
+      emoji, imageUrl, price, priceLabel, features, landingSections,
       isActive, sortOrder, route, externalUrl,
     } = body;
 
@@ -83,6 +81,7 @@ export async function POST(request: NextRequest) {
       price: price || 0,
       priceLabel: priceLabel || null,
       features: features ? JSON.stringify(features) : null,
+      landingSections: landingSections ? JSON.stringify(landingSections) : null,
       isActive: isActive !== false,
       sortOrder: sortOrder || 0,
       route: route || null,
@@ -97,7 +96,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      data: product ? { ...product, features: product.features ? JSON.parse(product.features) : [] } : null,
+      data: product ? parseProduct(product) : null,
     }, { status: 201 });
   } catch (error) {
     console.error('[products POST] Error:', error);
