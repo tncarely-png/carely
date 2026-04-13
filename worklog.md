@@ -183,3 +183,24 @@ Stage Summary:
 - Landing page editor: Hero section, Store info, Pricing - all saved to DB settings
 - Homepage dynamically renders products and hero content from database
 - Client side and admin side fully synced via shared API
+
+---
+Task ID: 1
+Agent: main
+Task: Fix broken product images and Explore button
+
+Work Log:
+- Diagnosed image issue: R2 upload returns URL `/api/upload/products/{key}` but GET handler was in `route.ts` (only matches `/api/upload`), not in `[...key]/route.ts` catch-all
+- Created `src/app/api/upload/[...key]/route.ts` with GET handler to serve images from R2 with cache-control headers
+- Removed duplicate GET handler from `src/app/api/upload/route.ts` (kept only POST)
+- Added `product-detail` PageRoute + `selectedProductId` to Zustand store
+- Created `ProductDetailPage` component: shows product image/emoji, name, description, features, price, CTA buttons
+- Updated `AppCardsGrid` to use `setSelectedProductId` + navigate to product detail page
+- Wired `ProductDetailPage` into SPA router in `[[...slug]]/page.tsx`
+- Ran lint: 0 errors, 1 warning (pre-existing font warning)
+- Pushed to GitHub: commit 484ee17
+
+Stage Summary:
+- **Image fix**: Created catch-all `[...key]/route.ts` so `/api/upload/products/xxx.jpg` serves from R2
+- **Explore button fix**: All products now navigate to a dynamic ProductDetailPage that shows full info and CTAs
+- Files changed: 7 files, 294 insertions, 34 deletions
