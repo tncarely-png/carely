@@ -2,13 +2,14 @@
 
 import { useEffect } from 'react';
 import { useAppStore } from '@/store';
-import { PLANS, PAYMENT_METHODS, WHATSAPP_NUMBER } from '@/lib/constants';
+import { PLANS, PAYMENT_METHODS } from '@/lib/constants';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { MessageCircle, Clock, LayoutDashboard } from 'lucide-react';
 
 export default function CheckoutSuccessPage() {
   const navigate = useAppStore((s) => s.navigate);
+  const openWhatsAppPopup = useAppStore((s) => s.openWhatsAppPopup);
   const selectedPlanKey = useAppStore((s) => s.selectedPlan);
   const selectedPaymentMethod = useAppStore((s) => s.selectedPaymentMethod);
   const selectedPlanName = useAppStore((s) => s.selectedPlanName);
@@ -78,15 +79,9 @@ export default function CheckoutSuccessPage() {
         </Card>
 
         {/* WhatsApp CTA */}
-        <Button asChild className="carely-btn-primary h-12 text-base w-full">
-          <a
-            href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(waMessage)}`}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
+        <Button className="carely-btn-primary h-12 text-base w-full" onClick={() => openWhatsAppPopup(waMessage)}>
             <MessageCircle className="h-5 w-5 ml-2" />
             📲 تابع طلبك على واتساب
-          </a>
         </Button>
 
         {/* Dashboard link */}

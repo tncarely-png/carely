@@ -46,12 +46,16 @@ interface AppState {
   selectedPlanName: string;
   selectedUserId: string | null;
   selectedSubscriptionId: string | null;
+  whatsappPopupOpen: boolean;
+  whatsappPopupMessage: string | undefined;
   navigate: (page: PageRoute) => void;
   setSelectedPlan: (plan: "silver" | "gold" | null) => void;
   setSelectedPaymentMethod: (method: "flouci" | "virement" | "ccp" | null) => void;
   setSelectedPlanName: (name: string) => void;
   setSelectedUserId: (id: string | null) => void;
   setSelectedSubscriptionId: (id: string | null) => void;
+  openWhatsAppPopup: (message?: string) => void;
+  closeWhatsAppPopup: () => void;
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -61,6 +65,8 @@ export const useAppStore = create<AppState>((set) => ({
   selectedPlanName: "",
   selectedUserId: null,
   selectedSubscriptionId: null,
+  whatsappPopupOpen: false,
+  whatsappPopupMessage: undefined,
   navigate: (page) => {
     set({ currentPage: page });
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -70,6 +76,8 @@ export const useAppStore = create<AppState>((set) => ({
   setSelectedPlanName: (name) => set({ selectedPlanName: name }),
   setSelectedUserId: (id) => set({ selectedUserId: id }),
   setSelectedSubscriptionId: (id) => set({ selectedSubscriptionId: id }),
+  openWhatsAppPopup: (message) => set({ whatsappPopupOpen: true, whatsappPopupMessage: message }),
+  closeWhatsAppPopup: () => set({ whatsappPopupOpen: false, whatsappPopupMessage: undefined }),
 }));
 
 export interface AuthUser {

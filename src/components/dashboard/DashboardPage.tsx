@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useAuthStore, useAppStore } from '@/store';
-import { PLANS, SUBSCRIPTION_STATUS, getWhatsAppLink } from '@/lib/constants';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -25,6 +24,7 @@ interface Subscription {
 export default function DashboardPage() {
   const user = useAuthStore((s) => s.user);
   const navigate = useAppStore((s) => s.navigate);
+  const openWhatsAppPopup = useAppStore((s) => s.openWhatsAppPopup);
   const setSelectedPlan = useAppStore((s) => s.setSelectedPlan);
 
   const [subscription, setSubscription] = useState<Subscription | null>(null);
@@ -190,11 +190,9 @@ export default function DashboardPage() {
                 فريقنا راح يفعّل اشتراكك في أقرب وقت
               </p>
             </div>
-            <Button asChild className="carely-btn-primary text-base">
-              <a href={getWhatsAppLink('مرحبا، أنا في انتظار تفعيل اشتراكي')} target="_blank" rel="noopener noreferrer">
+            <Button className="carely-btn-primary text-base" onClick={() => openWhatsAppPopup('مرحبا، أنا في انتظار تفعيل اشتراكي')}>
                 <MessageCircle className="h-5 w-5 ml-2" />
                 تواصل معانا على واتساب
-              </a>
             </Button>
           </CardContent>
         )}
@@ -234,14 +232,8 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
 
-          <Card className="carely-card cursor-pointer hover:shadow-lg transition-shadow">
+          <Card className="carely-card cursor-pointer hover:shadow-lg transition-shadow" onClick={() => openWhatsAppPopup()}>
             <CardContent className="p-5 flex items-center gap-4">
-              <a
-                href={getWhatsAppLink()}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-4 w-full"
-              >
                 <div className="w-12 h-12 rounded-xl bg-green-50 flex items-center justify-center shrink-0">
                   <MessageCircle className="h-6 w-6 text-green-600" />
                 </div>
@@ -249,7 +241,6 @@ export default function DashboardPage() {
                   <p className="font-bold text-carely-dark">💬 تواصل معانا</p>
                   <p className="text-xs text-carely-gray">عبر واتساب مباشرة</p>
                 </div>
-              </a>
             </CardContent>
           </Card>
         </div>

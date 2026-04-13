@@ -63,7 +63,7 @@ import TermsOfServicePage from '@/components/legal/TermsOfServicePage';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import WhatsAppFAB from '@/components/layout/WhatsAppFAB';
-import { useWhatsAppAgent } from '@/hooks/useWhatsAppAgent';
+import { WhatsAppAgentPopup } from '@/components/shared/WhatsAppAgentPopup';
 
 // ═══════════════════════════════════════════
 // PUBLIC PAGES
@@ -164,8 +164,7 @@ function FaqPage() {
 }
 
 function ContactPage() {
-  const { navigate } = useAppStore();
-  const { getLink } = useWhatsAppAgent();
+  const { navigate, openWhatsAppPopup } = useAppStore();
   return (
     <>
       <Navbar />
@@ -185,14 +184,12 @@ function ContactPage() {
                 </div>
                 <h3 className="text-xl font-bold text-carely-dark mb-2">واتساب</h3>
                 <p className="text-carely-gray mb-4">أسرع طريقة للتواصل — رد في أقل من ساعة</p>
-                <a
-                  href={getLink('مرحبا، أريد الاستفسار عن اشتراك Carely.tn')}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <button
+                  onClick={() => openWhatsAppPopup('مرحبا، أريد الاستفسار عن اشتراك Carely.tn')}
                   className="carely-btn-primary inline-block"
                 >
                   تواصل على واتساب
-                </a>
+                </button>
               </div>
               <div className="carely-card p-8 text-center">
                 <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -328,6 +325,9 @@ function SuperAdminRouter() {
 
 export default function Home() {
   const currentPage = useAppStore((s) => s.currentPage);
+  const whatsappPopupOpen = useAppStore((s) => s.whatsappPopupOpen);
+  const whatsappPopupMessage = useAppStore((s) => s.whatsappPopupMessage);
+  const closeWhatsAppPopup = useAppStore((s) => s.closeWhatsAppPopup);
 
   // Seed on first load
   useEffect(() => {
@@ -386,14 +386,26 @@ export default function Home() {
   }
 
   // Public pages
+  let pageContent;
   switch (currentPage) {
-    case 'pricing': return <PricingPage />;
-    case 'features': return <FeaturesPage />;
-    case 'faq': return <FaqPage />;
-    case 'contact': return <ContactPage />;
-    case 'privacy-policy': return <PrivacyPolicyPage />;
-    case 'terms-of-service': return <TermsOfServicePage />;
+    case 'pricing': pageContent = <PricingPage />; break;
+    case 'features': pageContent = <FeaturesPage />; break;
+    case 'faq': pageContent = <FaqPage />; break;
+    case 'contact': pageContent = <ContactPage />; break;
+    case 'privacy-policy': pageContent = <PrivacyPolicyPage />; break;
+    case 'terms-of-service': pageContent = <TermsOfServicePage />; break;
     case 'home':
-    default: return <HomePage />;
+    default: pageContent = <HomePage />; break;
   }
+
+  return (
+    <>
+      {pageContent}
+      <WhatsAppAgentPopup
+        open={whatsappPopupOpen}
+        onClose={closeWhatsAppPopup}
+        message={whatsappPopupMessage}
+      />
+    </>
+  );
 }

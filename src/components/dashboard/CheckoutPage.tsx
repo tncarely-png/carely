@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback } from 'react';
 import { useAppStore, useAuthStore } from '@/store';
-import { PLANS, PAYMENT_METHODS, WHATSAPP_NUMBER } from '@/lib/constants';
+import { PLANS, PAYMENT_METHODS } from '@/lib/constants';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -201,19 +201,15 @@ export default function CheckoutPage() {
     </div>
   );
 
+  const openWhatsAppPopup = useAppStore((s) => s.openWhatsAppPopup);
+
   // ─── WhatsApp Help ─────────────────────────────────────────
   const WhatsAppHelp = () => (
     <div className="mt-6 text-center">
       <p className="text-sm text-carely-gray mb-2">محتاج مساعدة؟ 💬</p>
-      <Button asChild variant="outline" className="carely-btn-outline h-10 text-sm">
-        <a
-          href={`https://wa.me/${WHATSAPP_NUMBER}?text=مرحبا، عندي سؤال على الطلب`}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <MessageCircle className="h-4 w-4 ml-1" />
-          تواصل على واتساب
-        </a>
+      <Button variant="outline" className="carely-btn-outline h-10 text-sm" onClick={() => openWhatsAppPopup('مرحبا، عندي سؤال على الطلب')}>
+        <MessageCircle className="h-4 w-4 ml-1" />
+        تواصل على واتساب
       </Button>
     </div>
   );
@@ -375,15 +371,9 @@ export default function CheckoutPage() {
           <p className="text-sm text-carely-dark font-semibold">
             💬 تقدر ترسل المبلغ مباشرة على واتساب
           </p>
-          <Button asChild variant="outline" className="carely-btn-outline h-9 text-xs mt-2">
-            <a
-              href={`https://wa.me/${WHATSAPP_NUMBER}?text=مرحبا، نحب ندفع بالمبلغ ل${PAYMENT_LABELS[selectedPayment]}`}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
+          <Button variant="outline" className="carely-btn-outline h-9 text-xs mt-2" onClick={() => openWhatsAppPopup(`مرحبا، نحب ندفع بالمبلغ ل${PAYMENT_LABELS[selectedPayment]}`)}>
               <MessageCircle className="h-3.5 w-3.5 ml-1" />
               أرسل على واتساب
-            </a>
           </Button>
         </div>
       )}
@@ -539,16 +529,12 @@ export default function CheckoutPage() {
       {/* WhatsApp receipt note */}
       <div className="bg-carely-mint border border-carely-light rounded-xl p-4 text-center">
         <p className="text-sm text-carely-dark font-semibold">
-          💬 تقدر ترسل الوصل مباشرة على واتساب:{' '}
-          <a
-            href={`https://wa.me/${WHATSAPP_NUMBER}?text=مرحبا، بعتلكم وصل الدفع`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-carely-green underline font-bold"
-          >
-            wa.me/21626107128
-          </a>
+          💬 تقدر ترسل الوصل مباشرة على واتساب
         </p>
+        <Button variant="outline" className="carely-btn-outline h-9 text-xs mt-2" onClick={() => openWhatsAppPopup('مرحبا، بعتلكم وصل الدفع')}>
+          <MessageCircle className="h-3.5 w-3.5 ml-1" />
+          أرسل الوصل على واتساب
+        </Button>
       </div>
 
       {/* Navigation */}
@@ -635,15 +621,9 @@ export default function CheckoutPage() {
           </Card>
 
           {/* WhatsApp CTA */}
-          <Button asChild className="carely-btn-primary h-12 text-base w-full">
-            <a
-              href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(waMessage)}`}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
+          <Button className="carely-btn-primary h-12 text-base w-full" onClick={() => openWhatsAppPopup(waMessage)}>
               <MessageCircle className="h-5 w-5 ml-2" />
               📲 تابع طلبك على واتساب
-            </a>
           </Button>
 
           <p className="text-xs text-carely-gray">

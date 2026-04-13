@@ -1,14 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useAuthStore } from '@/store';
+import { useAuthStore, useAppStore } from '@/store';
 import { PLANS, PAYMENT_METHODS, ORDER_STATUS } from '@/lib/constants';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ShoppingBag, MessageCircle } from 'lucide-react';
-import { getWhatsAppLink } from '@/lib/constants';
 
 interface Order {
   id: string;
@@ -22,6 +21,7 @@ interface Order {
 
 export default function OrdersPage() {
   const user = useAuthStore((s) => s.user);
+  const openWhatsAppPopup = useAppStore((s) => s.openWhatsAppPopup);
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -76,11 +76,9 @@ export default function OrdersPage() {
             <div className="text-5xl mb-4">📋</div>
             <h3 className="text-xl font-bold text-carely-dark mb-2">ما عندكش طلبات بعد</h3>
             <p className="text-carely-gray mb-6">اشتري باقتك الأولى وابدأ بحماية عائلتك!</p>
-            <Button asChild className="carely-btn-primary">
-              <a href={getWhatsAppLink('مرحبا، أريد شراء اشتراك Carely')} target="_blank" rel="noopener noreferrer">
+            <Button className="carely-btn-primary" onClick={() => openWhatsAppPopup('مرحبا، أريد شراء اشتراك Carely')}>
                 <ShoppingBag className="h-5 w-5 ml-2" />
                 تواصل معانا لطلب باقة
-              </a>
             </Button>
           </CardContent>
         </Card>
