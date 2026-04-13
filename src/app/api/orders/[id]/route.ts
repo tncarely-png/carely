@@ -124,9 +124,16 @@ export async function PUT(
     // If status changed to "paid" and subscriptionId exists, activate subscription
     if (status === "paid" && existing.subscriptionId) {
       try {
+        const now = new Date();
+        const expiresAt = new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000);
         await db
           .update(subscriptions)
-          .set({ status: "active", updatedAt: new Date().toISOString() })
+          .set({
+            status: "active",
+            startsAt: now.toISOString(),
+            expiresAt: expiresAt.toISOString(),
+            updatedAt: new Date().toISOString(),
+          })
           .where(eq(subscriptions.id, existing.subscriptionId));
       } catch {
         // Subscription might not exist, non-blocking

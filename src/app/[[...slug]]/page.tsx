@@ -355,26 +355,10 @@ export default function Home() {
     }
   }, []);
 
-  // PIN gate (full screen, no layout)
-  if (currentPage === 'superadmin-pin-gate') return <SuperAdminPinGate />;
-
-  // SuperAdmin login (full screen, no layout)
-  if (currentPage === 'superadmin-login') return <SuperAdminLoginPage />;
-
-  // Auth pages (full screen, no layout)
-  if (currentPage === 'login') return <LoginPage />;
-
-  // Checkout pages (standalone)
-  if (currentPage === 'checkout') return <CheckoutPage />;
-  if (currentPage === 'checkout-success') return <CheckoutSuccessPage />;
-
   // Dashboard pages
   const dashboardPages: PageRoute[] = [
     'dashboard', 'dashboard-subscription', 'dashboard-orders', 'dashboard-profile',
   ];
-  if (dashboardPages.includes(currentPage)) {
-    return <DashboardRouter />;
-  }
 
   // Admin pages
   const adminPages: PageRoute[] = [
@@ -382,9 +366,6 @@ export default function Home() {
     'admin-subscriptions', 'admin-subscription-detail',
     'admin-orders', 'admin-licenses', 'admin-license-new',
   ];
-  if (adminPages.includes(currentPage)) {
-    return <AdminRouter />;
-  }
 
   // SuperAdmin pages
   const superAdminPages: PageRoute[] = [
@@ -392,13 +373,28 @@ export default function Home() {
     'superadmin-users', 'superadmin-orders',
     'superadmin-licenses', 'superadmin-whatsapp', 'superadmin-settings',
   ];
-  if (superAdminPages.includes(currentPage)) {
-    return <SuperAdminRouter />;
-  }
 
-  // Qustodio app landing page (with Navbar/Footer layout)
-  if (currentPage === 'qustodio-app') {
-    return (
+  // Determine page content (no early returns so WhatsAppAgentPopup always renders)
+  let pageContent: React.ReactNode;
+
+  if (currentPage === 'superadmin-pin-gate') {
+    pageContent = <SuperAdminPinGate />;
+  } else if (currentPage === 'superadmin-login') {
+    pageContent = <SuperAdminLoginPage />;
+  } else if (currentPage === 'login') {
+    pageContent = <LoginPage />;
+  } else if (currentPage === 'checkout') {
+    pageContent = <CheckoutPage />;
+  } else if (currentPage === 'checkout-success') {
+    pageContent = <CheckoutSuccessPage />;
+  } else if (dashboardPages.includes(currentPage)) {
+    pageContent = <DashboardRouter />;
+  } else if (adminPages.includes(currentPage)) {
+    pageContent = <AdminRouter />;
+  } else if (superAdminPages.includes(currentPage)) {
+    pageContent = <SuperAdminRouter />;
+  } else if (currentPage === 'qustodio-app') {
+    pageContent = (
       <>
         <Navbar />
         <main className="flex-1">
@@ -408,24 +404,19 @@ export default function Home() {
         <WhatsAppFAB />
       </>
     );
-  }
-
-  // Dynamic product detail page
-  if (currentPage === 'product-detail') {
-    return <ProductDetailPage />;
-  }
-
-  // Public pages
-  let pageContent;
-  switch (currentPage) {
-    case 'pricing': pageContent = <PricingPage />; break;
-    case 'features': pageContent = <FeaturesPage />; break;
-    case 'faq': pageContent = <FaqPage />; break;
-    case 'contact': pageContent = <ContactPage />; break;
-    case 'privacy-policy': pageContent = <PrivacyPolicyPage />; break;
-    case 'terms-of-service': pageContent = <TermsOfServicePage />; break;
-    case 'home':
-    default: pageContent = <HomePage />; break;
+  } else if (currentPage === 'product-detail') {
+    pageContent = <ProductDetailPage />;
+  } else {
+    switch (currentPage) {
+      case 'pricing': pageContent = <PricingPage />; break;
+      case 'features': pageContent = <FeaturesPage />; break;
+      case 'faq': pageContent = <FaqPage />; break;
+      case 'contact': pageContent = <ContactPage />; break;
+      case 'privacy-policy': pageContent = <PrivacyPolicyPage />; break;
+      case 'terms-of-service': pageContent = <TermsOfServicePage />; break;
+      case 'home':
+      default: pageContent = <HomePage />; break;
+    }
   }
 
   return (

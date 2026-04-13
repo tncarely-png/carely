@@ -5,6 +5,8 @@ import { useAppStore } from '@/store';
 import { getWhatsAppLink } from '@/lib/constants';
 import { Button } from '@/components/ui/button';
 import WhatsAppFAB from '@/components/layout/WhatsAppFAB';
+import Navbar from '@/components/layout/Navbar';
+import Footer from '@/components/layout/Footer';
 import { ArrowLeft, Check, ShieldCheck, MessageCircle, Star, Zap, Clock, Heart } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -640,6 +642,7 @@ export default function ProductDetailPage() {
   // ── Render sections ──
   return (
     <div className="min-h-screen bg-carely-mint">
+      <Navbar />
       {sections.map((section, idx) => {
         switch (section.type) {
           case 'hero':
@@ -684,17 +687,7 @@ export default function ProductDetailPage() {
         }
       })}
 
-      {/* Footer */}
-      <footer className="bg-carely-dark py-8 text-center">
-        <div className="mx-auto max-w-4xl px-4">
-          <p className="text-carely-light/60 text-sm">
-            © {new Date().getFullYear()} Carely.tn — كل الحقوق محفوظة
-          </p>
-          <p className="text-carely-light/40 text-xs mt-1">
-            متجر التطبيقات المدفوعة للعيلة التونسية
-          </p>
-        </div>
-      </footer>
+      <Footer />
 
       {/* WhatsApp floating button */}
       <WhatsAppFAB />

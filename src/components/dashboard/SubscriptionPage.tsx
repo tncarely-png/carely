@@ -232,7 +232,7 @@ export default function SubscriptionPage() {
                   </div>
                   <div className="bg-carely-mint rounded-xl p-3 text-center">
                     <p className="text-xs text-carely-gray">الأجهزة</p>
-                    <p className="text-lg font-bold text-carely-dark">{planData.devicesCount}</p>
+                    <p className="text-lg font-bold text-carely-dark">{planData.devices}</p>
                   </div>
                   <div className="bg-carely-mint rounded-xl p-3 text-center">
                     <p className="text-xs text-carely-gray">المدة</p>

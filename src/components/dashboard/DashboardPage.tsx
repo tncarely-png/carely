@@ -1,13 +1,14 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuthStore, useAppStore } from '@/store';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
-import { MessageCircle, Mail, ClipboardList, ShoppingBag } from 'lucide-react';
+import { MessageCircle, Mail, ClipboardList, ShoppingBag, RefreshCw, AlertTriangle } from 'lucide-react';
+import { PLANS, SUBSCRIPTION_STATUS } from '@/lib/constants';
 
 interface Subscription {
   id: string;
@@ -29,24 +30,27 @@ export default function DashboardPage() {
 
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  const fetchSub = useCallback(async () => {
+    if (!user?.id) return;
+    setError(false);
+    try {
+      const res = await fetch(`/api/subscriptions?userId=${user.id}`);
+      const data = await res.json();
+      if (data.subscriptions && data.subscriptions.length > 0) {
+        setSubscription(data.subscriptions[0]);
+      }
+    } catch {
+      setError(true);
+    } finally {
+      setLoading(false);
+    }
+  }, [user?.id]);
 
   useEffect(() => {
-    async function fetchSub() {
-      if (!user?.id) return;
-      try {
-        const res = await fetch(`/api/subscriptions?userId=${user.id}`);
-        const data = await res.json();
-        if (data.subscriptions && data.subscriptions.length > 0) {
-          setSubscription(data.subscriptions[0]);
-        }
-      } catch {
-        // silent fail
-      } finally {
-        setLoading(false);
-      }
-    }
     fetchSub();
-  }, [user?.id]);
+  }, [fetchSub]);
 
   const getDaysRemaining = () => {
     if (!subscription?.expiresAt) return 0;
@@ -82,6 +86,32 @@ export default function DashboardPage() {
             <Skeleton key={i} className="h-28 rounded-2xl" />
           ))}
         </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-6" dir="rtl">
+        <h1 className="text-2xl md:text-3xl font-extrabold text-carely-dark">
+          أهلا، {user?.name}! 👋
+        </h1>
+        <Card className="carely-card">
+          <CardContent className="p-6 md:p-8 text-center">
+            <div className="flex items-center justify-center mb-4">
+              <AlertTriangle className="h-12 w-12 text-yellow-500" />
+            </div>
+            <h3 className="text-xl font-bold text-carely-dark mb-2">حصل مشكال في تحميل البيانات</h3>
+            <p className="text-carely-gray mb-6">تأكد من اتصالك بالإنترنت وجرب مرة أخرى</p>
+            <Button
+              className="carely-btn-primary text-base"
+              onClick={fetchSub}
+            >
+              <RefreshCw className="h-5 w-5 ml-2" />
+              أعد المحاولة
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }

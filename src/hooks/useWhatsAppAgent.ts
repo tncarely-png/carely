@@ -27,11 +27,11 @@ export function useWhatsAppAgent() {
     fetch('/api/whatsapp-agent')
       .then((res) => res.json())
       .then((data) => {
-        if (data.phone) {
+        if (data.activeAgent?.phone) {
           setAgent({
-            name: data.name,
-            phone: data.phone,
-            key: data.key || 'maram',
+            name: data.activeAgent.name,
+            phone: data.activeAgent.phone,
+            key: data.activeAgent.key || 'maram',
           })
         }
       })

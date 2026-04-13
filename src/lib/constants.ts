@@ -50,9 +50,9 @@ export const PLANS = {
 export type PlanType = keyof typeof PLANS;
 
 export const PAYMENT_METHODS = [
-  { id: "flouci", name: "📱 Flouci", description: "حوّل على الرقم: 26107128" },
-  { id: "virement", name: "🏦 Virement Bancaire", description: "RIB: 0000000000000000" },
-  { id: "ccp", name: "📮 CCP", description: "CCP: 0000000000000000" },
+  { id: "flouci", name: "📱 Flouci", nameAr: "فلوسي", icon: "📱", description: "حوّل على الرقم: 26107128" },
+  { id: "virement", name: "🏦 Virement Bancaire", nameAr: "حوالة بنكية", icon: "🏦", description: "RIB: 0000000000000000" },
+  { id: "ccp", name: "📮 CCP", nameAr: "بريد", icon: "📮", description: "CCP: 0000000000000000" },
 ] as const;
 
 export const SUBSCRIPTION_STATUS = {

@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
       license: row.license?.id ? row.license : null,
     }));
 
-    return NextResponse.json({ success: true, data });
+    return NextResponse.json({ success: true, subscriptions: data });
   } catch (error) {
     console.error("GET /api/subscriptions error:", error);
     return NextResponse.json(

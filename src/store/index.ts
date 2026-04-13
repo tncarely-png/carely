@@ -161,15 +161,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   updateProfile: async (data) => {
+    const currentUser = get().user;
+    if (!currentUser) return false;
     try {
       const res = await fetch("/api/auth/profile", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: JSON.stringify({ userId: currentUser.id, ...data }),
       });
       if (!res.ok) return false;
       const userData = await res.json();
-      set({ user: { ...get().user!, ...userData } });
+      set({ user: { ...get().user!, ...(userData as any).user } });
       return true;
     } catch {
       return false;
