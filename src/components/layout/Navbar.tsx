@@ -173,8 +173,8 @@ export default function Navbar() {
       </header>
 
       {/* Mobile Bottom Nav */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t-2 border-carely-green safe-area-inset-bottom">
-        <div className="flex items-center justify-around h-16 px-2">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t-2 border-carely-green safe-area-bottom">
+        <div className="flex items-center justify-around h-14 px-2">
           {NAV_LINKS.map((link) => {
             const Icon = link.icon
             return (

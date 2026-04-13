@@ -56,7 +56,7 @@ export const PAYMENT_METHODS = [
 ] as const;
 
 export const SUBSCRIPTION_STATUS = {
-  active: { label: "نشط", color: "bg-green-100 text-green-800" },
+  active: { label: "نشط", color: "bg-gray-900 text-white" },
   expired: { label: "منتهي", color: "bg-red-100 text-red-800" },
   pending: { label: "معلق", color: "bg-yellow-100 text-yellow-800" },
   cancelled: { label: "ملغى", color: "bg-gray-100 text-gray-800" },
@@ -64,7 +64,7 @@ export const SUBSCRIPTION_STATUS = {
 
 export const ORDER_STATUS = {
   pending: { label: "في الانتظار", color: "bg-yellow-100 text-yellow-800" },
-  paid: { label: "مدفوع ✓", color: "bg-green-100 text-green-800" },
+  paid: { label: "مدفوع ✓", color: "bg-gray-900 text-white" },
   failed: { label: "فشل", color: "bg-red-100 text-red-800" },
   refunded: { label: "مسترجع", color: "bg-gray-100 text-gray-800" },
 } as const;
@@ -75,6 +75,12 @@ export const CONTACT_EMAIL = "contact@carely.tn";
 export const STORE_DESCRIPTION = "نبيعو حسابات مدفوعة آمنة لتطبيقات العيلة — من ولاية الكاف، مع إرشاد ودعم على الواتساب";
 export const STORE_TAGLINE = "متجر التطبيقات المدفوعة للعيلة التونسية — من ولاية الكاف، حسابات آمنة مع دعم على الواتساب";
 
+/**
+ * Generate a WhatsApp link with the static WHATSAPP_NUMBER.
+ * NOTE: For dynamic agent routing (client-side), prefer using the
+ * `useWhatsAppAgent` hook from `@/hooks/useWhatsAppAgent` instead.
+ * This function is kept as a fallback for server-side use only.
+ */
 export function getWhatsAppLink(message?: string) {
   const msg = message || "مرحبا، أريد الاستفسار عن اشتراك Carely.tn";
   return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`;

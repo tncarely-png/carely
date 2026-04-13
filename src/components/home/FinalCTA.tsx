@@ -7,7 +7,7 @@ export default function FinalCTA() {
   const { navigate } = useAppStore()
 
   return (
-    <section className="relative overflow-hidden py-16 md:py-20">
+    <section className="relative overflow-hidden blur-contained py-16 md:py-20">
       {/* Background gradient */}
       <div className="absolute inset-0 bg-gradient-to-br from-carely-green to-carely-dark" />
 

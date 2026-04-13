@@ -90,12 +90,14 @@
     @apply border-border outline-ring/50;
     box-sizing: border-box;
   }
-  body {
-    @apply bg-background text-foreground overflow-x-hidden;
-    font-family: 'Baloo Bhaijaan 2', sans-serif;
-  }
   html {
     overflow-x: hidden;
+    max-width: 100vw;
+  }
+  body {
+    @apply bg-background text-foreground overflow-x-hidden;
+    max-width: 100vw;
+    font-family: 'Baloo Bhaijaan 2', sans-serif;
   }
   h1, h2, h3, h4, h5, h6 {
     color: #094825;
@@ -164,6 +166,11 @@
     background: #1a8449;
   }
 
+  /* iOS Safe Area support */
+ .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
   /* ═══════════════════════════════════════════
      SuperAdmin (Black & White theme)
      ═══════════════════════════════════════════ */
@@ -193,4 +200,9 @@
     color: #000000;
     border: 1px solid #000000;
   }
-}
+
+  /* Contain blur effects to prevent horizontal scroll */
+  .blur-contained {
+    isolation: isolate;
+    overflow: hidden;
+  }

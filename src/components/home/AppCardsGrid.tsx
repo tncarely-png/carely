@@ -8,6 +8,7 @@ interface AppCard {
   emoji: string
   name: string
   description: string
+  subtitle?: string
   price: string
   action: 'discover' | 'coming-soon'
   route?: string
@@ -26,6 +27,7 @@ const APPS: AppCard[] = [
     emoji: '🔜',
     name: 'قريبًا...',
     description: 'تطبيق جديد',
+    subtitle: 'ابقو معانا 👀',
     price: '',
     action: 'coming-soon',
   },
@@ -68,6 +70,11 @@ export default function AppCardsGrid() {
                   <p className="text-sm text-carely-gray">
                     {app.description}
                   </p>
+                  {app.subtitle && (
+                    <p className="text-sm text-carely-gray">
+                      {app.subtitle}
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -97,7 +104,7 @@ export default function AppCardsGrid() {
                   className="w-full bg-gray-200 text-gray-500 font-bold py-3 rounded-full cursor-not-allowed"
                   disabled
                 >
-                  قريبًا...
+                  قريبًا
                 </Button>
               )}
             </div>

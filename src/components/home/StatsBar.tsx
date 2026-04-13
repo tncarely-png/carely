@@ -39,16 +39,16 @@ export default function StatsBar() {
             return (
               <div
                 key={stat.label}
-                className="carely-card p-5 flex items-center gap-4 text-center sm:text-right"
+                className="carely-card p-3 sm:p-5 flex items-center gap-3 sm:gap-4 text-center sm:text-right"
               >
-                <div className="shrink-0 w-12 h-12 rounded-xl bg-carely-mint flex items-center justify-center text-xl">
+                <div className="shrink-0 w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-carely-mint flex items-center justify-center text-lg sm:text-xl">
                   {stat.emoji}
                 </div>
                 <div className="min-w-0">
-                  <p className="text-base sm:text-lg font-extrabold text-carely-dark leading-tight">
+                  <p className="text-xs sm:text-base lg:text-lg font-extrabold text-carely-dark leading-tight">
                     {stat.value}
                   </p>
-                  <p className="text-xs sm:text-sm text-carely-gray font-medium">
+                  <p className="text-[10px] sm:text-xs text-carely-gray font-medium">
                     {stat.label}
                   </p>
                 </div>

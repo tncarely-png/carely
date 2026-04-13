@@ -63,6 +63,7 @@ import TermsOfServicePage from '@/components/legal/TermsOfServicePage';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import WhatsAppFAB from '@/components/layout/WhatsAppFAB';
+import { useWhatsAppAgent } from '@/hooks/useWhatsAppAgent';
 
 // ═══════════════════════════════════════════
 // PUBLIC PAGES
@@ -164,6 +165,7 @@ function FaqPage() {
 
 function ContactPage() {
   const { navigate } = useAppStore();
+  const { getLink } = useWhatsAppAgent();
   return (
     <>
       <Navbar />
@@ -184,7 +186,7 @@ function ContactPage() {
                 <h3 className="text-xl font-bold text-carely-dark mb-2">واتساب</h3>
                 <p className="text-carely-gray mb-4">أسرع طريقة للتواصل — رد في أقل من ساعة</p>
                 <a
-                  href="https://wa.me/21600000000?text=مرحبا، أريد الاستفسار عن اشتراك Carely.tn"
+                  href={getLink('مرحبا، أريد الاستفسار عن اشتراك Carely.tn')}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="carely-btn-primary inline-block"
@@ -252,7 +254,7 @@ function DashboardRouter() {
   };
 
   return (
-    <div className="min-h-screen bg-carely-mint">
+    <div className="min-h-screen bg-carely-mint overflow-x-hidden">
       <div className="max-w-7xl mx-auto p-4 md:p-6">
         <div className="md:hidden h-14" />
         <div className="flex gap-6">

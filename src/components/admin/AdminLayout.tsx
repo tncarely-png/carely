@@ -115,7 +115,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   )?.label || 'لوحة التحكم';
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50" dir="rtl">
+    <div className="min-h-screen flex flex-col bg-gray-50 overflow-x-hidden" dir="rtl">
       {/* Top Bar - Mobile */}
       <div className="lg:hidden sticky top-0 z-40 bg-white border-b border-carely-green/10 shadow-sm">
         <div className="flex items-center justify-between px-4 py-3">

@@ -22,7 +22,7 @@ export default function HeroSection() {
   }
 
   return (
-    <section className="relative overflow-hidden py-20 md:py-28">
+    <section className="relative overflow-hidden blur-contained py-20 md:py-28">
       {/* Background gradient */}
       <div className="absolute inset-0 bg-gradient-to-br from-carely-mint via-carely-light/50 to-carely-mint" />
 

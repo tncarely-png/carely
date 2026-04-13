@@ -7,7 +7,7 @@ import {
   AlertTriangle,
   Trash2,
   Eye,
-  UserPlus,
+  Filter,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -32,6 +32,15 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import { PLANS, SUBSCRIPTION_STATUS } from '@/lib/constants';
+
+interface UserSubscription {
+  id: string;
+  plan: string;
+  status: string;
+  startsAt: string | null;
+  expiresAt: string | null;
+}
 
 interface User {
   id: string;
@@ -41,12 +50,21 @@ interface User {
   wilaya: string | null;
   role: string;
   createdAt: string;
-  _count: { subscriptions: number; orders: number };
+  subscriptions: UserSubscription[];
 }
+
+const STATUS_FILTERS = [
+  { value: 'all', label: 'الكل' },
+  { value: 'active', label: 'نشط' },
+  { value: 'expired', label: 'منتهي' },
+  { value: 'pending', label: 'معلق' },
+  { value: 'none', label: 'بدون اشتراك' },
+];
 
 export default function SuperAdminUsers() {
   const [users, setUsers] = useState<User[]>([]);
   const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -54,10 +72,10 @@ export default function SuperAdminUsers() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch('/api/users');
+      const res = await fetch('/api/admin/users');
       if (!res.ok) throw new Error('فشل تحميل المستخدمين');
       const data = await res.json();
-      setUsers(Array.isArray(data) ? data : data.users || []);
+      setUsers(Array.isArray(data) ? data : data.data || data.users || []);
     } catch {
       setError('حدث خطأ أثناء تحميل المستخدمين');
     } finally {
@@ -80,12 +98,30 @@ export default function SuperAdminUsers() {
     }
   };
 
-  const filtered = users.filter(
-    (u) =>
+  const getLatestSubscription = (user: User): UserSubscription | null => {
+    if (!user.subscriptions || user.subscriptions.length === 0) return null;
+    return user.subscriptions[0]; // Already ordered by desc createdAt in the API
+  };
+
+  const filtered = users.filter((u) => {
+    // Search filter
+    const matchesSearch =
       u.name.toLowerCase().includes(search.toLowerCase()) ||
       u.phone.includes(search) ||
-      (u.email && u.email.toLowerCase().includes(search.toLowerCase()))
-  );
+      (u.email && u.email.toLowerCase().includes(search.toLowerCase()));
+
+    if (!matchesSearch) return false;
+
+    // Status filter
+    if (statusFilter === 'all') return true;
+
+    const latestSub = getLatestSubscription(u);
+    if (statusFilter === 'none') return !latestSub;
+
+    if (!latestSub) return false;
+
+    return latestSub.status === statusFilter;
+  });
 
   if (loading) {
     return (
@@ -121,6 +157,24 @@ export default function SuperAdminUsers() {
           </p>
         </div>
         <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <Filter className="w-4 h-4" style={{ color: '#888888' }} />
+            <div className="flex flex-wrap gap-1">
+              {STATUS_FILTERS.map((f) => (
+                <button
+                  key={f.value}
+                  onClick={() => setStatusFilter(f.value)}
+                  className="px-2.5 py-1 rounded-lg text-xs font-bold transition-all"
+                  style={{
+                    background: statusFilter === f.value ? '#000000' : '#f5f5f5',
+                    color: statusFilter === f.value ? '#ffffff' : '#666666',
+                  }}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+          </div>
           <div className="relative">
             <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: '#888888' }} />
             <Input
@@ -145,81 +199,96 @@ export default function SuperAdminUsers() {
               <TableRow style={{ background: '#f5f5f5' }}>
                 <TableHead className="font-bold" style={{ color: '#000000' }}>الاسم</TableHead>
                 <TableHead className="font-bold" style={{ color: '#000000' }}>الهاتف</TableHead>
-                <TableHead className="font-bold" style={{ color: '#000000' }}>البريد</TableHead>
                 <TableHead className="font-bold" style={{ color: '#000000' }}>الولاية</TableHead>
-                <TableHead className="font-bold" style={{ color: '#000000' }}>الاشتراكات</TableHead>
-                <TableHead className="font-bold" style={{ color: '#000000' }}>الطلبات</TableHead>
-                <TableHead className="font-bold" style={{ color: '#000000' }}>الانضمام</TableHead>
+                <TableHead className="font-bold" style={{ color: '#000000' }}>الباقة</TableHead>
+                <TableHead className="font-bold" style={{ color: '#000000' }}>الحالة</TableHead>
+                <TableHead className="font-bold" style={{ color: '#000000' }}>تاريخ التسجيل</TableHead>
                 <TableHead className="font-bold" style={{ color: '#000000' }}>إجراءات</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filtered.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-8" style={{ color: '#888888' }}>
+                  <TableCell colSpan={7} className="text-center py-8" style={{ color: '#888888' }}>
                     لا يوجد مستخدمون
                   </TableCell>
                 </TableRow>
               ) : (
-                filtered.map((user) => (
-                  <TableRow key={user.id} className="transition-colors">
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <div
-                          className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold text-white"
-                          style={{ background: '#000000' }}
-                        >
-                          {user.name.charAt(0)}
-                        </div>
-                        <div>
+                filtered.map((user) => {
+                  const latestSub = getLatestSubscription(user);
+                  return (
+                    <TableRow key={user.id} className="transition-colors">
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <div
+                            className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold text-white shrink-0"
+                            style={{ background: '#000000' }}
+                          >
+                            {user.name.charAt(0)}
+                          </div>
                           <p className="font-bold" style={{ color: '#000000' }}>{user.name}</p>
-                          <Badge className="sa-badge-active text-xs">{user.role}</Badge>
                         </div>
-                      </div>
-                    </TableCell>
-                    <TableCell className="font-semibold" style={{ color: '#000000' }} dir="ltr">
-                      {user.phone}
-                    </TableCell>
-                    <TableCell style={{ color: '#888888' }} dir="ltr">{user.email || '—'}</TableCell>
-                    <TableCell style={{ color: '#888888' }}>{user.wilaya || '—'}</TableCell>
-                    <TableCell className="font-bold">{user._count.subscriptions}</TableCell>
-                    <TableCell className="font-bold">{user._count.orders}</TableCell>
-                    <TableCell className="text-sm" style={{ color: '#888888' }}>
-                      {new Date(user.createdAt).toLocaleDateString('ar-TN')}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        <Button size="sm" variant="outline" className="h-8 px-2" style={{ border: '1px solid #e0e0e0' }}>
-                          <Eye className="w-3.5 h-3.5" />
-                        </Button>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button size="sm" variant="outline" className="h-8 px-2" style={{ border: '1px solid #fecaca', color: '#dc2626' }}>
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent dir="rtl">
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>حذف المستخدم</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                هل أنت متأكد من حذف <strong>{user.name}</strong>؟ هذا الإجراء لا يمكن التراجع عنه.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>إلغاء</AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={() => handleDelete(user.id)}
-                                style={{ background: '#dc2626', color: '#ffffff' }}
-                              >
-                                حذف
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
+                      </TableCell>
+                      <TableCell className="font-semibold" style={{ color: '#000000' }} dir="ltr">
+                        {user.phone}
+                      </TableCell>
+                      <TableCell style={{ color: '#888888' }}>{user.wilaya || '—'}</TableCell>
+                      <TableCell>
+                        {latestSub ? (
+                          <span className="text-sm">
+                            {PLANS[latestSub.plan as keyof typeof PLANS]?.icon}{' '}
+                            {PLANS[latestSub.plan as keyof typeof PLANS]?.nameAr || latestSub.plan}
+                          </span>
+                        ) : (
+                          <span style={{ color: '#888888' }}>—</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {latestSub ? (
+                          <Badge className={(SUBSCRIPTION_STATUS[latestSub.status as keyof typeof SUBSCRIPTION_STATUS]?.color) || 'bg-gray-100 text-gray-800'}>
+                            {SUBSCRIPTION_STATUS[latestSub.status as keyof typeof SUBSCRIPTION_STATUS]?.label || latestSub.status}
+                          </Badge>
+                        ) : (
+                          <span style={{ color: '#888888' }}>—</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-sm" style={{ color: '#888888' }}>
+                        {new Date(user.createdAt).toLocaleDateString('ar-TN')}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <Button size="sm" variant="outline" className="h-8 px-2" style={{ border: '1px solid #e0e0e0' }}>
+                            <Eye className="w-3.5 h-3.5" />
+                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button size="sm" variant="outline" className="h-8 px-2" style={{ border: '1px solid #fecaca', color: '#dc2626' }}>
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent dir="rtl">
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>حذف المستخدم</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  هل أنت متأكد من حذف <strong>{user.name}</strong>؟ هذا الإجراء لا يمكن التراجع عنه.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => handleDelete(user.id)}
+                                  style={{ background: '#dc2626', color: '#ffffff' }}
+                                >
+                                  حذف
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
               )}
             </TableBody>
           </Table>

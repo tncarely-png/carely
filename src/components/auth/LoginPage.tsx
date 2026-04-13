@@ -281,7 +281,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-carely-mint flex items-center justify-center p-4" dir="rtl">
+    <div className="min-h-screen bg-carely-mint flex items-center justify-center px-4 py-8" dir="rtl">
       {/* reCAPTCHA container — REQUIRED, must exist in DOM, outside conditional rendering */}
       <div id="recaptcha-container" />
 
@@ -295,7 +295,7 @@ export default function LoginPage() {
           <p className="text-sm text-carely-gray mt-1">حماية العائلة الرقمية في تونس</p>
         </div>
 
-        <Card className="carely-card p-6">
+        <Card className="carely-card p-5 sm:p-6">
           <CardContent className="p-0">
             {/* ═══ STEP 1: Phone ═══ */}
             {step === 'phone' && (
@@ -319,16 +319,16 @@ export default function LoginPage() {
                       رقم الهاتف
                     </Label>
                     <div className="flex items-center gap-2">
-                      <div className="flex items-center gap-1 bg-carely-mint rounded-xl px-4 h-12 border border-carely-light shrink-0">
+                      <div className="flex items-center gap-1 bg-carely-mint rounded-xl px-3 sm:px-4 h-12 border border-carely-light shrink-0">
                         <span className="text-lg">🇹🇳</span>
-                        <span className="text-sm font-bold text-carely-dark">+216</span>
+                        <span className="text-xs sm:text-sm font-bold text-carely-dark">+216</span>
                       </div>
                       <Input
                         id="phone"
                         placeholder="2X XXX XXX"
                         value={phone}
                         onChange={(e) => handlePhoneChange(e.target.value)}
-                        className="flex-1 h-12 text-lg tracking-widest text-center font-bold"
+                        className="flex-1 min-w-0 h-12 text-base sm:text-lg tracking-widest text-center font-bold"
                         dir="ltr"
                         inputMode="numeric"
                         autoFocus
@@ -403,30 +403,30 @@ export default function LoginPage() {
                     <InputOTPGroup>
                       <InputOTPSlot
                         index={0}
-                        className="w-12 h-14 text-xl font-bold rounded-xl border-2 border-carely-light focus:border-carely-green"
+                        className="w-10 h-12 sm:w-12 sm:h-14 text-lg sm:text-xl font-bold rounded-xl border-2 border-carely-light focus:border-carely-green"
                       />
                       <InputOTPSlot
                         index={1}
-                        className="w-12 h-14 text-xl font-bold rounded-xl border-2 border-carely-light focus:border-carely-green"
+                        className="w-10 h-12 sm:w-12 sm:h-14 text-lg sm:text-xl font-bold rounded-xl border-2 border-carely-light focus:border-carely-green"
                       />
                       <InputOTPSlot
                         index={2}
-                        className="w-12 h-14 text-xl font-bold rounded-xl border-2 border-carely-light focus:border-carely-green"
+                        className="w-10 h-12 sm:w-12 sm:h-14 text-lg sm:text-xl font-bold rounded-xl border-2 border-carely-light focus:border-carely-green"
                       />
                     </InputOTPGroup>
                     <InputOTPSeparator className="w-4" />
                     <InputOTPGroup>
                       <InputOTPSlot
                         index={3}
-                        className="w-12 h-14 text-xl font-bold rounded-xl border-2 border-carely-light focus:border-carely-green"
+                        className="w-10 h-12 sm:w-12 sm:h-14 text-lg sm:text-xl font-bold rounded-xl border-2 border-carely-light focus:border-carely-green"
                       />
                       <InputOTPSlot
                         index={4}
-                        className="w-12 h-14 text-xl font-bold rounded-xl border-2 border-carely-light focus:border-carely-green"
+                        className="w-10 h-12 sm:w-12 sm:h-14 text-lg sm:text-xl font-bold rounded-xl border-2 border-carely-light focus:border-carely-green"
                       />
                       <InputOTPSlot
                         index={5}
-                        className="w-12 h-14 text-xl font-bold rounded-xl border-2 border-carely-light focus:border-carely-green"
+                        className="w-10 h-12 sm:w-12 sm:h-14 text-lg sm:text-xl font-bold rounded-xl border-2 border-carely-light focus:border-carely-green"
                       />
                     </InputOTPGroup>
                   </InputOTP>

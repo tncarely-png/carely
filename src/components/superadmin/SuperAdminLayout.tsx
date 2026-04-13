@@ -112,7 +112,7 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
   )?.label || 'الرئيسية';
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: '#f9f9f9' }} dir="rtl">
+    <div className="min-h-screen flex flex-col overflow-x-hidden" style={{ background: '#f9f9f9' }} dir="rtl">
       {/* Top Bar - Mobile */}
       <div
         className="lg:hidden sticky top-0 z-40"

@@ -17,7 +17,7 @@ function QustodioHero() {
   }
 
   return (
-    <section className="relative overflow-hidden py-16 md:py-24">
+    <section className="relative overflow-hidden blur-contained py-16 md:py-24">
       {/* Background */}
       <div className="absolute inset-0 bg-gradient-to-br from-carely-mint via-white to-carely-light/30" />
       <div className="absolute top-10 right-10 w-64 h-64 bg-carely-green/5 rounded-full blur-3xl" />
@@ -169,7 +169,7 @@ function QustodioCTA() {
   const { navigate, setSelectedPlan } = useAppStore()
 
   return (
-    <section className="relative overflow-hidden py-16 md:py-20">
+    <section className="relative overflow-hidden blur-contained py-16 md:py-20">
       <div className="absolute inset-0 bg-gradient-to-br from-carely-green to-carely-dark" />
       <div className="absolute top-0 left-0 w-64 h-64 bg-white/5 rounded-full blur-3xl" />
       <div className="absolute bottom-0 right-0 w-80 h-80 bg-white/5 rounded-full blur-3xl" />

@@ -146,7 +146,7 @@ export default function SuperAdminSettings() {
         {success && (
           <div
             className="p-3 rounded-xl text-sm font-semibold mb-4"
-            style={{ background: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0' }}
+            style={{ background: '#f5f5f5', color: '#000000', border: '1px solid #e0e0e0' }}
           >
             {success}
           </div>
