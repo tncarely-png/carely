@@ -19,9 +19,7 @@ const nextConfig: NextConfig = {
   },
 
   // Don't bundle Node.js-only packages for edge runtime
-  experimental: {
-    serverComponentsExternalPackages: ["sharp"],
-  },
+  serverExternalPackages: ["sharp"],
 };
 
 export default nextConfig;

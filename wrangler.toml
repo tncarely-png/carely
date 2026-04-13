@@ -2,6 +2,11 @@ name = "carely-tn"
 compatibility_date = "2025-01-01"
 compatibility_flags = ["nodejs_compat"]
 
+main = ".open-next/worker.js"
+
+[assets]
+directory = ".open-next/assets"
+
 [[d1_databases]]
 binding = "DB"
 database_name = "carely-db"
