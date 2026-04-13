@@ -70,6 +70,14 @@ export async function GET() {
       try { await db.run(stmt); } catch { /* ignore already exists */ }
     }
 
+    // Migration: add columns that might be missing from existing tables
+    const MIGRATIONS = [
+      "ALTER TABLE products ADD COLUMN landing_sections text",
+    ];
+    for (const migration of MIGRATIONS) {
+      try { await db.run(migration); } catch { /* column already exists */ }
+    }
+
     // Check if admin already exists
     const existingAdmin = await db.select().from(users)
       .where(eq(users.phone, '+216 22 000 001'))
