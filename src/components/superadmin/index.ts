@@ -7,3 +7,5 @@ export { default as SuperAdminOrders } from './SuperAdminOrders';
 export { default as SuperAdminLicenses } from './SuperAdminLicenses';
 export { default as SuperAdminWhatsApp } from './SuperAdminWhatsApp';
 export { default as SuperAdminSettings } from './SuperAdminSettings';
+export { default as SuperAdminProducts } from './SuperAdminProducts';
+export { default as SuperAdminLandingPage } from './SuperAdminLandingPage';

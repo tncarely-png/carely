@@ -38,7 +38,9 @@ export type PageRoute =
   | "superadmin-orders"
   | "superadmin-licenses"
   | "superadmin-whatsapp"
-  | "superadmin-settings";
+  | "superadmin-settings"
+  | "superadmin-products"
+  | "superadmin-landing";
 
 interface AppState {
   currentPage: PageRoute;

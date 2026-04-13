@@ -41,6 +41,8 @@ import {
   SuperAdminLicenses,
   SuperAdminWhatsApp,
   SuperAdminSettings,
+  SuperAdminProducts,
+  SuperAdminLandingPage,
 } from '@/components/superadmin';
 
 // Homepage
@@ -304,6 +306,8 @@ function SuperAdminRouter() {
   const renderPage = () => {
     switch (currentPage) {
       case 'superadmin': return <SuperAdminDashboard />;
+      case 'superadmin-products': return <SuperAdminProducts />;
+      case 'superadmin-landing': return <SuperAdminLandingPage />;
       case 'superadmin-users': return <SuperAdminUsers />;
       case 'superadmin-orders': return <SuperAdminOrders />;
       case 'superadmin-licenses': return <SuperAdminLicenses />;
@@ -383,7 +387,8 @@ export default function Home() {
 
   // SuperAdmin pages
   const superAdminPages: PageRoute[] = [
-    'superadmin', 'superadmin-users', 'superadmin-orders',
+    'superadmin', 'superadmin-products', 'superadmin-landing',
+    'superadmin-users', 'superadmin-orders',
     'superadmin-licenses', 'superadmin-whatsapp', 'superadmin-settings',
   ];
   if (superAdminPages.includes(currentPage)) {

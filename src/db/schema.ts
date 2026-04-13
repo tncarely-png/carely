@@ -24,6 +24,30 @@ export const usersRelations = relations(users, ({ many }) => ({
 }));
 
 // ═══════════════════════════════════════════
+// PRODUCTS
+// ═══════════════════════════════════════════
+export const products = sqliteTable("products", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  nameAr: text("name_ar").notNull(),
+  slug: text("slug").notNull().unique(),
+  description: text("description"),
+  descriptionAr: text("description_ar"),
+  emoji: text("emoji").default("📦"),
+  imageUrl: text("image_url"),
+  price: real("price").notNull().default(0),
+  currency: text("currency").default("TND"),
+  priceLabel: text("price_label"),
+  features: text("features"), // JSON array of feature strings
+  isActive: integer("is_active", { mode: "boolean" }).default(true),
+  sortOrder: integer("sort_order").default(0),
+  route: text("route"), // SPA route to navigate to
+  externalUrl: text("external_url"), // External link (optional)
+  createdAt: text("created_at").notNull(),
+  updatedAt: text("updated_at").notNull(),
+});
+
+// ═══════════════════════════════════════════
 // SUBSCRIPTIONS
 // ═══════════════════════════════════════════
 export const subscriptions = sqliteTable("subscriptions", {
@@ -123,6 +147,8 @@ export const settings = sqliteTable("settings", {
 // ═══════════════════════════════════════════
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
+export type Product = typeof products.$inferSelect;
+export type NewProduct = typeof products.$inferInsert;
 export type Subscription = typeof subscriptions.$inferSelect;
 export type NewSubscription = typeof subscriptions.$inferInsert;
 export type Order = typeof orders.$inferSelect;

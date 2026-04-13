@@ -1,8 +1,27 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { useAppStore } from '@/store'
 import { Button } from '@/components/ui/button'
 import { Check } from 'lucide-react'
+
+interface HeroSettings {
+  hero_title: string;
+  hero_subtitle: string;
+  hero_description: string;
+  hero_subdescription: string;
+  cta_primary_text: string;
+  cta_secondary_text: string;
+}
+
+const DEFAULT_HERO: HeroSettings = {
+  hero_title: 'متجر Carely.tn 🛍️',
+  hero_subtitle: 'حسابات تطبيقات العيلة المدفوعة',
+  hero_description: 'اشتري، فعّل، واستمتع — مع دعم مباشر على الواتساب',
+  hero_subdescription: 'من ولاية الكاف، نخدمو كامل تونس 🇹🇳',
+  cta_primary_text: 'شوف تطبيقاتنا',
+  cta_secondary_text: 'تواصل معانا',
+}
 
 const TRUST_BADGES = [
   'حسابات أصلية 100%',
@@ -13,6 +32,30 @@ const TRUST_BADGES = [
 
 export default function HeroSection() {
   const { navigate } = useAppStore()
+  const [hero, setHero] = useState<HeroSettings>(DEFAULT_HERO)
+
+  useEffect(() => {
+    async function loadHeroSettings() {
+      try {
+        const keys = ['hero_title', 'hero_subtitle', 'hero_description', 'hero_subdescription', 'cta_primary_text', 'cta_secondary_text']
+        const results = await Promise.all(
+          keys.map(key => fetch(`/api/settings?key=${key}`).then(r => r.ok ? r.json() : null).catch(() => null))
+        )
+        const newHero: Partial<HeroSettings> = {}
+        results.forEach((data, i) => {
+          if (data?.value) {
+            newHero[keys[i] as keyof HeroSettings] = data.value
+          }
+        })
+        if (Object.keys(newHero).length > 0) {
+          setHero(prev => ({ ...prev, ...newHero }))
+        }
+      } catch {
+        // Use defaults
+      }
+    }
+    loadHeroSettings()
+  }, [])
 
   const handleScrollToApps = () => {
     const el = document.getElementById('app-cards-section')
@@ -39,17 +82,17 @@ export default function HeroSection() {
 
         {/* Heading */}
         <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold text-carely-dark leading-tight mb-4">
-          متجر Carely.tn 🛍️
+          {hero.hero_title}
           <br />
-          <span className="text-carely-green">حسابات تطبيقات العيلة المدفوعة</span>
+          <span className="text-carely-green">{hero.hero_subtitle}</span>
         </h1>
 
         {/* Subtext */}
         <p className="text-base sm:text-lg md:text-xl text-carely-gray max-w-2xl mx-auto mb-2 leading-relaxed">
-          اشتري، فعّل، واستمتع — مع دعم مباشر على الواتساب
+          {hero.hero_description}
         </p>
         <p className="text-sm sm:text-base md:text-lg text-carely-gray max-w-2xl mx-auto mb-8 leading-relaxed">
-          من ولاية الكاف، نخدمو كامل تونس 🇹🇳
+          {hero.hero_subdescription}
         </p>
 
         {/* CTA Buttons */}
@@ -59,7 +102,7 @@ export default function HeroSection() {
             className="carely-btn-primary text-base px-8 py-3"
             onClick={handleScrollToApps}
           >
-            شوف تطبيقاتنا
+            {hero.cta_primary_text}
           </Button>
           <Button
             variant="outline"
@@ -67,7 +110,7 @@ export default function HeroSection() {
             className="carely-btn-outline text-base px-8 py-3"
             onClick={() => navigate('contact')}
           >
-            تواصل معانا
+            {hero.cta_secondary_text}
           </Button>
         </div>
 

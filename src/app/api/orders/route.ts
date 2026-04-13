@@ -1,46 +1,110 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCfContext } from "@/lib/cf-context";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and, like, or } from "drizzle-orm";
 import { orders, users, subscriptions } from "@/db/schema";
 import { PLANS } from "@/lib/constants";
 
+// GET /api/orders — list orders
+// If userId provided → list user's orders
+// If no userId → list ALL orders (admin/superadmin)
 export async function GET(request: NextRequest) {
   try {
     const { db } = getCfContext();
     const userId = request.nextUrl.searchParams.get("userId");
-    if (!userId) {
-      return NextResponse.json({ error: "userId is required" }, { status: 400 });
+    const status = request.nextUrl.searchParams.get("status");
+    const limit = request.nextUrl.searchParams.get("limit");
+
+    if (userId) {
+      // User's own orders
+      const result = await db
+        .select({
+          order: orders,
+          subscription: {
+            id: subscriptions.id,
+            status: subscriptions.status,
+            startsAt: subscriptions.startsAt,
+            expiresAt: subscriptions.expiresAt,
+          },
+          user: {
+            id: users.id,
+            name: users.name,
+            email: users.email,
+          },
+        })
+        .from(orders)
+        .leftJoin(users, eq(orders.userId, users.id))
+        .leftJoin(subscriptions, eq(orders.subscriptionId, subscriptions.id))
+        .where(eq(orders.userId, userId))
+        .orderBy(desc(orders.createdAt))
+        .all();
+
+      const mappedOrders = result.map((row) => ({
+        ...row.order,
+        subscription: row.subscription?.id ? row.subscription : null,
+        user: row.user?.id ? row.user : null,
+      }));
+
+      return NextResponse.json({ orders: mappedOrders });
     }
 
-    const result = await db
+    // Admin: list ALL orders with user info
+    const conditions = [];
+    if (status && status !== "all") {
+      conditions.push(eq(orders.status, status));
+    }
+
+    let query = db
       .select({
-        order: orders,
-        subscription: {
-          id: subscriptions.id,
-          status: subscriptions.status,
-          startsAt: subscriptions.startsAt,
-          expiresAt: subscriptions.expiresAt,
-        },
-        user: {
-          id: users.id,
-          name: users.name,
-          email: users.email,
-        },
+        id: orders.id,
+        userId: orders.userId,
+        subscriptionId: orders.subscriptionId,
+        plan: orders.plan,
+        amountTnd: orders.amountTnd,
+        paymentMethod: orders.paymentMethod,
+        paymentRef: orders.paymentRef,
+        receiptUrl: orders.receiptUrl,
+        status: orders.status,
+        paidAt: orders.paidAt,
+        createdAt: orders.createdAt,
+        updatedAt: orders.updatedAt,
+        userName: users.name,
+        userPhone: users.phone,
+        userEmail: users.email,
       })
       .from(orders)
-      .leftJoin(users, eq(orders.userId, users.id))
-      .leftJoin(subscriptions, eq(orders.subscriptionId, subscriptions.id))
-      .where(eq(orders.userId, userId))
-      .orderBy(desc(orders.createdAt))
-      .all();
+      .leftJoin(users, eq(orders.userId, users.id));
 
-    const mappedOrders = result.map((row) => ({
-      ...row.order,
-      subscription: row.subscription?.id ? row.subscription : null,
-      user: row.user?.id ? row.user : null,
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions)) as typeof query;
+    }
+
+    let results = await query.orderBy(desc(orders.createdAt)).all();
+
+    if (limit) {
+      results = results.slice(0, parseInt(limit));
+    }
+
+    const allOrders = results.map((r) => ({
+      id: r.id,
+      userId: r.userId,
+      subscriptionId: r.subscriptionId,
+      plan: r.plan,
+      amountTnd: r.amountTnd,
+      paymentMethod: r.paymentMethod,
+      paymentRef: r.paymentRef,
+      receiptUrl: r.receiptUrl,
+      status: r.status,
+      paidAt: r.paidAt,
+      createdAt: r.createdAt,
+      updatedAt: r.updatedAt,
+      user: {
+        name: r.userName,
+        phone: r.userPhone,
+        email: r.userEmail,
+      },
     }));
 
-    return NextResponse.json({ orders: mappedOrders });
+    return NextResponse.json({ success: true, data: allOrders });
   } catch (error) {
     console.error("[orders GET] Error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
@@ -53,7 +117,6 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { userId, plan, paymentMethod, receiptData } = body;
 
-    // Validate required fields
     if (!userId || !plan || !paymentMethod) {
       return NextResponse.json(
         { success: false, error: "البيانات غير مكتملة" },
@@ -61,7 +124,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verify the user exists
     const user = await db
       .select()
       .from(users)
@@ -75,7 +137,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get plan pricing from constants
     const planConfig = PLANS[plan as keyof typeof PLANS];
     if (!planConfig) {
       return NextResponse.json(
@@ -90,7 +151,6 @@ export async function POST(request: NextRequest) {
     const orderId = crypto.randomUUID();
     const subscriptionId = crypto.randomUUID();
 
-    // Create the order linked to the real user
     await db.insert(orders).values({
       id: orderId,
       userId: user.id,
@@ -103,7 +163,6 @@ export async function POST(request: NextRequest) {
       updatedAt: now,
     });
 
-    // Create a pending subscription linked to this order
     await db.insert(subscriptions).values({
       id: subscriptionId,
       userId: user.id,
@@ -114,24 +173,11 @@ export async function POST(request: NextRequest) {
       updatedAt: now,
     });
 
-    // Link subscription to order
     await db
       .update(orders)
       .set({ subscriptionId, updatedAt: now })
       .where(eq(orders.id, orderId));
 
-    console.log(
-      "[orders POST] Order created:",
-      orderId,
-      "for user:",
-      user.id,
-      "plan:",
-      plan,
-      "amount:",
-      amountTnd
-    );
-
-    // Fetch the created records to return them
     const order = await db
       .select()
       .from(orders)

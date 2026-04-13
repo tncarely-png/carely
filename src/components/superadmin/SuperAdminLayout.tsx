@@ -9,8 +9,10 @@ import { useAppStore } from '@/store';
 
 const navItems = [
   { id: 'superadmin' as const, label: 'الرئيسية', emoji: '🏠' },
+  { id: 'superadmin-products' as const, label: 'المنتجات', emoji: '📦' },
+  { id: 'superadmin-landing' as const, label: 'الصفحة الرئيسية', emoji: '🎨' },
   { id: 'superadmin-users' as const, label: 'المستخدمون', emoji: '👥' },
-  { id: 'superadmin-orders' as const, label: 'الطلبات', emoji: '📦' },
+  { id: 'superadmin-orders' as const, label: 'الطلبات', emoji: '📋' },
   { id: 'superadmin-licenses' as const, label: 'التراخيص', emoji: '🔑' },
   { id: 'superadmin-whatsapp' as const, label: 'واتساب', emoji: '💬' },
   { id: 'superadmin-settings' as const, label: 'الإعدادات', emoji: '⚙️' },

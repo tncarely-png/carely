@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getCfContext } from '@/lib/cf-context';
-import { eq, and, sql, desc, gte, lte } from 'drizzle-orm';
-import { users, subscriptions, orders, licenses, whatsappAgents } from '@/db/schema';
+import { eq } from 'drizzle-orm';
+import { users, subscriptions, orders, licenses, whatsappAgents, products } from '@/db/schema';
 
 // Schema SQL for auto-setup
 const SCHEMA_SQL = `
@@ -13,6 +13,15 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE UNIQUE INDEX IF NOT EXISTS users_email_unique ON users (email);
 CREATE UNIQUE INDEX IF NOT EXISTS users_phone_unique ON users (phone);
 CREATE UNIQUE INDEX IF NOT EXISTS users_firebase_uid_unique ON users (firebase_uid);
+
+CREATE TABLE IF NOT EXISTS products (
+  id text PRIMARY KEY NOT NULL, name text NOT NULL, name_ar text NOT NULL, slug text NOT NULL,
+  description text, description_ar text, emoji text DEFAULT '📦', image_url text,
+  price real NOT NULL DEFAULT 0, currency text DEFAULT 'TND', price_label text,
+  features text, is_active integer DEFAULT 1, sort_order integer DEFAULT 0,
+  route text, external_url text, created_at text NOT NULL, updated_at text NOT NULL
+);
+CREATE UNIQUE INDEX IF NOT EXISTS products_slug_unique ON products (slug);
 
 CREATE TABLE IF NOT EXISTS licenses (
   id text PRIMARY KEY NOT NULL, qustodio_email text NOT NULL, qustodio_password text NOT NULL,
@@ -61,7 +70,7 @@ export async function GET() {
       try { await db.run(stmt); } catch { /* ignore already exists */ }
     }
 
-    // Check if admin already exists (by phone)
+    // Check if admin already exists
     const existingAdmin = await db.select().from(users)
       .where(eq(users.phone, '+216 22 000 001'))
       .get();
@@ -137,6 +146,85 @@ export async function GET() {
         updatedAt: now,
       }))
     );
+
+    // Create products
+    await db.insert(products).values([
+      {
+        id: crypto.randomUUID(),
+        name: 'Qustodio',
+        nameAr: 'كوستوديو',
+        slug: 'qustodio',
+        description: 'Parental control & digital wellbeing for families',
+        descriptionAr: 'حماية أطفالك على النت — تحكم أبوي كامل',
+        emoji: '🛡️',
+        imageUrl: null,
+        price: 89,
+        currency: 'TND',
+        priceLabel: 'من 89 دت / سنة',
+        features: JSON.stringify([
+          'حجب المواقع غير اللائقة',
+          'تحديد وقت الشاشة',
+          'تقارير أسبوعية',
+          'دعم فني بالتونسي',
+          'تفعيل فوري بعد الدفع',
+        ]),
+        isActive: true,
+        sortOrder: 1,
+        route: 'qustodio-app',
+        createdAt: now,
+        updatedAt: now,
+      },
+      {
+        id: crypto.randomUUID(),
+        name: 'Coming Soon',
+        nameAr: 'قريبًا...',
+        slug: 'coming-soon',
+        description: 'New app coming soon',
+        descriptionAr: 'تطبيق جديد — ابقو معانا 👀',
+        emoji: '🔜',
+        imageUrl: null,
+        price: 0,
+        currency: 'TND',
+        priceLabel: '',
+        features: JSON.stringify([]),
+        isActive: true,
+        sortOrder: 99,
+        route: null,
+        createdAt: now,
+        updatedAt: now,
+      },
+    ]);
+
+    // Seed landing page settings
+    await db.insert(products).values; // not needed, we seed settings separately
+
+    // Create default landing page content settings
+    const defaultSettings = [
+      { key: 'hero_title', value: 'متجر Carely.tn 🛍️' },
+      { key: 'hero_subtitle', value: 'حسابات تطبيقات العيلة المدفوعة' },
+      { key: 'hero_description', value: 'اشتري، فعّل، واستمتع — مع دعم مباشر على الواتساب' },
+      { key: 'hero_subdescription', value: 'من ولاية الكاف، نخدمو كامل تونس 🇹🇳' },
+      { key: 'cta_primary_text', value: 'شوف تطبيقاتنا' },
+      { key: 'cta_secondary_text', value: 'تواصل معانا' },
+      { key: 'store_name', value: 'Carely.tn' },
+      { key: 'store_tagline', value: 'متجر التطبيقات المدفوعة للعيلة التونسية' },
+      { key: 'whatsapp_number', value: '21626107128' },
+      { key: 'contact_email', value: 'contact@carely.tn' },
+      { key: 'silver_price', value: '89' },
+      { key: 'gold_price', value: '149' },
+    ];
+
+    // Create settings table entries via raw SQL to avoid drizzle issues
+    for (const s of defaultSettings) {
+      try {
+        await db.run(
+          `INSERT OR IGNORE INTO settings (key, value, created_at, updated_at) VALUES (?, ?, ?, ?)`,
+          [s.key, s.value, now, now]
+        );
+      } catch {
+        // ignore duplicates
+      }
+    }
 
     // Create 3 available licenses
     const licenseData = [
@@ -253,8 +341,8 @@ export async function GET() {
         subscriptionId: sub1Id,
         plan: 'silver',
         amountTnd: 89,
-        paymentMethod: 'card',
-        paymentRef: 'CARD-001234',
+        paymentMethod: 'flouci',
+        paymentRef: 'FL-001234',
         status: 'paid',
         paidAt: thirtyDaysAgo,
         createdAt: thirtyDaysAgo,
@@ -279,7 +367,7 @@ export async function GET() {
         subscriptionId: sub3Id,
         plan: 'silver',
         amountTnd: 89,
-        paymentMethod: 'cash',
+        paymentMethod: 'ccp',
         status: 'paid',
         paidAt: fourHundredDaysAgo,
         createdAt: fourHundredDaysAgo,
@@ -291,7 +379,7 @@ export async function GET() {
         subscriptionId: sub4Id,
         plan: 'gold',
         amountTnd: 149,
-        paymentMethod: 'd17',
+        paymentMethod: 'flouci',
         status: 'pending',
         createdAt: now,
         updatedAt: now,
@@ -301,7 +389,7 @@ export async function GET() {
         userId: customerData[4].id,
         plan: 'silver',
         amountTnd: 89,
-        paymentMethod: 'transfer',
+        paymentMethod: 'virement',
         status: 'pending',
         createdAt: now,
         updatedAt: now,

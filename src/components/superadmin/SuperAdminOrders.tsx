@@ -61,11 +61,13 @@ export default function SuperAdminOrders() {
     setLoading(true);
     setError(null);
     try {
-      const params = statusFilter !== 'all' ? `?status=${statusFilter}` : '';
-      const res = await fetch(`/api/orders${params}&limit=100`);
+      const params = new URLSearchParams();
+      if (statusFilter !== 'all') params.set('status', statusFilter);
+      params.set('limit', '100');
+      const res = await fetch(`/api/orders?${params.toString()}`);
       if (!res.ok) throw new Error('فشل تحميل الطلبات');
       const data = await res.json();
-      setOrders(Array.isArray(data) ? data : []);
+      setOrders(Array.isArray(data.data) ? data.data : Array.isArray(data) ? data : []);
     } catch {
       setError('حدث خطأ أثناء تحميل الطلبات');
     } finally {
@@ -79,7 +81,11 @@ export default function SuperAdminOrders() {
 
   const handleConfirmPayment = async (orderId: string) => {
     try {
-      const res = await fetch(`/api/orders/${orderId}/confirm`, { method: 'POST' });
+      const res = await fetch(`/api/orders/${orderId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'paid', paidAt: new Date().toISOString() }),
+      });
       if (res.ok) {
         setOrders((prev) =>
           prev.map((o) =>

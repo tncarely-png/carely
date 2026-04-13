@@ -151,3 +151,35 @@ Stage Summary:
 - R2 bucket ready for receipt uploads
 - wrangler.toml committed and pushed to GitHub
 - Next step: Connect CF Pages to GitHub repo and deploy
+
+---
+Task ID: 8
+Agent: Main
+Task: Fix broken SuperAdmin functions + Add product management + Landing page editor
+
+Work Log:
+- Fixed `/api/orders` GET: Made `userId` optional - lists ALL orders when no userId (for admin panel)
+- Fixed `/api/whatsapp-agent` PUT: Now accepts both `agentId` (UUID) and `agent` (name key like 'maram')
+- Fixed `SuperAdminOrders` confirm payment: Changed from non-existent `/api/orders/[id]/confirm` POST to `/api/orders/[id]` PUT with `{ status: 'paid' }`
+- Fixed `SuperAdminOrders` fetch: Now correctly parses `{ data: [...] }` response format
+- Added `products` table to DB schema with fields: name, nameAr, slug, description, emoji, imageUrl, price, priceLabel, features (JSON), isActive, sortOrder, route, externalUrl
+- Updated seed route to create products table + seed 2 default products + seed landing page settings
+- Created `/api/products` route (GET list + POST create)
+- Created `/api/products/[id]` route (GET + PUT + DELETE)
+- Created `/api/upload` route (POST image upload to R2 + GET serve from R2)
+- Created `SuperAdminProducts.tsx` - Full product CRUD with image upload, features list, active toggle, card grid layout
+- Created `SuperAdminLandingPage.tsx` - Landing page editor with tabs (Hero, Store Info, Pricing), live preview mini-hero, saves to settings API
+- Updated `HeroSection.tsx` - Now fetches hero content from settings API (dynamic)
+- Updated `AppCardsGrid.tsx` - Now fetches products from API instead of hardcoded array, with loading skeletons and fallback
+- Updated store with new routes: `superadmin-products`, `superadmin-landing`
+- Updated SuperAdminLayout sidebar with Products + Landing Page nav items
+- Updated main page router with new SuperAdmin routes
+- All components fully RTL Arabic, consistent SuperAdmin black/white theme
+- Lint: 0 errors
+
+Stage Summary:
+- All broken SuperAdmin functions fixed (orders API, whatsapp agent API, confirm payment)
+- Full product management system: Create, Read, Update, Delete with image upload to R2
+- Landing page editor: Hero section, Store info, Pricing - all saved to DB settings
+- Homepage dynamically renders products and hero content from database
+- Client side and admin side fully synced via shared API
