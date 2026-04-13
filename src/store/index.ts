@@ -18,6 +18,7 @@ export type PageRoute =
   | "dashboard-profile"
   // App pages
   | "qustodio-app"
+  | "product-detail"
   // Checkout
   | "checkout"
   | "checkout-success"
@@ -49,6 +50,7 @@ interface AppState {
   selectedPlanName: string;
   selectedUserId: string | null;
   selectedSubscriptionId: string | null;
+  selectedProductId: string | null;
   whatsappPopupOpen: boolean;
   whatsappPopupMessage: string | undefined;
   navigate: (page: PageRoute) => void;
@@ -57,6 +59,7 @@ interface AppState {
   setSelectedPlanName: (name: string) => void;
   setSelectedUserId: (id: string | null) => void;
   setSelectedSubscriptionId: (id: string | null) => void;
+  setSelectedProductId: (id: string | null) => void;
   openWhatsAppPopup: (message?: string) => void;
   closeWhatsAppPopup: () => void;
 }
@@ -68,6 +71,7 @@ export const useAppStore = create<AppState>((set) => ({
   selectedPlanName: "",
   selectedUserId: null,
   selectedSubscriptionId: null,
+  selectedProductId: null,
   whatsappPopupOpen: false,
   whatsappPopupMessage: undefined,
   navigate: (page) => {
@@ -79,6 +83,7 @@ export const useAppStore = create<AppState>((set) => ({
   setSelectedPlanName: (name) => set({ selectedPlanName: name }),
   setSelectedUserId: (id) => set({ selectedUserId: id }),
   setSelectedSubscriptionId: (id) => set({ selectedSubscriptionId: id }),
+  setSelectedProductId: (id) => set({ selectedProductId: id }),
   openWhatsAppPopup: (message) => set({ whatsappPopupOpen: true, whatsappPopupMessage: message }),
   closeWhatsAppPopup: () => set({ whatsappPopupOpen: false, whatsappPopupMessage: undefined }),
 }));

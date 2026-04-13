@@ -42,7 +42,7 @@ const FALLBACK_APPS = [
 ]
 
 export default function AppCardsGrid() {
-  const { navigate } = useAppStore()
+  const { navigate, setSelectedProductId } = useAppStore()
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -155,7 +155,13 @@ export default function AppCardsGrid() {
                         if (product.externalUrl) {
                           window.open(product.externalUrl, '_blank')
                         } else if (product.route) {
+                          // If product has a known SPA route, use it
+                          setSelectedProductId(product.id)
                           navigate(product.route as any)
+                        } else {
+                          // Always navigate to product detail page
+                          setSelectedProductId(product.id)
+                          navigate('product-detail')
                         }
                       }}
                     >

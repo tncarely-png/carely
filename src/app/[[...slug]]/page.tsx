@@ -56,6 +56,7 @@ import {
   FaqAccordion,
   FinalCTA,
   QustodioAppPage,
+  ProductDetailPage,
 } from '@/components/home';
 
 // Legal
@@ -407,6 +408,11 @@ export default function Home() {
         <WhatsAppFAB />
       </>
     );
+  }
+
+  // Dynamic product detail page
+  if (currentPage === 'product-detail') {
+    return <ProductDetailPage />;
   }
 
   // Public pages
