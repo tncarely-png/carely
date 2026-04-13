@@ -7,9 +7,9 @@ import { getDb } from "@/db";
 import type { KVNamespace, R2Bucket } from "@cloudflare/workers-types";
 
 interface CfBindings {
-  DB: D1Database;
-  KV: KVNamespace;
-  R2: R2Bucket;
+  "carely-db": D1Database;
+  "carely-kv": KVNamespace;
+  "carely-uploads": R2Bucket;
 }
 
 interface CfContext {
@@ -25,9 +25,9 @@ export function getCfContext(): CfContext {
     const env = ctx.env as unknown as CfBindings;
 
     return {
-      db: getDb(env.DB),
-      kv: env.KV,
-      r2: env.R2,
+      db: getDb(env["carely-db"]),
+      kv: env["carely-kv"],
+      r2: env["carely-uploads"],
       env: ctx.env as CfContext["env"],
     };
   } catch {

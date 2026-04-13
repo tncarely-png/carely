@@ -3,16 +3,16 @@ compatibility_date = "2025-01-01"
 compatibility_flags = ["nodejs_compat"]
 
 [[d1_databases]]
-binding = "DB"
+binding = "carely-db"
 database_name = "carely-db"
 database_id = "4ce1b942-b175-4592-8eb7-705cdd2a8ede"
 
 [[kv_namespaces]]
-binding = "KV"
+binding = "carely-kv"
 id = "7ae342ee1b1043498ae0853122b961c9"
 
 [[r2_buckets]]
-binding = "R2"
+binding = "carely-uploads"
 bucket_name = "carely-uploads"
 
 [vars]
