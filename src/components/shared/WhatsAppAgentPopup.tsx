@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import Avatar from 'boring-avatars';
 import { X, MessageCircle } from 'lucide-react';
 
@@ -56,7 +56,14 @@ export function WhatsAppAgentPopup({
       .then((res) => res.json())
       .then((data) => {
         if (data.agents && data.agents.length > 0) {
-          setAgents(data.agents);
+          // Deduplicate by id, keep only unique agents
+          const seen = new Set<string>();
+          const unique = data.agents.filter((a: AgentInfo) => {
+            if (seen.has(a.id)) return false;
+            seen.add(a.id);
+            return true;
+          });
+          setAgents(unique.slice(0, 2));
         }
       })
       .catch(() => {
@@ -92,9 +99,9 @@ export function WhatsAppAgentPopup({
     [message, onClose]
   );
 
-  if (!open) return null;
+  const activeAgent = useMemo(() => agents.find((a) => a.isActive), [agents]);
 
-  const activeAgent = agents.find((a) => a.isActive);
+  if (!open) return null;
 
   return (
     <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center">
@@ -105,7 +112,7 @@ export function WhatsAppAgentPopup({
       />
 
       {/* Popup Card */}
-      <div className="relative w-full max-w-md mx-4 mb-6 sm:mb-0 animate-in slide-in-from-bottom-4 fade-in duration-300">
+      <div className="relative w-full max-w-sm mx-4 mb-6 sm:mb-0 animate-in slide-in-from-bottom-4 fade-in duration-300">
         {/* Close button */}
         <button
           onClick={onClose}
@@ -127,21 +134,19 @@ export function WhatsAppAgentPopup({
             </p>
           </div>
 
-          {/* Agent Cards */}
-          <div className="p-5">
+          {/* Agent Cards — Vertical layout */}
+          <div className="p-4">
             {loading ? (
-              <div className="flex items-center justify-center py-8">
-                <div className="flex gap-3">
-                  {[1, 2].map((i) => (
-                    <div
-                      key={i}
-                      className="w-36 h-44 bg-gray-100 rounded-xl animate-pulse"
-                    />
-                  ))}
-                </div>
+              <div className="flex flex-col gap-3 py-4">
+                {[1, 2].map((i) => (
+                  <div
+                    key={i}
+                    className="h-20 bg-gray-100 rounded-xl animate-pulse"
+                  />
+                ))}
               </div>
             ) : (
-              <div className="flex gap-4 justify-center">
+              <div className="flex flex-col gap-3">
                 {agents.map((agent) => {
                   const isActive = agent.isActive;
                   const avatarColors =
@@ -155,36 +160,22 @@ export function WhatsAppAgentPopup({
                       onClick={() => handleChat(agent)}
                       disabled={!isActive}
                       className={`
-                        relative flex flex-col items-center gap-3 p-5 rounded-2xl border-2 transition-all duration-200 w-40
+                        relative flex items-center gap-4 p-4 rounded-xl border-2 transition-all duration-200 w-full text-right
                         ${
                           isActive
-                            ? 'border-carely-green bg-carely-mint/50 hover:bg-carely-mint hover:shadow-lg hover:scale-[1.03] cursor-pointer'
+                            ? 'border-carely-green bg-carely-mint/50 hover:bg-carely-mint hover:shadow-lg cursor-pointer'
                             : 'border-gray-200 bg-gray-50 opacity-50 cursor-not-allowed grayscale'
                         }
                       `}
                     >
-                      {/* Active badge */}
-                      {isActive && (
-                        <div className="absolute -top-2 left-1/2 -translate-x-1/2 bg-carely-green text-white text-[10px] font-bold px-3 py-0.5 rounded-full flex items-center gap-1">
-                          <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
-                          متاح
-                        </div>
-                      )}
-
-                      {!isActive && (
-                        <div className="absolute -top-2 left-1/2 -translate-x-1/2 bg-gray-300 text-gray-600 text-[10px] font-bold px-3 py-0.5 rounded-full">
-                          غير متاح
-                        </div>
-                      )}
-
                       {/* Avatar */}
                       <div
-                        className={`w-16 h-16 rounded-full overflow-hidden ${
+                        className={`w-12 h-12 rounded-full overflow-hidden shrink-0 ${
                           !isActive ? 'opacity-60' : ''
                         }`}
                       >
                         <Avatar
-                          size={64}
+                          size={48}
                           name={agent.name}
                           variant="beam"
                           colors={avatarColors}
@@ -192,14 +183,27 @@ export function WhatsAppAgentPopup({
                       </div>
 
                       {/* Name + Title */}
-                      <div className="text-center">
-                        <p
-                          className={`font-bold text-sm ${
-                            isActive ? 'text-carely-dark' : 'text-gray-400'
-                          }`}
-                        >
-                          {agent.emoji} {agent.name}
-                        </p>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p
+                            className={`font-bold text-sm ${
+                              isActive ? 'text-carely-dark' : 'text-gray-400'
+                            }`}
+                          >
+                            {agent.emoji} {agent.name}
+                          </p>
+                          {isActive && (
+                            <span className="bg-carely-green text-white text-[9px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+                              <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
+                              متاح
+                            </span>
+                          )}
+                          {!isActive && (
+                            <span className="bg-gray-300 text-gray-600 text-[9px] font-bold px-2 py-0.5 rounded-full">
+                              غير متاح
+                            </span>
+                          )}
+                        </div>
                         {agent.title && (
                           <p
                             className={`text-xs mt-0.5 ${
@@ -211,10 +215,9 @@ export function WhatsAppAgentPopup({
                         )}
                       </div>
 
-                      {/* Chat button */}
+                      {/* Chat icon */}
                       <div
-                        className={`
-                          flex items-center gap-1.5 text-xs font-bold px-4 py-2 rounded-full transition-all
+                        className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-all
                           ${
                             isActive
                               ? 'bg-[#25D366] text-white shadow-md'
@@ -222,8 +225,7 @@ export function WhatsAppAgentPopup({
                           }
                         `}
                       >
-                        <MessageCircle className="h-3.5 w-3.5" />
-                        {isActive ? 'محادثة' : 'مغلق'}
+                        <MessageCircle className="h-4 w-4" />
                       </div>
                     </button>
                   );
@@ -232,7 +234,7 @@ export function WhatsAppAgentPopup({
             )}
 
             {/* Hint */}
-            <p className="text-center text-xs text-carely-gray mt-4">
+            <p className="text-center text-xs text-carely-gray mt-3">
               {activeAgent
                 ? `راح تتواصل مع ${activeAgent.name} — رد سريع مضمون ⚡`
                 : 'لا يوجد وكلاء متاحين حالياً'}
