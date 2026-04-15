@@ -199,7 +199,7 @@ export default function AppCardsGrid() {
                           }
                         }}
                       >
-                        <span>اكتشف</span>
+                        <span>شوف التفاصيل</span>
                         <ChevronLeft className="size-4 mr-1" />
                       </Button>
                     )}

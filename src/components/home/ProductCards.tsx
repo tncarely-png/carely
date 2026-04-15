@@ -1,6 +1,6 @@
 'use client'
 
-import { useAppStore } from '@/store'
+import { useAppStore, useAuthStore } from '@/store'
 import { PLANS } from '@/lib/constants'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -9,9 +9,15 @@ import { Check } from 'lucide-react'
 export default function ProductCards() {
   const { navigate, setSelectedPlan } = useAppStore()
 
+  const user = useAuthStore((s) => s.user)
+
   const handleBuy = (plan: 'silver' | 'gold') => {
     setSelectedPlan(plan)
-    navigate('checkout')
+    if (!user) {
+      navigate('login')
+    } else {
+      navigate('checkout')
+    }
   }
 
   return (

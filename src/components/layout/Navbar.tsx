@@ -4,13 +4,13 @@ import { useState, useEffect } from 'react'
 import { useAppStore, useAuthStore } from '@/store'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetHeader } from '@/components/ui/sheet'
-import { Menu, Home, Wallet, User, MessageCircle, LogOut, X } from 'lucide-react'
+import { Menu, Home, Wallet, User, HelpCircle, LogOut, X } from 'lucide-react'
 
 const NAV_LINKS = [
   { label: 'الرئيسية', page: 'home' as const, icon: Home },
   { label: 'الأسعار', page: 'pricing' as const, icon: Wallet },
   { label: 'المميزات', page: 'features' as const, icon: User },
-  { label: 'تواصل معانا', page: 'contact' as const, icon: MessageCircle },
+  { label: 'الأسئلة الشائعة', page: 'faq' as const, icon: HelpCircle },
 ]
 
 export default function Navbar() {
