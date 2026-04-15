@@ -204,7 +204,7 @@ function SectionHero({
   data: HeroSection;
   product: Product;
 }) {
-  const { navigate, openWhatsAppPopup, setSelectedPlan } = useAppStore();
+  const { navigate, openWhatsAppPopup, setSelectedPlan, setPendingRedirect } = useAppStore();
   const { user } = useAuthStore();
 
   const emoji = data.emoji || product.emoji || '📦';
@@ -301,6 +301,7 @@ function SectionHero({
               className="carely-btn-primary text-base sm:text-lg py-3.5 sm:py-4 px-8 sm:px-10 shadow-xl shadow-carely-green/25"
               onClick={() => {
                 if (!user) {
+                  setPendingRedirect('checkout');
                   navigate('login');
                 } else {
                   setSelectedPlan('gold');
@@ -456,7 +457,7 @@ function SectionTrustBadges({ data }: { data: TrustBadgesSection }) {
 }
 
 function SectionCTA({ data, product }: { data: CTASection; product: Product }) {
-  const { navigate, openWhatsAppPopup, setSelectedPlan } = useAppStore();
+  const { navigate, openWhatsAppPopup, setSelectedPlan, setPendingRedirect } = useAppStore();
   const { user } = useAuthStore();
 
   const waMessage = `مرحبا، أريد الاستفسار عن ${product.nameAr}`;
@@ -488,6 +489,7 @@ function SectionCTA({ data, product }: { data: CTASection; product: Product }) {
                 className="bg-white text-carely-dark hover:bg-carely-light font-extrabold rounded-full py-3.5 sm:py-4 px-8 sm:px-10 text-base sm:text-lg shadow-xl hover:shadow-2xl transition-all hover:-translate-y-0.5"
                 onClick={() => {
                   if (!user) {
+                    setPendingRedirect('checkout');
                     navigate('login');
                   } else {
                     setSelectedPlan('gold');
@@ -521,7 +523,7 @@ function SectionCTA({ data, product }: { data: CTASection; product: Product }) {
 }
 
 function SectionPricing({ data }: { data: PricingSection }) {
-  const { setSelectedPlan, navigate } = useAppStore();
+  const { setSelectedPlan, navigate, setPendingRedirect } = useAppStore();
   const { user } = useAuthStore();
 
   const handleBuy = (planKey: 'silver' | 'gold') => {
@@ -529,6 +531,7 @@ function SectionPricing({ data }: { data: PricingSection }) {
     if (user) {
       navigate('checkout');
     } else {
+      setPendingRedirect('checkout');
       navigate('login');
     }
   };

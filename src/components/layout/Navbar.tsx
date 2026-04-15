@@ -14,7 +14,7 @@ const NAV_LINKS = [
 ]
 
 export default function Navbar() {
-  const { navigate, currentPage } = useAppStore()
+  const { navigate, currentPage, setPendingRedirect } = useAppStore()
   const { user, logout } = useAuthStore()
   const [scrolled, setScrolled] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -156,6 +156,7 @@ export default function Navbar() {
                   className="carely-btn-primary text-sm"
                   onClick={() => {
                     if (!user) {
+                      setPendingRedirect('checkout')
                       navigate('login')
                     } else {
                       navigate('checkout')

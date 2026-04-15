@@ -4,7 +4,7 @@ import { useAppStore, useAuthStore } from '@/store'
 import { Button } from '@/components/ui/button'
 
 export default function FinalCTA() {
-  const { navigate } = useAppStore()
+  const { navigate, setPendingRedirect } = useAppStore()
   const user = useAuthStore((s) => s.user)
 
   return (
@@ -28,6 +28,7 @@ export default function FinalCTA() {
           className="bg-white text-carely-green hover:bg-gray-100 font-bold rounded-full px-8 py-3 text-base shadow-lg hover:shadow-xl transition-all duration-200 hover:-translate-y-0.5"
           onClick={() => {
             if (!user) {
+              setPendingRedirect('checkout')
               navigate('login')
             } else {
               navigate('checkout')

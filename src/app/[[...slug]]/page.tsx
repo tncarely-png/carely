@@ -114,7 +114,6 @@ function HomePage() {
       <AppCardsGrid />
       <StatsBar />
       <HowItWorks />
-      <ProductCards />
       <FeaturesGrid />
       <Testimonials />
       <FaqAccordion />
@@ -215,13 +214,19 @@ function AppRouter() {
     contact: <ContactView />,
     'qustodio-app': <QustodioAppPage />,
     'product-detail': <ProductDetailPage />,
+    'checkout': <CheckoutPage />,
+    'checkout-success': <CheckoutSuccessPage />,
   }
   if (publicRoutes[currentPage]) {
+    // Checkout routes require authentication
+    if ((currentPage === 'checkout' || currentPage === 'checkout-success') && !user) {
+      return <LoginPage />
+    }
     return publicRoutes[currentPage]
   }
 
   // ── Dashboard routes ──
-  if (currentPage.startsWith('dashboard') || currentPage === 'checkout' || currentPage === 'checkout-success') {
+  if (currentPage.startsWith('dashboard')) {
     if (!user) {
       return <LoginPage />
     }
@@ -232,8 +237,6 @@ function AppRouter() {
         case 'dashboard-subscription': return <SubscriptionPage />
         case 'dashboard-orders': return <OrdersPage />
         case 'dashboard-profile': return <ProfilePage />
-        case 'checkout': return <CheckoutPage />
-        case 'checkout-success': return <CheckoutSuccessPage />
         default: return <DashboardPage />
       }
     }

@@ -374,3 +374,28 @@ Stage Summary:
 - Product page: "اشتري الآن" buy button in hero + bottom CTA
 - All pages: Floating home button (top-left, visible on non-home pages)
 
+---
+Task ID: 8
+Agent: Main
+Task: Fix Buy → Login → Dashboard flow (should redirect to Checkout)
+
+Work Log:
+- Added `pendingRedirect: PageRoute | null` and `setPendingRedirect` action to Zustand store (`src/store/index.ts`)
+- Fixed all "Buy" buttons to set `pendingRedirect('checkout')` before navigating to login:
+  - `src/components/home/FinalCTA.tsx` — CTA button
+  - `src/components/home/ProductCards.tsx` — handleBuy function (silver/gold)
+  - `src/components/home/ProductDetailPage.tsx` — SectionHero CTA, SectionCTA CTA, SectionPricing handleBuy
+  - `src/components/layout/Navbar.tsx` — "اشتري الآن" button
+- Fixed `src/components/auth/LoginPage.tsx` — After successful OTP login AND after profile submit, checks `pendingRedirect` via `useAppStore.getState()`. If set, redirects to that page instead of dashboard/admin. Clears the pending redirect after use.
+- Fixed `src/app/[[...slug]]/page.tsx` — Moved checkout and checkout-success out of the DashboardSidebar wrapper into publicRoutes. Added auth guard for checkout routes (redirects to LoginPage if no user). Dashboard routes now only wrap actual dashboard/* pages.
+- Fixed `src/components/dashboard/CheckoutPage.tsx` — Removed the `!user` fallback guard (lines 638-647) since the router already handles auth. Checkout page now renders its step indicator and content directly without a sidebar.
+- `needsLayout` in RootPage already excludes checkout/checkout-success, so the checkout page renders standalone (no Navbar/Footer, no DashboardSidebar).
+- Lint: 0 errors, 1 warning (pre-existing font-in-head warning)
+
+Stage Summary:
+- Buy → Login → Checkout flow now works correctly via `pendingRedirect` state
+- All 5 buy button locations updated to set pending redirect
+- LoginPage checks and consumes pending redirect on both login and registration paths
+- Checkout page is now standalone (no sidebar, no navbar/footer)
+- Dashboard routes properly isolated from checkout routes
+

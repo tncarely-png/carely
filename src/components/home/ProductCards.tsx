@@ -7,13 +7,14 @@ import { Button } from '@/components/ui/button'
 import { Check } from 'lucide-react'
 
 export default function ProductCards() {
-  const { navigate, setSelectedPlan } = useAppStore()
+  const { navigate, setSelectedPlan, setPendingRedirect } = useAppStore()
 
   const user = useAuthStore((s) => s.user)
 
   const handleBuy = (plan: 'silver' | 'gold') => {
     setSelectedPlan(plan)
     if (!user) {
+      setPendingRedirect('checkout')
       navigate('login')
     } else {
       navigate('checkout')

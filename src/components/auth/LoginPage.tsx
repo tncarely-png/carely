@@ -188,7 +188,13 @@ export default function LoginPage() {
       if (res.ok && data.success) {
         // Existing user — login successful
         setUser(data.user);
-        navigate(data.user.role === 'admin' ? 'admin' : 'dashboard');
+        const pendingRedirect = useAppStore.getState().pendingRedirect;
+        if (pendingRedirect) {
+          useAppStore.getState().setPendingRedirect(null);
+          navigate(pendingRedirect);
+        } else {
+          navigate(data.user.role === 'admin' ? 'admin' : 'dashboard');
+        }
       } else if (data.isNewUser) {
         // New user — show profile completion step
         setStep('profile');
@@ -259,7 +265,13 @@ export default function LoginPage() {
 
       if (res.ok && data.success) {
         setUser(data.user);
-        navigate(data.user.role === 'admin' ? 'admin' : 'dashboard');
+        const pendingRedirect = useAppStore.getState().pendingRedirect;
+        if (pendingRedirect) {
+          useAppStore.getState().setPendingRedirect(null);
+          navigate(pendingRedirect);
+        } else {
+          navigate(data.user.role === 'admin' ? 'admin' : 'dashboard');
+        }
       } else {
         setError(data.error || 'حصل مشكل أثناء التسجيل. جرب مرة أخرى.');
         setLoading(false);

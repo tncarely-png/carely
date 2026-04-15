@@ -15,19 +15,19 @@ interface HeroSettings {
 }
 
 const DEFAULT_HERO: HeroSettings = {
-  hero_title: 'متجر Carely.tn 🛍️',
-  hero_subtitle: 'حسابات تطبيقات العيلة المدفوعة',
-  hero_description: 'اشتري، فعّل، واستمتع — مع دعم مباشر على الواتساب',
-  hero_subdescription: 'من ولاية الكاف، نخدمو كامل تونس 🇹🇳',
-  cta_primary_text: 'شوف تطبيقاتنا',
+  hero_title: 'Carely.tn 🛍️',
+  hero_subtitle: 'متجرك لحسابات التطبيقات بالدينار التونسي',
+  hero_description: 'اشتري اشتراكات التطبيقات اللي تحتاجها — دفع بالدينار، تفعيل فوري، ودعم مباشر على واتساب',
+  hero_subdescription: 'نخدمو من تونس لكل تونسي 🇹🇳',
+  cta_primary_text: 'شوف التطبيقات',
   cta_secondary_text: 'تواصل معانا',
 }
 
 const TRUST_BADGES = [
   'حسابات أصلية 100%',
+  'دفع بالدينار التونسي',
   'دعم على الواتساب',
-  'دفع آمن بالدينار',
-  'تسليم سريع',
+  'تسليم فوري',
 ]
 
 export default function HeroSection() {

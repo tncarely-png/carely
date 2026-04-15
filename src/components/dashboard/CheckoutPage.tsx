@@ -635,17 +635,6 @@ export default function CheckoutPage() {
   };
 
   // ─── Main Render ───────────────────────────────────────────
-  if (!user) {
-    return (
-      <div className="text-center py-20" dir="rtl">
-        <p className="text-carely-gray">لازم تسجل أول باش تقدر تشتري</p>
-        <Button className="carely-btn-primary mt-4" onClick={() => navigate('login')}>
-          سجل دخول
-        </Button>
-      </div>
-    );
-  }
-
   return (
     <div className="max-w-2xl mx-auto px-4 py-6" dir="rtl">
       <StepIndicator />

@@ -53,6 +53,7 @@ interface AppState {
   selectedProductId: string | null;
   whatsappPopupOpen: boolean;
   whatsappPopupMessage: string | undefined;
+  pendingRedirect: PageRoute | null;
   navigate: (page: PageRoute) => void;
   setSelectedPlan: (plan: "silver" | "gold" | null) => void;
   setSelectedPaymentMethod: (method: "flouci" | "virement" | "ccp" | null) => void;
@@ -60,6 +61,7 @@ interface AppState {
   setSelectedUserId: (id: string | null) => void;
   setSelectedSubscriptionId: (id: string | null) => void;
   setSelectedProductId: (id: string | null) => void;
+  setPendingRedirect: (page: PageRoute | null) => void;
   openWhatsAppPopup: (message?: string) => void;
   closeWhatsAppPopup: () => void;
 }
@@ -74,6 +76,7 @@ export const useAppStore = create<AppState>((set) => ({
   selectedProductId: null,
   whatsappPopupOpen: false,
   whatsappPopupMessage: undefined,
+  pendingRedirect: null,
   navigate: (page) => {
     set({ currentPage: page });
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -84,6 +87,7 @@ export const useAppStore = create<AppState>((set) => ({
   setSelectedUserId: (id) => set({ selectedUserId: id }),
   setSelectedSubscriptionId: (id) => set({ selectedSubscriptionId: id }),
   setSelectedProductId: (id) => set({ selectedProductId: id }),
+  setPendingRedirect: (page) => set({ pendingRedirect: page }),
   openWhatsAppPopup: (message) => set({ whatsappPopupOpen: true, whatsappPopupMessage: message }),
   closeWhatsAppPopup: () => set({ whatsappPopupOpen: false, whatsappPopupMessage: undefined }),
 }));
