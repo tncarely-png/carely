@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { useAppStore, useAuthStore, type PageRoute } from '@/store'
 import { Home } from 'lucide-react'
 
@@ -261,15 +261,20 @@ export default function RootPage() {
     navigate,
   } = useAppStore()
 
-  // Sync URL path to Zustand store on mount (handles direct URL access like /superadmin)
+  // Sync URL path to Zustand store on mount ONLY (handles direct URL access like /superadmin)
+  const syncedRef = useRef(false)
   useEffect(() => {
-    const page = pathToPage(window.location.pathname)
-    if (page !== currentPage) {
-      navigate(page)
+    if (!syncedRef.current) {
+      syncedRef.current = true
+      const page = pathToPage(window.location.pathname)
+      if (page !== currentPage) {
+        navigate(page)
+      }
     }
-  })
+  }, [])
 
   // Determine if we need the main layout (Navbar + Footer)
+  // Note: product-detail and qustodio-app render their own Navbar/Footer
   const needsLayout = !currentPage.startsWith('superadmin') &&
     !currentPage.startsWith('admin') &&
     currentPage !== 'login' &&
@@ -277,7 +282,9 @@ export default function RootPage() {
     currentPage !== 'checkout' &&
     currentPage !== 'checkout-success' &&
     currentPage !== 'privacy-policy' &&
-    currentPage !== 'terms-of-service'
+    currentPage !== 'terms-of-service' &&
+    currentPage !== 'product-detail' &&
+    currentPage !== 'qustodio-app'
 
   return (
     <div className="min-h-screen flex flex-col">
