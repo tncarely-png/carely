@@ -204,3 +204,35 @@ Stage Summary:
 - **Image fix**: Created catch-all `[...key]/route.ts` so `/api/upload/products/xxx.jpg` serves from R2
 - **Explore button fix**: All products now navigate to a dynamic ProductDetailPage that shows full info and CTAs
 - Files changed: 7 files, 294 insertions, 34 deletions
+
+---
+Task ID: 4
+Agent: frontend-dev
+Task: Add pricing section to ProductDetailPage
+
+Work Log:
+- Read ProductDetailPage.tsx
+- Added PricingSection type and SectionPricing component
+- Added pricing section to buildDefaultSections (before CTA)
+- Added pricing case to section rendering switch
+- Section shows Silver/Gold plans with buy buttons
+
+Stage Summary:
+- ProductDetailPage now has a complete purchase path
+- Users can select a plan and go directly to checkout
+
+---
+Task ID: 3
+Agent: frontend-dev
+Task: Rewrite PricingPage to show Silver/Gold pricing plans with buy buttons
+
+Work Log:
+- Read [[...slug]]/page.tsx
+- Rewrote PricingPage function with pricing cards
+- Added Silver/Gold plan cards with features, pricing, and buy buttons
+- Buy buttons navigate to checkout (or login if not logged in)
+- Kept AppCardsGrid below pricing section
+
+Stage Summary:
+- PricingPage now shows actual pricing plans instead of just product cards
+- Clear purchase path from pricing page to checkout

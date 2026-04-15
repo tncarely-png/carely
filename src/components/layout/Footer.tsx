@@ -64,7 +64,7 @@ export default function Footer() {
                 { label: 'الرئيسية', page: 'home' as const },
                 { label: 'الأسعار', page: 'pricing' as const },
                 { label: 'المميزات', page: 'features' as const },
-                { label: 'الأسئلة الشايعة', page: 'faq' as const },
+                { label: 'الأسئلة الشائعة', page: 'faq' as const },
               ].map((item) => (
                 <li key={item.page}>
                   <button
@@ -88,14 +88,6 @@ export default function Footer() {
                   className="text-sm text-gray-300 hover:text-white transition-colors"
                 >
                   تواصل معانا
-                </button>
-              </li>
-              <li>
-                <button
-                  onClick={() => openWhatsAppPopup()}
-                  className="text-sm text-gray-300 hover:text-white transition-colors"
-                >
-                  واتساب
                 </button>
               </li>
               <li>

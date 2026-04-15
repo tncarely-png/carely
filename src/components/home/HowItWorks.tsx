@@ -1,28 +1,28 @@
 'use client'
 
-import { Smartphone, Layers, CreditCard, MessageCircle, ArrowLeft } from 'lucide-react'
+import { Layers, CreditCard, MessageCircle, ArrowLeft } from 'lucide-react'
 
 const STEPS = [
   {
     number: 1,
-    icon: Smartphone,
-    emoji: '📱',
-    title: 'اختار التطبيق',
-    desc: 'اختار من تطبيقاتنا الموثوقة',
-  },
-  {
-    number: 2,
     icon: Layers,
     emoji: '📦',
     title: 'اختار الباقة',
-    desc: 'Silver أو Gold حسب احتياجك',
+    desc: 'Silver أو Gold حسب احتياج عيلتك',
   },
   {
-    number: 3,
+    number: 2,
     icon: CreditCard,
     emoji: '💳',
     title: 'ادفع بالدينار',
     desc: 'Flouci، حوال بنكي، أو CCP',
+  },
+  {
+    number: 3,
+    icon: MessageCircle,
+    emoji: '📸',
+    title: 'ابعث الوصل',
+    desc: 'ارفع صورة وصل الدفع وانتظر التأكيد',
   },
   {
     number: 4,

@@ -1,13 +1,16 @@
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
-import { useAppStore } from '@/store';
-import { getWhatsAppLink } from '@/lib/constants';
+import { useAppStore, useAuthStore } from '@/store';
+import { getWhatsAppLink, PLANS } from '@/lib/constants';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
 import WhatsAppFAB from '@/components/layout/WhatsAppFAB';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
-import { ArrowLeft, Check, ShieldCheck, MessageCircle, Star, Zap, Clock, Heart } from 'lucide-react';
+import { ArrowLeft, Check, ShieldCheck, MessageCircle, Star, Zap, Clock, Heart, Smartphone } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
 // ────────────────────────────────────────────
@@ -86,12 +89,18 @@ interface CTASection {
   ctaSubtext?: string;
 }
 
+interface PricingSection {
+  type: 'pricing';
+  title?: string;
+}
+
 type LandingSection =
   | HeroSection
   | FeaturesSection
   | HowItWorksSection
   | TrustBadgesSection
-  | CTASection;
+  | CTASection
+  | PricingSection;
 
 // ────────────────────────────────────────────
 // Helpers
@@ -164,6 +173,12 @@ function buildDefaultSections(product: Product): LandingSection[] {
       { icon: '💬', text: 'دعم بالتونسي' },
       { icon: '🇹🇳', text: 'من تونس' },
     ],
+  });
+
+  // Pricing
+  sections.push({
+    type: 'pricing',
+    title: 'اختار باقتك',
   });
 
   // CTA
@@ -520,6 +535,98 @@ function SectionCTA({ data, product }: { data: CTASection; product: Product }) {
   );
 }
 
+function SectionPricing({ data }: { data: PricingSection }) {
+  const { setSelectedPlan, navigate } = useAppStore();
+  const { user } = useAuthStore();
+
+  const handleBuy = (planKey: 'silver' | 'gold') => {
+    setSelectedPlan(planKey);
+    if (user) {
+      navigate('checkout');
+    } else {
+      navigate('login');
+    }
+  };
+
+  return (
+    <section className="py-12 md:py-20 bg-white">
+      <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+        <div className="text-center mb-10 md:mb-14">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-carely-dark mb-3">
+            {data.title || 'اختار باقتك'}
+          </h2>
+          <p className="text-base sm:text-lg text-carely-gray max-w-xl mx-auto">
+            اختار الباقة اللي تناسبك — اشتري الآن وفعّل الحساب في دقائق
+          </p>
+          <div className="w-16 h-1 bg-carely-green rounded-full mx-auto mt-4" />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+          {(['silver', 'gold'] as const).map((key) => {
+            const plan = PLANS[key];
+            return (
+              <Card
+                key={key}
+                className={`relative transition-all hover:shadow-lg ${
+                  plan.featured ? 'carely-card-featured' : 'carely-card'
+                }`}
+              >
+                {plan.featured && (
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-carely-gold text-white text-xs font-bold px-3 py-1 rounded-full">
+                    ⭐ الأكثر شراءً
+                  </div>
+                )}
+                <CardContent className="p-5 sm:p-6">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="text-3xl">{plan.icon}</div>
+                    <div>
+                      <h3 className="text-lg font-bold text-carely-dark">{plan.nameAr}</h3>
+                      <p className="text-xs text-carely-gray">{plan.duration}</p>
+                    </div>
+                  </div>
+
+                  <div className="mb-4">
+                    <span className="text-3xl font-extrabold text-carely-green">{plan.priceTnd}</span>
+                    <span className="text-sm text-carely-gray mr-1">دت / سنة</span>
+                  </div>
+
+                  <div className="flex items-center gap-2 mb-4">
+                    <Badge variant="secondary" className="bg-carely-mint text-carely-dark font-semibold">
+                      <Smartphone className="h-3.5 w-3.5 ml-1" />
+                      {plan.devices} أجهزة
+                    </Badge>
+                  </div>
+
+                  <Separator className="my-4" />
+
+                  <ul className="space-y-2.5">
+                    {plan.features.map((f, i) => (
+                      <li key={i} className="flex items-start gap-2 text-sm text-carely-gray">
+                        <Check className="h-4 w-4 text-carely-green shrink-0 mt-0.5" />
+                        {f}
+                      </li>
+                    ))}
+                  </ul>
+
+                  <Button
+                    className={`w-full mt-5 h-11 text-sm font-bold ${
+                      plan.featured ? 'carely-btn-primary' : 'carely-btn-outline'
+                    }`}
+                    onClick={() => handleBuy(key)}
+                  >
+                    اشتري
+                    <ArrowLeft className="h-4 w-4 mr-1.5" />
+                  </Button>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 // ────────────────────────────────────────────
 // Loading skeleton
 // ────────────────────────────────────────────
@@ -672,6 +779,13 @@ export default function ProductDetailPage() {
               <SectionTrustBadges
                 key={`s-${idx}`}
                 data={section as TrustBadgesSection}
+              />
+            );
+          case 'pricing':
+            return (
+              <SectionPricing
+                key={`s-${idx}`}
+                data={section as PricingSection}
               />
             );
           case 'cta':

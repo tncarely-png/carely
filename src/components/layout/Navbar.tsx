@@ -154,7 +154,13 @@ export default function Navbar() {
                 <Button
                   size="sm"
                   className="carely-btn-primary text-sm"
-                  onClick={() => navigate('pricing')}
+                  onClick={() => {
+                    if (!user) {
+                      navigate('login')
+                    } else {
+                      navigate('checkout')
+                    }
+                  }}
                 >
                   اشتري الآن
                 </Button>

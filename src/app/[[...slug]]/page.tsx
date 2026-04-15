@@ -2,6 +2,10 @@
 
 import { useEffect } from 'react';
 import { useAppStore, useAuthStore, type PageRoute } from '@/store';
+import { PLANS } from '@/lib/constants';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Check } from 'lucide-react';
 
 // Auth
 import { LoginPage } from '@/components/auth';
@@ -94,22 +98,158 @@ function HomePage() {
 }
 
 function PricingPage() {
-  const { navigate } = useAppStore();
+  const { navigate, setSelectedPlan } = useAppStore();
+  const user = useAuthStore((s) => s.user);
+
+  const handleBuy = (plan: 'silver' | 'gold') => {
+    if (!user) {
+      navigate('login');
+      return;
+    }
+    setSelectedPlan(plan);
+    navigate('checkout');
+  };
+
   return (
     <>
       <Navbar />
       <main className="flex-1">
-        <section className="py-16 px-4">
-          <div className="max-w-5xl mx-auto">
+        {/* Pricing Section */}
+        <section className="py-16 md:py-20 px-4">
+          <div className="max-w-3xl mx-auto">
             <h1 className="text-3xl md:text-4xl font-extrabold text-center text-carely-dark mb-4">
               أسعارنا
             </h1>
             <p className="text-center text-carely-gray text-lg mb-12">
               اختار الباقة المناسبة لعيلتك — كل الباقات تشمل سنة كاملة
             </p>
+
+            {/* Pricing Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8 items-start">
+              {/* SILVER */}
+              <div className="carely-card carely-top-accent p-6 flex flex-col">
+                <div className="mb-4">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-3xl">{PLANS.silver.icon}</span>
+                    <div>
+                      <h3 className="text-xl font-extrabold text-carely-dark">
+                        {PLANS.silver.displayName}
+                      </h3>
+                    </div>
+                  </div>
+                  <p className="text-sm text-carely-gray mt-2">
+                    مناسبة للعيلة الصغيرة
+                  </p>
+                </div>
+
+                <div className="mb-4">
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-4xl font-extrabold text-carely-green">
+                      {PLANS.silver.priceTnd}
+                    </span>
+                    <span className="text-lg text-carely-gray font-medium">دت</span>
+                  </div>
+                  <p className="text-sm text-carely-gray">/ سنة</p>
+                </div>
+
+                <div className="mb-5">
+                  <Badge
+                    variant="secondary"
+                    className="bg-gray-100 text-gray-700 px-3 py-1 text-sm font-bold"
+                  >
+                    {PLANS.silver.devices} أجهزة
+                  </Badge>
+                </div>
+
+                <ul className="flex flex-col gap-2.5 mb-6 flex-1">
+                  {PLANS.silver.features.map((feature) => (
+                    <li key={feature} className="flex items-start gap-2 text-sm">
+                      <Check className="size-4 text-carely-green shrink-0 mt-0.5" />
+                      <span className="text-carely-gray">{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+
+                <Button
+                  variant="outline"
+                  className="w-full border-carely-silver text-carely-gray hover:bg-carely-silver hover:text-white font-bold rounded-full py-3"
+                  onClick={() => handleBuy('silver')}
+                >
+                  اشتري
+                </Button>
+              </div>
+
+              {/* GOLD */}
+              <div className="carely-card-featured carely-top-accent-gold p-6 flex flex-col relative">
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                  <Badge className="bg-carely-gold text-white px-4 py-1 text-sm font-bold shadow-md">
+                    ⭐ الأكثر شراءً
+                  </Badge>
+                </div>
+
+                <div className="mb-4 mt-2">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-3xl">{PLANS.gold.icon}</span>
+                    <div>
+                      <h3 className="text-xl font-extrabold text-carely-dark">
+                        {PLANS.gold.displayName}
+                      </h3>
+                    </div>
+                  </div>
+                  <p className="text-sm text-carely-gray mt-2">
+                    للعيلة اللي تحب الحماية الكاملة
+                  </p>
+                </div>
+
+                <div className="mb-4">
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-4xl font-extrabold text-carely-green">
+                      {PLANS.gold.priceTnd}
+                    </span>
+                    <span className="text-lg text-carely-gray font-medium">دت</span>
+                  </div>
+                  <p className="text-sm text-carely-gray">/ سنة</p>
+                </div>
+
+                <div className="mb-5">
+                  <Badge className="bg-carely-gold/10 text-carely-gold px-3 py-1 text-sm font-bold border border-carely-gold/20">
+                    {PLANS.gold.devices} أجهزة
+                  </Badge>
+                </div>
+
+                <ul className="flex flex-col gap-2.5 mb-6 flex-1">
+                  {PLANS.gold.features.map((feature) => (
+                    <li key={feature} className="flex items-start gap-2 text-sm">
+                      <Check className="size-4 text-carely-green shrink-0 mt-0.5" />
+                      <span className="text-carely-gray">{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+
+                <Button
+                  className="w-full carely-btn-primary font-bold py-3"
+                  onClick={() => handleBuy('gold')}
+                >
+                  اشتري
+                </Button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Product Showcase */}
+        <section className="py-12 px-4">
+          <div className="max-w-5xl mx-auto">
+            <h2 className="text-2xl md:text-3xl font-extrabold text-center text-carely-dark mb-4">
+              تطبيقاتنا
+            </h2>
+            <p className="text-center text-carely-gray text-lg mb-10">
+              اكتشف باقي تطبيقاتنا للعيلة التونسية
+            </p>
             <AppCardsGrid />
           </div>
         </section>
+
         <FinalCTA />
       </main>
       <Footer />
