@@ -3,9 +3,9 @@ import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 
 export const metadata: Metadata = {
-  title: "Carely.tn — حمي عيلتك على النت",
-  description: "اشتري اشتراك Qustodio بالدينار التونسي — فعّل في دقيقتين — تابع من هاتفك. Carely.tn",
-  keywords: ["Carely", "Qustodio", "حماية الأطفال", "تونس", "مراقبة أطفال"],
+  title: "9arini.tn — Gestion des cours particuliers en Tunisie",
+  description: "La plateforme qui simplifie la gestion des cours particuliers : paiements, présence, et coordination — pour les enseignants et étudiants tunisiens.",
+  keywords: ["9arini", "cours particuliers", "tunisie", "enseignant", "étudiant", "paiement", "présence"],
 };
 
 export default function RootLayout({
@@ -14,7 +14,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ar" dir="rtl" suppressHydrationWarning>
+    <html lang="fr" dir="ltr" suppressHydrationWarning>
       <head>
         <link
           href="https://fonts.googleapis.com/css2?family=Baloo+Bhaijaan+2:wght@400;500;600;700;800&display=swap"
@@ -22,7 +22,7 @@ export default function RootLayout({
         />
       </head>
       <body
-        className="antialiased bg-carely-mint text-carely-gray min-h-screen flex flex-col overflow-x-hidden"
+        className="antialiased bg-white text-zinc-900 min-h-screen flex flex-col overflow-x-hidden"
         style={{ fontFamily: "'Baloo Bhaijaan 2', sans-serif" }}
       >
         {children}

@@ -236,3 +236,81 @@ Work Log:
 Stage Summary:
 - PricingPage now shows actual pricing plans instead of just product cards
 - Clear purchase path from pricing page to checkout
+
+---
+Task ID: 2
+Agent: main
+Task: Update theme and layout files for 9arini.tn with "New York Studio" aesthetic
+
+Work Log:
+- Read existing `src/app/globals.css` (carely green theme) and `src/app/layout.tsx` (Arabic RTL)
+- Rewrote `globals.css` with New York Studio color palette:
+  - Background: #FFFFFF, Foreground: #09090B, Primary: #78350F (amber brown)
+  - Muted: #F4F4F5, Border: #E4E4E7, Destructive: #EF4444
+  - Removed all carely-specific custom colors and utility classes
+  - Added ninar utility classes: ninar-card, ninar-btn-primary, ninar-btn-outline, ninar-btn-ghost, ninar-section, ninar-container
+  - Added ninar-scroll scrollbar styles adapted to new palette
+  - Kept safe-area-bottom, blur-contained, shadcn/ui CSS variable mapping
+  - Body base styles: bg-white, text-zinc-900; headings: text-zinc-950 font-extrabold
+- Rewrote `layout.tsx` for 9arini.tn:
+  - French (LTR) instead of Arabic (RTL)
+  - Updated metadata: title, description, keywords for 9arini.tn
+  - Body classes: bg-white text-zinc-900 (Tailwind standard, no custom colors)
+  - Kept Baloo Bhaijaan 2 font, Toaster component
+- Lint: 0 errors, 1 warning (pre-existing font-in-head warning, harmless in App Router)
+
+Stage Summary:
+- Complete theme migration from Carely (green, Arabic RTL) to 9arini.tn (New York Studio, French LTR)
+- Color palette: warm amber-brown (#78350F) primary on pure white background
+- All utility classes renamed from carely-* to ninar-* prefix
+- Layout defaults to French language and LTR direction
+- shadcn/ui CSS variable mapping preserved for component compatibility
+
+---
+Task ID: 3
+Agent: main
+Task: Create all landing page components for 9arini.tn
+
+Work Log:
+- Updated `src/app/globals.css` with 9arini.tn "New York Studio" theme (primary #78350F, white bg, ninar-* utility classes)
+- Updated `src/app/layout.tsx` for French LTR with 9arini.tn metadata
+- Created `src/components/ninar/Navbar.tsx` — Sticky navbar with logo, 4 nav links, FR/TN/EN language pill switcher, prominent brown "Se connecter" button, mobile Sheet hamburger menu, framer-motion scroll shadow
+- Created `src/components/ninar/HeroSection.tsx` — Large hero with Tunisian badge, bold headline, subtitle, 2 CTA buttons (primary + outline), stats row (500+ teachers, 10K+ students, 50K+ payments), decorative geometric lines
+- Created `src/components/ninar/FeaturesSection.tsx` — 6 feature cards in responsive 1→2→3 grid with emoji icons, titles, descriptions, brown top-border accent, framer-motion scroll-in animations
+- Created `src/components/ninar/HowItWorksSection.tsx` — 4-step horizontal timeline with numbered brown circle badges, icons, titles, descriptions, connecting line on desktop
+- Created `src/components/ninar/PricingSection.tsx` — 2 pricing cards (Gratuit 0 DT + Premium 29 DT with "⭐ Populaire" badge), feature lists with checkmarks, brown-bordered featured card
+- Created `src/components/ninar/TestimonialsSection.tsx` — 3 testimonial cards with 5-star ratings, quotes, author avatars/names/roles
+- Created `src/components/ninar/CTASection.tsx` — Full-width dark (zinc-950) section with white headline, benefits row (checkmarks), white CTA button
+- Created `src/components/ninar/Footer.tsx` — 4-column grid (Brand, Produit, Support, Légal), social icons, bottom bar with copyright + "Se connecter" button
+- Created `src/components/ninar/LoginModal.tsx` — Two-step phone/OTP login Dialog: Step 1 (🇹🇳 +216 phone input with XX XXX XXX formatting, validation for 2/5/9 prefix), Step 2 (6-digit InputOTP with auto-submit, 60s resend countdown, back button). Used key-based remount pattern to avoid setState-in-effect lint
+- Created `src/components/ninar/index.ts` — Barrel export for all 10 components
+- Updated `src/app/page.tsx` — Wired all components together with shared `loginOpen` state
+- Lint: 0 errors, 1 warning (pre-existing font-in-head, harmless)
+
+Stage Summary:
+- All 9 landing page components + 1 barrel export created in `src/components/ninar/`
+- "New York Studio" design: high contrast, editorial, minimal with #78350F amber brown primary
+- Fully responsive (mobile-first) with framer-motion scroll animations
+- Login modal accessible everywhere: Navbar, Hero, Pricing, CTA, Footer — all trigger onLoginClick
+- Phone validation for Tunisian numbers (must start with 2/5/9, 8 digits)
+- 0 lint errors
+
+---
+Task ID: 4
+Agent: Main
+Task: Assemble 9arini.tn main page, remove conflicting routes, generate hero image, verify compilation
+
+Work Log:
+- Created src/app/page.tsx — Main landing page assembling all 9arini components with shared loginOpen state
+- Deleted src/app/[[...slug]]/ directory — Conflicted with page.tsx route specificity
+- Deleted src/app/terms/ and src/app/privacy/ — Old Carely legal pages
+- Generated hero illustration image at public/hero-illustration.png (1344x768)
+- Verified dev server compilation: GET / returns 200 in ~1.4s
+- Final lint check: 0 errors, 1 pre-existing warning
+
+Stage Summary:
+- 9arini.tn landing page fully assembled and rendering at /
+- All components wired together with centralized login modal state
+- Hero image generated for platform branding
+- Clean compilation with zero errors
+
