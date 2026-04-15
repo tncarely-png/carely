@@ -3,9 +3,16 @@ import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 
 export const metadata: Metadata = {
-  title: "9arini.tn — Gestion des cours particuliers en Tunisie",
-  description: "La plateforme qui simplifie la gestion des cours particuliers : paiements, présence, et coordination — pour les enseignants et étudiants tunisiens.",
-  keywords: ["9arini", "cours particuliers", "tunisie", "enseignant", "étudiant", "paiement", "présence"],
+  title: "Carely.tn — متجر اشتراكات حماية الأطفال 🛡️",
+  description: "اشتري اشتراك Qustodio بالدينار التونسي — حماية أطفالك على الإنترنت من Carely.tn. دفع آمن، تفعيل فوري، دعم واتساب.",
+  keywords: ["Carely", "carely", "qustodio", "حماية الأطفال", "تونس", "دينار تونسي", "اشتراك", "parental control"],
+  openGraph: {
+    title: "Carely.tn — متجر اشتراكات حماية الأطفال",
+    description: "اشتري اشتراك Qustodio بالدينار التونسي — حماية أطفالك على الإنترنت",
+    type: "website",
+    locale: "ar_TN",
+    url: "https://carely.tn",
+  },
 };
 
 export default function RootLayout({
@@ -14,17 +21,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="fr" dir="ltr" suppressHydrationWarning>
+    <html lang="ar" dir="rtl" suppressHydrationWarning>
       <head>
         <link
-          href="https://fonts.googleapis.com/css2?family=Baloo+Bhaijaan+2:wght@400;500;600;700;800&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap"
           rel="stylesheet"
         />
       </head>
-      <body
-        className="antialiased bg-white text-zinc-900 min-h-screen flex flex-col overflow-x-hidden"
-        style={{ fontFamily: "'Baloo Bhaijaan 2', sans-serif" }}
-      >
+      <body className="antialiased bg-white text-carely-dark min-h-screen flex flex-col overflow-x-hidden">
         {children}
         <Toaster />
       </body>

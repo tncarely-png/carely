@@ -1,4 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Baloo+Bhaijaan+2:wght@400;500;600;700;800&display=swap');
 @import "tailwindcss";
 @import "tw-animate-css";
 
@@ -7,7 +6,7 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: 'Baloo Bhaijaan 2', sans-serif;
+  --font-sans: 'Tajawal', 'Segoe UI', sans-serif;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -41,41 +40,51 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+
+  /* Carely.tn Brand Colors */
+  --color-carely-green: #1a8449;
+  --color-carely-green-light: #22c55e;
+  --color-carely-dark: #1f2937;
+  --color-carely-gray: #6b7280;
+  --color-carely-gold: #d4a017;
+  --color-carely-light: #f0fdf4;
+  --color-carely-mint: #ecfdf5;
+  --color-carely-silver: #9CA3AF;
 }
 
 :root {
-  --radius: 0.875rem;
-  --background: #FFFFFF;
-  --foreground: #09090B;
-  --card: #FFFFFF;
-  --card-foreground: #09090B;
-  --popover: #FFFFFF;
-  --popover-foreground: #09090B;
-  --primary: #78350F;
-  --primary-foreground: #FFFFFF;
-  --secondary: #F4F4F5;
-  --secondary-foreground: #09090B;
-  --muted: #F4F4F5;
-  --muted-foreground: #71717A;
-  --accent: #F4F4F5;
-  --accent-foreground: #09090B;
-  --destructive: #EF4444;
-  --border: #E4E4E7;
-  --input: #E4E4E7;
-  --ring: #78350F;
-  --chart-1: #78350F;
-  --chart-2: #92400E;
-  --chart-3: #B45309;
-  --chart-4: #D97706;
-  --chart-5: #F59E0B;
-  --sidebar: #FFFFFF;
-  --sidebar-foreground: #09090B;
-  --sidebar-primary: #78350F;
-  --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: #F4F4F5;
-  --sidebar-accent-foreground: #09090B;
-  --sidebar-border: #E4E4E7;
-  --sidebar-ring: #78350F;
+  --radius: 0.75rem;
+  --background: #ffffff;
+  --foreground: #1f2937;
+  --card: #ffffff;
+  --card-foreground: #1f2937;
+  --popover: #ffffff;
+  --popover-foreground: #1f2937;
+  --primary: #1a8449;
+  --primary-foreground: #ffffff;
+  --secondary: #f0fdf4;
+  --secondary-foreground: #1f2937;
+  --muted: #f3f4f6;
+  --muted-foreground: #6b7280;
+  --accent: #ecfdf5;
+  --accent-foreground: #1f2937;
+  --destructive: #ef4444;
+  --border: #e5e7eb;
+  --input: #e5e7eb;
+  --ring: #1a8449;
+  --chart-1: #1a8449;
+  --chart-2: #22c55e;
+  --chart-3: #d4a017;
+  --chart-4: #f59e0b;
+  --chart-5: #10b981;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #1f2937;
+  --sidebar-primary: #1a8449;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #f0fdf4;
+  --sidebar-accent-foreground: #1f2937;
+  --sidebar-border: #e5e7eb;
+  --sidebar-ring: #1a8449;
 }
 
 @layer base {
@@ -86,100 +95,121 @@
   html {
     overflow-x: hidden;
     max-width: 100vw;
+    direction: rtl;
   }
   body {
-    @apply bg-white text-zinc-900 overflow-x-hidden;
+    @apply bg-white text-carely-dark overflow-x-hidden;
     max-width: 100vw;
-    font-family: 'Baloo Bhaijaan 2', sans-serif;
+    font-family: 'Tajawal', 'Segoe UI', sans-serif;
   }
   h1, h2, h3, h4, h5, h6 {
-    color: #09090B;
+    color: #1f2937;
     font-weight: 800;
   }
 }
 
 @layer utilities {
-  /* ── 9arini Card ── */
-  .ninar-card {
-    background: #FFFFFF;
-    border-radius: 8px;
+  /* ── Carely Card ── */
+  .carely-card {
+    background: #ffffff;
+    border-radius: 1rem;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 4px 12px rgba(0, 0, 0, 0.06);
-    border: 1px solid #E4E4E7;
-  }
-
-  /* ── 9arini Buttons ── */
-  .ninar-btn-primary {
-    background: #78350F;
-    color: #FFFFFF;
-    font-weight: 600;
-    border-radius: 8px;
-    padding: 10px 24px;
+    border: 1px solid #f0fdf4;
     transition: all 0.2s ease;
   }
-  .ninar-btn-primary:hover {
-    background: #92400E;
+  .carely-card:hover {
+    box-shadow: 0 4px 16px rgba(26, 132, 73, 0.08), 0 2px 6px rgba(0, 0, 0, 0.04);
+  }
+
+  /* ── Carely Featured Card ── */
+  .carely-card-featured {
+    background: #ffffff;
+    border-radius: 1rem;
+    box-shadow: 0 4px 20px rgba(212, 160, 23, 0.12), 0 2px 8px rgba(0, 0, 0, 0.06);
+    border: 2px solid #d4a017;
+    transition: all 0.2s ease;
+  }
+  .carely-card-featured:hover {
+    box-shadow: 0 8px 30px rgba(212, 160, 23, 0.18), 0 4px 12px rgba(0, 0, 0, 0.06);
+    transform: translateY(-2px);
+  }
+
+  /* ── Top Accent Bars ── */
+  .carely-top-accent {
+    position: relative;
+  }
+  .carely-top-accent::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(to left, #1a8449, #22c55e);
+    border-radius: 1rem 1rem 0 0;
+  }
+  .carely-top-accent-gold {
+    position: relative;
+  }
+  .carely-top-accent-gold::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(to left, #d4a017, #f59e0b);
+    border-radius: 1rem 1rem 0 0;
+  }
+
+  /* ── Carely Buttons ── */
+  .carely-btn-primary {
+    background: linear-gradient(135deg, #1a8449, #22c55e);
+    color: #ffffff;
+    font-weight: 700;
+    border-radius: 9999px;
+    padding: 10px 28px;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 8px rgba(26, 132, 73, 0.25);
+  }
+  .carely-btn-primary:hover {
+    background: linear-gradient(135deg, #15803d, #16a34a);
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(120, 53, 15, 0.25);
+    box-shadow: 0 4px 16px rgba(26, 132, 73, 0.35);
   }
-  .ninar-btn-outline {
+  .carely-btn-outline {
     background: transparent;
-    color: #78350F;
-    font-weight: 600;
-    border-radius: 8px;
-    padding: 10px 24px;
-    border: 1.5px solid #78350F;
+    color: #1a8449;
+    font-weight: 700;
+    border-radius: 9999px;
+    padding: 10px 28px;
+    border: 2px solid #1a8449;
     transition: all 0.2s ease;
   }
-  .ninar-btn-outline:hover {
-    background: #78350F;
-    color: #FFFFFF;
-  }
-  .ninar-btn-ghost {
-    background: transparent;
-    color: #09090B;
-    font-weight: 600;
-    border-radius: 8px;
-    padding: 10px 24px;
-    transition: all 0.2s ease;
-  }
-  .ninar-btn-ghost:hover {
-    background: #F4F4F5;
+  .carely-btn-outline:hover {
+    background: #1a8449;
+    color: #ffffff;
   }
 
-  /* ── 9arini Layout ── */
-  .ninar-section {
-    padding-top: 4rem;
-    padding-bottom: 4rem;
-    padding-left: 1rem;
-    padding-right: 1rem;
+  /* ── Product Card ── */
+  .product-card {
+    background: #ffffff;
+    border-radius: 1rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 4px 16px rgba(0, 0, 0, 0.08);
+    border: 1px solid #f3f4f6;
+    overflow: hidden;
+    transition: all 0.3s ease;
   }
-  @media (min-width: 768px) {
-    .ninar-section {
-      padding-top: 6rem;
-      padding-bottom: 6rem;
-    }
-  }
-  .ninar-container {
-    max-width: 72rem;
-    margin-left: auto;
-    margin-right: auto;
+  .product-card:hover {
+    box-shadow: 0 8px 30px rgba(26, 132, 73, 0.12), 0 4px 12px rgba(0, 0, 0, 0.06);
+    transform: translateY(-4px);
+    border-color: #ecfdf5;
   }
 
-  /* ── Scrollbar ── */
-  .ninar-scroll::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
-  }
-  .ninar-scroll::-webkit-scrollbar-track {
-    background: #F4F4F5;
-    border-radius: 3px;
-  }
-  .ninar-scroll::-webkit-scrollbar-thumb {
-    background: #D4D4D8;
-    border-radius: 3px;
-  }
-  .ninar-scroll::-webkit-scrollbar-thumb:hover {
-    background: #78350F;
+  /* ── Contain blur effects to prevent horizontal scroll ── */
+  .blur-contained {
+    isolation: isolate;
+    overflow: hidden;
   }
 
   /* ── iOS Safe Area ── */
@@ -187,9 +217,20 @@
     padding-bottom: env(safe-area-inset-bottom, 0px);
   }
 
-  /* ── Contain blur effects to prevent horizontal scroll ── */
-  .blur-contained {
-    isolation: isolate;
-    overflow: hidden;
+  /* ── Scrollbar ── */
+  .carely-scroll::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .carely-scroll::-webkit-scrollbar-track {
+    background: #f3f4f6;
+    border-radius: 3px;
+  }
+  .carely-scroll::-webkit-scrollbar-thumb {
+    background: #d1d5db;
+    border-radius: 3px;
+  }
+  .carely-scroll::-webkit-scrollbar-thumb:hover {
+    background: #1a8449;
   }
 }

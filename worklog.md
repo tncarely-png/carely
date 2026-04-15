@@ -314,3 +314,24 @@ Stage Summary:
 - Hero image generated for platform branding
 - Clean compilation with zero errors
 
+---
+Task ID: 5
+Agent: Main
+Task: Revert from 9arini.tn back to Carely.tn — restore SPA router, layout, and CSS
+
+Work Log:
+- Diagnosed issue: page.tsx, layout.tsx, and globals.css were overwritten with 9arini.tn content
+- Restored `src/app/globals.css` — Carely.tn color system with carely-green (#1a8449), carely-dark, carely-gray, carely-gold, carely-light, carely-mint, carely-silver; restored utility classes: carely-card, carely-card-featured, carely-top-accent, carely-top-accent-gold, carely-btn-primary, carely-btn-outline, product-card; RTL direction on html
+- Restored `src/app/layout.tsx` — Carely.tn metadata, Arabic (ar) language, RTL direction, Tajawal font
+- Restored `src/app/page.tsx` — Complete Carely.tn SPA router using Zustand store, mapping all 30+ routes to correct components (home, pricing, features, faq, contact, login, dashboard/*, checkout, admin/*, superadmin/*, legal pages, qustodio-app, product-detail)
+- Added `ProductCards` export to `src/components/home/index.ts` (was missing)
+- Created `src/components/layout/ContactPage.tsx` — Dedicated contact page with WhatsApp and email cards
+- Verified dev server: GET / returns 200 with zero compilation errors
+- Lint: 0 errors, 1 warning (pre-existing font-in-head warning)
+
+Stage Summary:
+- Full revert to Carely.tn completed — preview is working again
+- All 3 overwritten files restored with original Carely.tn branding
+- SPA router handles all 30+ routes correctly
+- Missing ProductCards export fixed, ContactPage component created
+
