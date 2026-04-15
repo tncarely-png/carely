@@ -1,6 +1,7 @@
 'use client'
 
-import { useAppStore, useAuthStore } from '@/store'
+import { useEffect } from 'react'
+import { useAppStore, useAuthStore, type PageRoute } from '@/store'
 import { Home } from 'lucide-react'
 
 // Layout
@@ -72,6 +73,39 @@ import TermsOfServicePage from '@/components/legal/TermsOfServicePage'
 
 // Contact Page
 import ContactPage from '@/components/layout/ContactPage'
+
+// ── URL path → PageRoute mapping ──
+function pathToPage(pathname: string): PageRoute {
+  const p = pathname.replace(/^\/+|\/+$/g, '') // strip leading/trailing slashes
+  if (!p || p === '/') return 'home'
+
+  // Direct match first
+  const validRoutes: PageRoute[] = [
+    'home', 'pricing', 'features', 'faq', 'contact',
+    'privacy-policy', 'terms-of-service', 'login',
+    'dashboard', 'dashboard-subscription', 'dashboard-orders', 'dashboard-profile',
+    'qustodio-app', 'product-detail',
+    'checkout', 'checkout-success',
+    'admin', 'admin-users', 'admin-user-detail',
+    'admin-subscriptions', 'admin-subscription-detail',
+    'admin-orders', 'admin-licenses', 'admin-license-new',
+    'superadmin-pin-gate', 'superadmin-login',
+    'superadmin', 'superadmin-users', 'superadmin-orders',
+    'superadmin-licenses', 'superadmin-whatsapp',
+    'superadmin-settings', 'superadmin-products', 'superadmin-landing',
+  ]
+
+  if (validRoutes.includes(p as PageRoute)) {
+    return p as PageRoute
+  }
+
+  // Prefix matching for dynamic segments
+  if (p.startsWith('dashboard/')) return 'dashboard'
+  if (p.startsWith('admin/')) return 'admin'
+  if (p.startsWith('superadmin/')) return 'superadmin'
+
+  return 'home'
+}
 
 function HomePage() {
   return (
@@ -223,9 +257,17 @@ export default function RootPage() {
     whatsappPopupOpen,
     whatsappPopupMessage,
     closeWhatsAppPopup,
+    currentPage,
+    navigate,
   } = useAppStore()
 
-  const { currentPage } = useAppStore()
+  // Sync URL path to Zustand store on mount (handles direct URL access like /superadmin)
+  useEffect(() => {
+    const page = pathToPage(window.location.pathname)
+    if (page !== currentPage) {
+      navigate(page)
+    }
+  })
 
   // Determine if we need the main layout (Navbar + Footer)
   const needsLayout = !currentPage.startsWith('superadmin') &&
