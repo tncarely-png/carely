@@ -24,11 +24,14 @@ export default function RootLayout({
     <html lang="ar" dir="rtl" suppressHydrationWarning>
       <head>
         <link
-          href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Baloo+Bhaijaan+2:wght@400;500;600;700;800&display=swap"
           rel="stylesheet"
         />
       </head>
-      <body className="antialiased bg-white text-carely-dark min-h-screen flex flex-col overflow-x-hidden">
+      <body
+        className="antialiased bg-carely-mint text-carely-gray min-h-screen flex flex-col overflow-x-hidden"
+        style={{ fontFamily: "'Baloo Bhaijaan 2', sans-serif" }}
+      >
         {children}
         <Toaster />
       </body>

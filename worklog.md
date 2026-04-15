@@ -356,3 +356,21 @@ Stage Summary:
 - Purchase flow: Buy buttons check login state before checkout navigation
 - All changes pushed to GitHub
 
+---
+Task ID: 7
+Agent: Main
+Task: Fix 4 issues — restore font, fix /superadmin 404, add buy button to product page, add back-to-home on all pages
+
+Work Log:
+- **Font fix**: Restored original "Baloo Bhaijaan 2" font in `layout.tsx` (Google Fonts link + body style) and `globals.css` (CSS @import + font-sans variable + body font-family). Also restored original body background `bg-carely-mint text-carely-gray` (was changed to `bg-white text-carely-dark` during 9arini revert).
+- **SuperAdmin 404 fix**: Created `public/_redirects` with SPA fallback rule `/* /index.html 200` so Cloudflare Pages serves index.html for all paths including `/superadmin`, `/admin`, etc.
+- **Buy button on product page**: Modified `ProductDetailPage.tsx` — Replaced the hero CTA (was "اكتشف المزيد" which navigated to same page) with "اشتري الآن" button that navigates to checkout (with login check). Also updated bottom CTA section similarly. Both CTAs now use `setSelectedPlan('gold')` + `navigate('checkout')`.
+- **Back to home on all pages**: Added floating Home button in `page.tsx` (RootPage component) — appears as a fixed button on the left side (RTL layout) on ALL pages except the home page. Uses `Home` icon from lucide-react with hover animation.
+- Lint: 0 errors, 1 warning (pre-existing font-in-head warning)
+
+Stage Summary:
+- Font: "Baloo Bhaijaan 2" restored (was "Tajawal")
+- /superadmin: SPA routing fixed via `_redirects` file
+- Product page: "اشتري الآن" buy button in hero + bottom CTA
+- All pages: Floating home button (top-left, visible on non-home pages)
+

@@ -204,7 +204,8 @@ function SectionHero({
   data: HeroSection;
   product: Product;
 }) {
-  const { navigate, openWhatsAppPopup } = useAppStore();
+  const { navigate, openWhatsAppPopup, setSelectedPlan } = useAppStore();
+  const { user } = useAuthStore();
 
   const emoji = data.emoji || product.emoji || '📦';
   const title = data.title || product.nameAr;
@@ -299,24 +300,16 @@ function SectionHero({
             <Button
               className="carely-btn-primary text-base sm:text-lg py-3.5 sm:py-4 px-8 sm:px-10 shadow-xl shadow-carely-green/25"
               onClick={() => {
-                if (product.route) {
-                  navigate(product.route as any);
+                if (!user) {
+                  navigate('login');
                 } else {
-                  openWhatsAppPopup(waMessage);
+                  setSelectedPlan('gold');
+                  navigate('checkout');
                 }
               }}
             >
-              {product.route ? (
-                <>
-                  <span>{ctaText}</span>
-                  <ArrowLeft className="size-5 ml-2" />
-                </>
-              ) : (
-                <>
-                  <MessageCircle className="size-5 ml-2" />
-                  <span>{ctaText}</span>
-                </>
-              )}
+              <Zap className="size-5 ml-2" />
+              <span>اشتري الآن</span>
             </Button>
 
             <a
@@ -463,9 +456,9 @@ function SectionTrustBadges({ data }: { data: TrustBadgesSection }) {
 }
 
 function SectionCTA({ data, product }: { data: CTASection; product: Product }) {
-  const { navigate, openWhatsAppPopup } = useAppStore();
+  const { navigate, openWhatsAppPopup, setSelectedPlan } = useAppStore();
+  const { user } = useAuthStore();
 
-  const ctaText = data.ctaText || 'اطلب الآن';
   const waMessage = `مرحبا، أريد الاستفسار عن ${product.nameAr}`;
 
   return (
@@ -494,24 +487,16 @@ function SectionCTA({ data, product }: { data: CTASection; product: Product }) {
               <Button
                 className="bg-white text-carely-dark hover:bg-carely-light font-extrabold rounded-full py-3.5 sm:py-4 px-8 sm:px-10 text-base sm:text-lg shadow-xl hover:shadow-2xl transition-all hover:-translate-y-0.5"
                 onClick={() => {
-                  if (product.route) {
-                    navigate(product.route as any);
+                  if (!user) {
+                    navigate('login');
                   } else {
-                    openWhatsAppPopup(waMessage);
+                    setSelectedPlan('gold');
+                    navigate('checkout');
                   }
                 }}
               >
-                {product.route ? (
-                  <>
-                    <span>{ctaText}</span>
-                    <ArrowLeft className="size-5 ml-2" />
-                  </>
-                ) : (
-                  <>
-                    <MessageCircle className="size-5 ml-2" />
-                    <span>{ctaText}</span>
-                  </>
-                )}
+                <Zap className="size-5 ml-2" />
+                <span>اشتري الآن</span>
               </Button>
 
               <Button

@@ -1,6 +1,7 @@
 'use client'
 
 import { useAppStore, useAuthStore } from '@/store'
+import { Home } from 'lucide-react'
 
 // Layout
 import Navbar from '@/components/layout/Navbar'
@@ -239,6 +240,17 @@ export default function RootPage() {
   return (
     <div className="min-h-screen flex flex-col">
       {needsLayout && <Navbar />}
+
+      {/* Floating Back to Home button — visible on all pages except home */}
+      {currentPage !== 'home' && (
+        <button
+          onClick={() => navigate('home')}
+          className="fixed top-20 left-4 z-50 bg-white rounded-full shadow-lg border border-carely-light hover:border-carely-green hover:shadow-xl transition-all duration-200 hover:-translate-y-0.5 p-3 group"
+          title="الرئيسية"
+        >
+          <Home className="size-5 text-carely-gray group-hover:text-carely-green transition-colors" />
+        </button>
+      )}
 
       <main className="flex-1">
         <AppRouter />
