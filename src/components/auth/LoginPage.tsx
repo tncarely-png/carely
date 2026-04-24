@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useAuthStore, useAppStore } from '@/store';
+import { isAdmin } from '@/lib/auth-user';
 import { WILAYAS } from '@/lib/constants';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -21,57 +22,43 @@ import {
   InputOTPSlot,
   InputOTPSeparator,
 } from '@/components/ui/input-otp';
-import { Loader2, ArrowLeft, Smartphone, ShieldCheck, RefreshCw, UserPlus } from 'lucide-react';
-import {
-  initRecaptcha,
-  sendFirebaseOTP,
-  verifyFirebaseOTP,
-  resetRecaptcha,
-  normalizePhone,
-} from '@/lib/firebase-otp';
+import { Loader2, ArrowLeft, Mail, ShieldCheck, RefreshCw, UserPlus } from 'lucide-react';
 
-type Step = 'phone' | 'otp' | 'profile';
+type Step = 'email' | 'otp' | 'profile';
+
+function isValidEmail(s: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s.trim());
+}
 
 export default function LoginPage() {
-  const [step, setStep] = useState<Step>('phone');
-  const [phone, setPhone] = useState('');
+  const [step, setStep] = useState<Step>('email');
+  const [email, setEmail] = useState('');
   const [otp, setOtp] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [cooldown, setCooldown] = useState(0);
-  const [confirmedPhone, setConfirmedPhone] = useState('');
+  const [confirmedEmail, setConfirmedEmail] = useState('');
 
-  // Profile form state
-  const [profileForm, setProfileForm] = useState({ name: '', wilaya: '', address: '' });
+  const [profileForm, setProfileForm] = useState({
+    name: '',
+    phone: '',
+    wilaya: '',
+    address: '',
+  });
   const [profileErrors, setProfileErrors] = useState<Record<string, string>>({});
 
   const hasTriggered = useRef(false);
-  const pendingIdTokenRef = useRef<string | null>(null);
-  const pendingPhoneDigitsRef = useRef<string>('');
+  const pendingEmailRef = useRef<string>('');
 
   const setUser = useAuthStore((s) => s.setUser);
   const navigate = useAppStore((s) => s.navigate);
 
-  // ── Init reCAPTCHA on mount (delay helps with React strict mode double-invoke) ──
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      initRecaptcha('recaptcha-container');
-    }, 100);
-
-    return () => {
-      clearTimeout(timer);
-      resetRecaptcha(); // cleanup on unmount
-    };
-  }, []);
-
-  // ── Countdown timer ──
   useEffect(() => {
     if (cooldown <= 0) return;
     const timer = setInterval(() => setCooldown((c) => c - 1), 1000);
     return () => clearInterval(timer);
   }, [cooldown]);
 
-  // ── Auto-focus OTP on step change ──
   useEffect(() => {
     if (step === 'otp') {
       hasTriggered.current = false;
@@ -82,151 +69,6 @@ export default function LoginPage() {
     }
   }, [step]);
 
-  // ── Phone formatting ──
-  const formatPhoneDisplay = (p: string) => {
-    const digits = p.replace(/[^\d]/g, '');
-    if (digits.length <= 2) return digits;
-    if (digits.length <= 5) return digits.slice(0, 2) + ' ' + digits.slice(2);
-    return digits.slice(0, 2) + ' ' + digits.slice(2, 5) + ' ' + digits.slice(5, 8);
-  };
-
-  const handlePhoneChange = (value: string) => {
-    setPhone(formatPhoneDisplay(value.replace(/[^\d]/g, '').slice(0, 8)));
-    setError('');
-  };
-
-  // ── Send OTP ──
-  const handleSendOtp = async () => {
-    const digits = phone.replace(/[^\d]/g, '');
-    if (digits.length !== 8 || !/^[259]/.test(digits)) {
-      setError('أدخل رقم هاتف صحيح (8 أرقام)');
-      return;
-    }
-
-    setError('');
-    setLoading(true);
-
-    // Normalize to E.164: "+21626107128"
-    const e164 = normalizePhone(digits);
-
-    // Reset reCAPTCHA and re-init before sending
-    resetRecaptcha();
-    initRecaptcha('recaptcha-container');
-
-    // Small delay to let reCAPTCHA initialize
-    await new Promise((r) => setTimeout(r, 500));
-
-    const result = await sendFirebaseOTP(e164);
-
-    if (typeof result === 'string') {
-      // Error string returned
-      setError(result);
-      setLoading(false);
-      return;
-    }
-
-    // Success — ConfirmationResult returned
-    setConfirmedPhone('+216 ' + digits.slice(0, 2) + ' ' + digits.slice(2, 5) + ' ' + digits.slice(5, 8));
-    setStep('otp');
-    setCooldown(60);
-    setOtp('');
-    pendingPhoneDigitsRef.current = digits;
-    setLoading(false);
-  };
-
-  // ── Resend OTP ──
-  const handleResendOtp = async () => {
-    if (loading) return;
-    setLoading(true);
-    setError('');
-
-    const digits = pendingPhoneDigitsRef.current || phone.replace(/[^\d]/g, '');
-    const e164 = normalizePhone(digits);
-
-    // Must reset and re-init reCAPTCHA before resending
-    resetRecaptcha();
-    initRecaptcha('recaptcha-container');
-
-    await new Promise((r) => setTimeout(r, 500));
-
-    const result = await sendFirebaseOTP(e164);
-
-    if (typeof result === 'string') {
-      setError(result);
-    } else {
-      setCooldown(60);
-      setOtp('');
-      setError('');
-    }
-
-    setLoading(false);
-  };
-
-  // ── Verify OTP ──
-  const handleOtpComplete = useCallback(async (code: string) => {
-    if (loading || hasTriggered.current) return;
-    hasTriggered.current = true;
-    setLoading(true);
-    setError('');
-
-    try {
-      // Call verifyFirebaseOTP — returns idToken
-      const idToken = await verifyFirebaseOTP(code);
-      pendingIdTokenRef.current = idToken;
-
-      // Send idToken to server — server gets phone from Firebase token, not from us
-      const res = await fetch('/api/auth/otp-login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          idToken,
-          action: 'login',
-        }),
-      });
-      const data = await res.json();
-
-      if (res.ok && data.success) {
-        // Existing user — login successful
-        setUser(data.user);
-        const pendingRedirect = useAppStore.getState().pendingRedirect;
-        if (pendingRedirect) {
-          useAppStore.getState().setPendingRedirect(null);
-          navigate(pendingRedirect);
-        } else {
-          navigate(data.user.role === 'admin' ? 'admin' : 'dashboard');
-        }
-      } else if (data.isNewUser) {
-        // New user — show profile completion step
-        setStep('profile');
-        setProfileForm({ name: '', wilaya: '', address: '' });
-        setProfileErrors({});
-      } else {
-        setError(data.error || 'حصل مشكل. جرب مرة أخرى.');
-        setOtp('');
-        hasTriggered.current = false;
-        // Reset reCAPTCHA on error so user can retry
-        resetRecaptcha();
-        initRecaptcha('recaptcha-container');
-      }
-    } catch (err) {
-      const fbErr = err as { code?: string; message?: string };
-      if (fbErr.code === 'auth/invalid-verification-code') {
-        setError('الكود غالط. جرب مرة أخرى.');
-      } else if (fbErr.code === 'auth/code-expired') {
-        setError('الكود انتهى. أرسل كود جديد.');
-      } else {
-        setError('حصل مشكل في التحقق. جرب مرة أخرى.');
-      }
-      setOtp('');
-      hasTriggered.current = false;
-      // Reset reCAPTCHA on error
-      resetRecaptcha();
-      initRecaptcha('recaptcha-container');
-    }
-    setLoading(false);
-  }, [loading, setUser, navigate]);
-
-  // ── Profile form ──
   const updateProfileField = (field: string, value: string) => {
     setProfileForm((prev) => ({ ...prev, [field]: value }));
     if (profileErrors[field]) {
@@ -238,9 +80,136 @@ export default function LoginPage() {
     }
   };
 
+  const formatPhoneDisplay = (p: string) => {
+    const digits = p.replace(/[^\d]/g, '');
+    if (digits.length <= 2) return digits;
+    if (digits.length <= 5) return digits.slice(0, 2) + ' ' + digits.slice(2);
+    return digits.slice(0, 2) + ' ' + digits.slice(2, 5) + ' ' + digits.slice(5, 8);
+  };
+
+  const handlePhoneChange = (value: string) => {
+    updateProfileField('phone', formatPhoneDisplay(value.replace(/[^\d]/g, '').slice(0, 8)));
+  };
+
+  const handleSendOtp = async () => {
+    const em = email.trim();
+    if (!isValidEmail(em)) {
+      setError('أدخل بريداً إلكترونياً صحيحاً');
+      return;
+    }
+
+    setError('');
+    setLoading(true);
+
+    try {
+      const res = await fetch('/api/auth/send-email-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: em }),
+      });
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        setError(data.error || 'تعذر إرسال الكود');
+        setLoading(false);
+        return;
+      }
+
+      pendingEmailRef.current = em.toLowerCase();
+      setConfirmedEmail(em);
+      setStep('otp');
+      setCooldown(60);
+      setOtp('');
+    } catch {
+      setError('ما نقدرش نتواصل مع المخدم');
+    }
+    setLoading(false);
+  };
+
+  const handleResendOtp = async () => {
+    if (loading) return;
+    setLoading(true);
+    setError('');
+
+    const em = pendingEmailRef.current || email.trim();
+
+    try {
+      const res = await fetch('/api/auth/send-email-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: em }),
+      });
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        setError(data.error || 'تعذر إرسال الكود');
+      } else {
+        setCooldown(60);
+        setOtp('');
+        setError('');
+      }
+    } catch {
+      setError('ما نقدرش نتواصل مع المخدم');
+    }
+    setLoading(false);
+  };
+
+  const handleOtpComplete = useCallback(
+    async (code: string) => {
+      if (loading || hasTriggered.current) return;
+      hasTriggered.current = true;
+      setLoading(true);
+      setError('');
+
+      try {
+        const em = pendingEmailRef.current || email.trim();
+        const res = await fetch('/api/auth/otp-login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: em,
+            code,
+            action: 'login',
+          }),
+        });
+        const data = await res.json();
+
+        if (res.ok && data.success) {
+          setUser(data.user);
+          const pendingRedirect = useAppStore.getState().pendingRedirect;
+          if (pendingRedirect) {
+            useAppStore.getState().setPendingRedirect(null);
+            navigate(pendingRedirect);
+          } else {
+            const logged = useAuthStore.getState().user;
+            navigate(logged && isAdmin(logged) ? 'admin' : 'dashboard');
+          }
+        } else if (data.isNewUser) {
+          setStep('profile');
+          setProfileForm({ name: '', phone: '', wilaya: '', address: '' });
+          setProfileErrors({});
+        } else {
+          setError(data.error || 'حصل مشكل. جرب مرة أخرى.');
+          setOtp('');
+          hasTriggered.current = false;
+        }
+      } catch {
+        setError('حصل مشكل في التحقق. جرب مرة أخرى.');
+        setOtp('');
+        hasTriggered.current = false;
+      }
+      setLoading(false);
+    },
+    [loading, setUser, navigate, email]
+  );
+
   const handleProfileSubmit = async () => {
     const errs: Record<string, string> = {};
     if (!profileForm.name.trim()) errs.name = 'الاسم لازم';
+    const phoneDigits = profileForm.phone.replace(/[^\d]/g, '');
+    if (phoneDigits.length !== 8 || !/^[259]/.test(phoneDigits)) {
+      errs.phone = 'رقم هاتف تونسي صحيح (8 أرقام)';
+    }
     if (Object.keys(errs).length > 0) {
       setProfileErrors(errs);
       return;
@@ -250,13 +219,15 @@ export default function LoginPage() {
     setError('');
 
     try {
+      const em = pendingEmailRef.current || email.trim();
       const res = await fetch('/api/auth/otp-login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          idToken: pendingIdTokenRef.current,
+          email: em,
           action: 'register',
           name: profileForm.name.trim(),
+          phone: profileForm.phone,
           wilaya: profileForm.wilaya || undefined,
           address: profileForm.address || undefined,
         }),
@@ -270,7 +241,8 @@ export default function LoginPage() {
           useAppStore.getState().setPendingRedirect(null);
           navigate(pendingRedirect);
         } else {
-          navigate(data.user.role === 'admin' ? 'admin' : 'dashboard');
+          const logged = useAuthStore.getState().user;
+          navigate(logged && isAdmin(logged) ? 'admin' : 'dashboard');
         }
       } else {
         setError(data.error || 'حصل مشكل أثناء التسجيل. جرب مرة أخرى.');
@@ -282,11 +254,8 @@ export default function LoginPage() {
     }
   };
 
-  // ── Back to phone step ──
-  const handleBackToPhone = () => {
-    resetRecaptcha();
-    initRecaptcha('recaptcha-container');
-    setStep('phone');
+  const handleBackToEmail = () => {
+    setStep('email');
     setOtp('');
     setError('');
     setLoading(false);
@@ -294,11 +263,7 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-carely-mint flex items-center justify-center px-4 py-8" dir="rtl">
-      {/* reCAPTCHA container — REQUIRED, must exist in DOM, outside conditional rendering */}
-      <div id="recaptcha-container" />
-
       <div className="w-full max-w-md">
-        {/* Logo */}
         <div className="text-center mb-6">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-white rounded-2xl shadow-lg mb-3">
             <span className="text-3xl">🛡️</span>
@@ -309,44 +274,40 @@ export default function LoginPage() {
 
         <Card className="carely-card p-5 sm:p-6">
           <CardContent className="p-0">
-            {/* ═══ STEP 1: Phone ═══ */}
-            {step === 'phone' && (
+            {step === 'email' && (
               <>
                 <h2 className="text-xl font-bold text-carely-dark mb-2 text-center">
                   تسجيل الدخول
                 </h2>
                 <p className="text-sm text-carely-gray text-center mb-6">
-                  أدخل رقم هاتفك التونسي ونرسلك كود تفعيل
+                  أدخل بريدك الإلكتروني ونرسلك كود التحقق
                 </p>
 
                 <div className="flex justify-center mb-6">
                   <div className="w-20 h-20 rounded-full bg-carely-light flex items-center justify-center">
-                    <Smartphone className="w-10 h-10 text-carely-green" />
+                    <Mail className="w-10 h-10 text-carely-green" />
                   </div>
                 </div>
 
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="phone" className="text-carely-dark font-semibold">
-                      رقم الهاتف
+                    <Label htmlFor="email" className="text-carely-dark font-semibold">
+                      البريد الإلكتروني
                     </Label>
-                    <div className="flex items-center gap-2">
-                      <div className="flex items-center gap-1 bg-carely-mint rounded-xl px-3 sm:px-4 h-12 border border-carely-light shrink-0">
-                        <span className="text-lg">🇹🇳</span>
-                        <span className="text-xs sm:text-sm font-bold text-carely-dark">+216</span>
-                      </div>
-                      <Input
-                        id="phone"
-                        placeholder="2X XXX XXX"
-                        value={phone}
-                        onChange={(e) => handlePhoneChange(e.target.value)}
-                        className="flex-1 min-w-0 h-12 text-base sm:text-lg tracking-widest text-center font-bold"
-                        dir="ltr"
-                        inputMode="numeric"
-                        autoFocus
-                        maxLength={11}
-                      />
-                    </div>
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="you@example.com"
+                      value={email}
+                      onChange={(e) => {
+                        setEmail(e.target.value);
+                        setError('');
+                      }}
+                      className="h-12 text-base"
+                      dir="ltr"
+                      autoComplete="email"
+                      autoFocus
+                    />
                   </div>
 
                   {error && (
@@ -357,7 +318,7 @@ export default function LoginPage() {
 
                   <Button
                     onClick={handleSendOtp}
-                    disabled={loading || phone.replace(/[^\d]/g, '').length !== 8}
+                    disabled={loading || !isValidEmail(email)}
                     className="carely-btn-primary w-full h-12 text-base disabled:opacity-50"
                   >
                     {loading ? (
@@ -368,7 +329,7 @@ export default function LoginPage() {
                     ) : (
                       <>
                         <ShieldCheck className="w-5 h-5 ml-2" />
-                        إرسال كود التفعيل
+                        إرسال كود التحقق
                       </>
                     )}
                   </Button>
@@ -387,20 +348,19 @@ export default function LoginPage() {
               </>
             )}
 
-            {/* ═══ STEP 2: OTP ═══ */}
             {step === 'otp' && (
               <>
                 <h2 className="text-xl font-bold text-carely-dark mb-2 text-center">
-                  تأكيد الرقم
+                  تأكيد البريد
                 </h2>
                 <p className="text-sm text-carely-gray text-center mb-4">
-                  أدخل كود الـ 6 أرقام اللي وصلك على
+                  أدخل كود الـ 6 أرقام المرسل إلى
                 </p>
                 <p
-                  className="text-base font-bold text-carely-green text-center mb-6"
+                  className="text-base font-bold text-carely-green text-center mb-6 break-all"
                   dir="ltr"
                 >
-                  {confirmedPhone}
+                  {confirmedEmail}
                 </p>
 
                 <div className="flex justify-center mb-6">
@@ -465,12 +425,12 @@ export default function LoginPage() {
 
                 <div className="flex items-center justify-between mt-4">
                   <button
-                    onClick={handleBackToPhone}
+                    onClick={handleBackToEmail}
                     className="flex items-center gap-1 text-sm text-carely-gray hover:text-carely-dark transition-colors"
                     disabled={loading}
                   >
                     <ArrowLeft className="w-4 h-4" />
-                    تعديل الرقم
+                    تعديل البريد
                   </button>
                   {cooldown > 0 ? (
                     <span className="text-sm text-carely-gray">
@@ -491,7 +451,6 @@ export default function LoginPage() {
               </>
             )}
 
-            {/* ═══ STEP 3: Complete Profile (new users only) ═══ */}
             {step === 'profile' && (
               <>
                 <div className="flex justify-center mb-4">
@@ -525,6 +484,31 @@ export default function LoginPage() {
                     />
                     {profileErrors.name && (
                       <p className="text-red-500 text-xs">{profileErrors.name}</p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="profile-phone" className="text-carely-dark font-semibold">
+                      رقم الهاتف التونسي *
+                    </Label>
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1 bg-carely-mint rounded-xl px-3 h-11 border border-carely-light shrink-0">
+                        <span className="text-lg">🇹🇳</span>
+                        <span className="text-xs font-bold text-carely-dark">+216</span>
+                      </div>
+                      <Input
+                        id="profile-phone"
+                        placeholder="2X XXX XXX"
+                        value={profileForm.phone}
+                        onChange={(e) => handlePhoneChange(e.target.value)}
+                        className="flex-1 h-11 text-center font-bold tracking-widest"
+                        dir="ltr"
+                        inputMode="numeric"
+                        maxLength={11}
+                      />
+                    </div>
+                    {profileErrors.phone && (
+                      <p className="text-red-500 text-xs">{profileErrors.phone}</p>
                     )}
                   </div>
 
@@ -572,7 +556,9 @@ export default function LoginPage() {
 
                   <Button
                     onClick={handleProfileSubmit}
-                    disabled={loading || !profileForm.name.trim()}
+                    disabled={
+                      loading || !profileForm.name.trim() || profileForm.phone.replace(/\D/g, '').length !== 8
+                    }
                     className="carely-btn-primary w-full h-12 text-base disabled:opacity-50"
                   >
                     {loading ? (

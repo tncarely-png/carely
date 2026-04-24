@@ -2,6 +2,7 @@
 
 import { useAuthStore, useAppStore } from '@/store';
 import type { PageRoute } from '@/store';
+import { isAdmin } from '@/lib/auth-user';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import {
@@ -17,6 +18,7 @@ import {
   UserCircle,
   LogOut,
   Menu,
+  ShieldCheck,
 } from 'lucide-react';
 
 const navItems: { id: PageRoute; label: string; icon: React.ReactNode }[] = [
@@ -47,7 +49,9 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
           </div>
           <div className="flex-1 min-w-0">
             <p className="font-bold text-carely-dark text-sm truncate">{user?.name || 'مستخدم'}</p>
-            <p className="text-xs text-carely-gray truncate" dir="ltr">{user?.phone || ''}</p>
+            <p className="text-xs text-carely-gray truncate" dir="ltr">
+              {user?.email || user?.phone || ''}
+            </p>
           </div>
         </div>
       </div>
@@ -75,11 +79,28 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         })}
       </nav>
 
+      {isAdmin(user) ? (
+        <div className="px-3 pb-2">
+          <button
+            type="button"
+            onClick={() => {
+              navigate('admin');
+              onNavigate?.();
+            }}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-carely-dark bg-carely-mint hover:bg-carely-light transition-all border border-carely-green/20"
+          >
+            <ShieldCheck className="h-5 w-5 text-carely-green" />
+            لوحة إدارة المتجر
+          </button>
+        </div>
+      ) : null}
+
       <Separator />
 
       {/* Logout */}
       <div className="p-3">
         <button
+          type="button"
           onClick={() => {
             logout();
             onNavigate?.();

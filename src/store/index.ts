@@ -1,7 +1,14 @@
 import { create } from "zustand";
+import { persist, createJSONStorage } from "zustand/middleware";
+import {
+  type AuthUser,
+  authUserFromResponseJson,
+} from "@/lib/auth-user";
+
+export type { AuthUser };
+export type { UserRole } from "@/lib/auth-user";
 
 export type PageRoute =
-  // Public pages
   | "home"
   | "pricing"
   | "features"
@@ -9,20 +16,15 @@ export type PageRoute =
   | "contact"
   | "privacy-policy"
   | "terms-of-service"
-  // Auth
   | "login"
-  // Client portal
   | "dashboard"
   | "dashboard-subscription"
   | "dashboard-orders"
   | "dashboard-profile"
-  // App pages
   | "qustodio-app"
   | "product-detail"
-  // Checkout
   | "checkout"
   | "checkout-success"
-  // Admin portal
   | "admin"
   | "admin-users"
   | "admin-user-detail"
@@ -31,7 +33,6 @@ export type PageRoute =
   | "admin-orders"
   | "admin-licenses"
   | "admin-license-new"
-  // SuperAdmin portal
   | "superadmin-pin-gate"
   | "superadmin-login"
   | "superadmin"
@@ -55,6 +56,8 @@ interface AppState {
   whatsappPopupMessage: string | undefined;
   pendingRedirect: PageRoute | null;
   navigate: (page: PageRoute) => void;
+  /** Sets product id, goes to product-detail, updates URL to /product-detail?id=… */
+  openProductDetail: (productId: string) => void;
   setSelectedPlan: (plan: "silver" | "gold" | null) => void;
   setSelectedPaymentMethod: (method: "flouci" | "virement" | "ccp" | null) => void;
   setSelectedPlanName: (name: string) => void;
@@ -78,7 +81,34 @@ export const useAppStore = create<AppState>((set) => ({
   whatsappPopupMessage: undefined,
   pendingRedirect: null,
   navigate: (page) => {
-    set({ currentPage: page });
+    set((s) => ({
+      currentPage: page,
+      selectedProductId:
+        page === "product-detail" ? s.selectedProductId : null,
+    }));
+    if (typeof window !== "undefined") {
+      const { selectedProductId: pid } = useAppStore.getState();
+      if (page === "product-detail" && pid) {
+        window.history.pushState(
+          {},
+          "",
+          `/product-detail?id=${encodeURIComponent(pid)}`
+        );
+      } else if (page === "qustodio-app") {
+        window.history.pushState({}, "", "/qustodio-app");
+      }
+    }
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  },
+  openProductDetail: (productId) => {
+    set({ selectedProductId: productId, currentPage: "product-detail" });
+    if (typeof window !== "undefined") {
+      window.history.pushState(
+        {},
+        "",
+        `/product-detail?id=${encodeURIComponent(productId)}`
+      );
+    }
     window.scrollTo({ top: 0, behavior: "smooth" });
   },
   setSelectedPlan: (plan) => set({ selectedPlan: plan }),
@@ -92,30 +122,15 @@ export const useAppStore = create<AppState>((set) => ({
   closeWhatsAppPopup: () => set({ whatsappPopupOpen: false, whatsappPopupMessage: undefined }),
 }));
 
-export interface AuthUser {
-  id: string;
-  name: string;
-  email: string | null;
-  phone: string;
-  address: string | null;
-  wilaya: string | null;
-  role: "customer" | "admin";
-}
-
 interface AuthState {
   user: AuthUser | null;
   isLoading: boolean;
   lastError: string | null;
-  setUser: (user: AuthUser | null) => void;
+  setUser: (user: AuthUser | Record<string, unknown> | null) => void;
   setLoading: (loading: boolean) => void;
-  /** 
-   * OTP login: sends phone + Firebase idToken to server.
-   * The server verifies the idToken cryptographically and finds/creates the user.
-   * 
-   * Note: sendOtp is no longer in the store — it's a direct Firebase client call
-   * done in the LoginPage component using lib/firebase-otp.ts functions.
-   */
-  otpLogin: (phone: string, idToken: string) => Promise<boolean>;
+  otpLogin: (email: string, code: string) => Promise<boolean>;
+  /** Re-fetch user from DB (after tab restore / stale cache). Clears user if invalid. */
+  refreshUser: () => Promise<void>;
   logout: () => void;
   updateProfile: (data: {
     name?: string;
@@ -125,60 +140,117 @@ interface AuthState {
   }) => Promise<boolean>;
 }
 
-export const useAuthStore = create<AuthState>((set, get) => ({
-  user: null,
-  isLoading: false,
-  lastError: null,
+function normalizeSetUserPayload(
+  user: AuthUser | Record<string, unknown> | null
+): AuthUser | null {
+  if (!user) return null;
+  return authUserFromResponseJson(user) ?? (user as AuthUser);
+}
 
-  setUser: (user) => set({ user, isLoading: false, lastError: null }),
-  setLoading: (isLoading) => set({ isLoading }),
+export const useAuthStore = create<AuthState>()(
+  persist(
+    (set, get) => ({
+      user: null,
+      isLoading: false,
+      lastError: null,
 
-  otpLogin: async (phone: string, idToken: string) => {
-    try {
-      const res = await fetch("/api/auth/otp-login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone, idToken, action: "login" }),
-      });
-      const data = await res.json();
+      setUser: (user) =>
+        set({
+          user: normalizeSetUserPayload(user),
+          isLoading: false,
+          lastError: null,
+        }),
 
-      if (!res.ok) {
-        set({ lastError: data.error || "حصل مشكل في تسجيل الدخول" });
-        return false;
-      }
+      setLoading: (isLoading) => set({ isLoading }),
 
-      if (data.success) {
-        set({ user: data.user, isLoading: false, lastError: null });
-        return true;
-      }
+      refreshUser: async () => {
+        const id = get().user?.id;
+        if (!id) return;
+        set({ isLoading: true });
+        try {
+          const res = await fetch(
+            `/api/auth/session?userId=${encodeURIComponent(id)}`
+          );
+          const data = await res.json();
+          if (res.ok && data.success && data.user) {
+            const u = authUserFromResponseJson(data.user);
+            if (u) {
+              set({ user: u, isLoading: false, lastError: null });
+              return;
+            }
+          }
+          set({ user: null, isLoading: false, lastError: null });
+        } catch {
+          set({ user: null, isLoading: false, lastError: null });
+        }
+      },
 
-      return false;
-    } catch {
-      set({ lastError: "ما نقدرش نتواصل مع المخدم" });
-      return false;
+      otpLogin: async (email: string, code: string) => {
+        try {
+          const res = await fetch("/api/auth/otp-login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, code, action: "login" }),
+          });
+          const data = await res.json();
+
+          if (!res.ok) {
+            set({ lastError: data.error || "حصل مشكل في تسجيل الدخول" });
+            return false;
+          }
+
+          if (data.success && data.user) {
+            const u = authUserFromResponseJson(data.user);
+            if (u) {
+              set({ user: u, isLoading: false, lastError: null });
+              return true;
+            }
+          }
+
+          set({ lastError: data.error || "حصل مشكل في تسجيل الدخول" });
+          return false;
+        } catch {
+          set({ lastError: "ما نقدرش نتواصل مع المخدم" });
+          return false;
+        }
+      },
+
+      logout: () => {
+        set({ user: null, isLoading: false, lastError: null });
+        useAppStore.getState().navigate("home");
+      },
+
+      updateProfile: async (data) => {
+        const currentUser = get().user;
+        if (!currentUser) return false;
+        try {
+          const res = await fetch("/api/auth/profile", {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ userId: currentUser.id, ...data }),
+          });
+          if (!res.ok) return false;
+          const payload = await res.json();
+          const u = authUserFromResponseJson(payload.user);
+          if (!u) return false;
+          set({ user: u });
+          return true;
+        } catch {
+          return false;
+        }
+      },
+    }),
+    {
+      name: "carely-auth-v1",
+      storage: createJSONStorage(() => localStorage),
+      partialize: (state) => ({ user: state.user }),
+      onRehydrateStorage: () => (state) => {
+        if (state?.user?.id) {
+          queueMicrotask(() => {
+            void useAuthStore.getState().refreshUser();
+          });
+        }
+      },
     }
-  },
-
-  logout: () => {
-    set({ user: null, isLoading: false, lastError: null });
-    useAppStore.getState().navigate("home");
-  },
-
-  updateProfile: async (data) => {
-    const currentUser = get().user;
-    if (!currentUser) return false;
-    try {
-      const res = await fetch("/api/auth/profile", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: currentUser.id, ...data }),
-      });
-      if (!res.ok) return false;
-      const userData = await res.json();
-      set({ user: { ...get().user!, ...(userData as any).user } });
-      return true;
-    } catch {
-      return false;
-    }
-  },
-}));
+  )
+);

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   LayoutDashboard,
   Users,
@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet';
 import { Separator } from '@/components/ui/separator';
 import { useAppStore, useAuthStore } from '@/store';
+import { isAdmin } from '@/lib/auth-user';
 
 const navItems = [
   { id: 'admin' as const, label: 'لوحة التحكم', icon: LayoutDashboard, emoji: '📊' },
@@ -99,6 +100,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const { currentPage, navigate } = useAppStore();
   const { user, logout } = useAuthStore();
   const [sheetOpen, setSheetOpen] = useState(false);
+
+  useEffect(() => {
+    if (!isAdmin(user)) {
+      navigate('login');
+    }
+  }, [user, navigate]);
 
   const handleNavigate = (page: 'admin' | 'admin-users' | 'admin-subscriptions' | 'admin-orders' | 'admin-licenses') => {
     navigate(page);

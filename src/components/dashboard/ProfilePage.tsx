@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuthStore } from '@/store';
 import { WILAYAS } from '@/lib/constants';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
-import { Loader2, Save, Smartphone, Shield } from 'lucide-react';
+import { Loader2, Save, Smartphone, Shield, Mail } from 'lucide-react';
 
 export default function ProfilePage() {
   const user = useAuthStore((s) => s.user);
@@ -25,6 +25,16 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
+
+  useEffect(() => {
+    if (!user) return;
+    setForm({
+      name: user.name,
+      phone: user.phone,
+      address: user.address ?? '',
+      wilaya: user.wilaya ?? '',
+    });
+  }, [user?.id, user?.name, user?.phone, user?.address, user?.wilaya]);
 
   const handleProfileSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -73,8 +83,14 @@ export default function ProfilePage() {
             <div className="w-14 h-14 rounded-full bg-carely-green flex items-center justify-center shrink-0">
               <Shield className="w-7 h-7 text-white" />
             </div>
-            <div className="min-w-0">
+            <div className="min-w-0 space-y-1">
               <h3 className="text-lg font-bold text-carely-dark truncate">{user.name}</h3>
+              {user.email ? (
+                <div className="flex items-center gap-2 text-sm text-carely-gray">
+                  <Mail className="w-4 h-4 shrink-0" />
+                  <span dir="ltr" className="truncate">{user.email}</span>
+                </div>
+              ) : null}
               <div className="flex items-center gap-2 text-sm text-carely-gray">
                 <Smartphone className="w-4 h-4 shrink-0" />
                 <span dir="ltr">{user.phone}</span>
@@ -111,7 +127,9 @@ export default function ProfilePage() {
                 className="w-full h-11"
                 dir="ltr"
               />
-              <p className="text-xs text-carely-gray">رقم الهاتف هو وسيلة الدخول لحسابك</p>
+              <p className="text-xs text-carely-gray">
+                الدخول يكون بالبريد الإلكتروني ورمز التحقق؛ يمكنك تحديث رقم الهاتف هنا
+              </p>
             </div>
 
             {/* Address */}
@@ -189,17 +207,19 @@ export default function ProfilePage() {
           <div className="space-y-3">
             <div className="flex items-center gap-3 p-3 rounded-xl bg-carely-mint">
               <div className="w-10 h-10 rounded-full bg-carely-green/20 flex items-center justify-center shrink-0">
-                <Smartphone className="w-5 h-5 text-carely-green" />
+                <Mail className="w-5 h-5 text-carely-green" />
               </div>
               <div>
-                <p className="text-sm font-bold text-carely-dark">الدخول برمز OTP</p>
-                <p className="text-xs text-carely-gray">حسابك محمي برمز تفعيل يوصلك على هاتفك</p>
+                <p className="text-sm font-bold text-carely-dark">الدخول برمز OTP عبر البريد</p>
+                <p className="text-xs text-carely-gray">
+                  رمز مكوّن من 6 أرقام يُرسل إلى بريدك عبر خدمة آمنة
+                </p>
               </div>
             </div>
             <div className="flex items-center gap-3 p-3 rounded-xl bg-green-50">
               <div className="text-green-600 text-lg">✅</div>
               <p className="text-sm text-carely-gray">
-                ما عندكش كلمة سر — الدخول يكون فقط بالهاتف والرمز
+                لا حاجة لكلمة سر — التحقق بالبريد الإلكتروني فقط
               </p>
             </div>
           </div>

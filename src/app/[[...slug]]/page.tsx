@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react'
 import { useAppStore, useAuthStore, type PageRoute } from '@/store'
+import { isAdmin } from '@/lib/auth-user'
 import { Home } from 'lucide-react'
 
 // Layout
@@ -170,8 +171,11 @@ function AppRouter() {
     )
   }
 
-  // ── Admin routes ──
+  // ── Admin routes (must be signed-in admin — same user store as dashboard) ──
   if (currentPage.startsWith('admin')) {
+    if (!isAdmin(user)) {
+      return <LoginPage />
+    }
     const renderPage = () => {
       switch (currentPage) {
         case 'admin': return <AdminDashboard />
@@ -270,7 +274,13 @@ export default function RootPage() {
     if (!syncedRef.current) {
       syncedRef.current = true
       const page = pathToPage(window.location.pathname)
-      if (page !== currentPage) {
+      if (page === 'product-detail') {
+        const id = new URLSearchParams(window.location.search).get('id')
+        if (id) {
+          useAppStore.getState().setSelectedProductId(id)
+        }
+      }
+      if (page !== useAppStore.getState().currentPage) {
         navigate(page)
       }
     }

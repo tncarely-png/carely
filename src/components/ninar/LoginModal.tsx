@@ -11,36 +11,32 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { InputOTP, InputOTPGroup, InputOTPSlot, InputOTPSeparator } from '@/components/ui/input-otp';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useAuthStore, useAppStore } from '@/store';
+import { isAdmin } from '@/lib/auth-user';
 
 interface LoginModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-function formatPhoneNumber(value: string): string {
-  const digits = value.replace(/\D/g, '').slice(0, 8);
-  if (digits.length <= 2) return digits;
-  if (digits.length <= 5) return `${digits.slice(0, 2)} ${digits.slice(2)}`;
-  return `${digits.slice(0, 2)} ${digits.slice(2, 5)} ${digits.slice(5)}`;
-}
-
-function isValidTunisianPhone(digits: string): boolean {
-  return digits.length === 8 && /^[259]\d{7}$/.test(digits);
+function isValidEmail(s: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s.trim());
 }
 
 function LoginModalContent({ onOpenChange }: { onOpenChange: (open: boolean) => void }) {
-  const [step, setStep] = useState<'phone' | 'otp'>('phone');
-  const [phoneInput, setPhoneInput] = useState('');
+  const [step, setStep] = useState<'email' | 'otp'>('email');
+  const [emailInput, setEmailInput] = useState('');
   const [otpValue, setOtpValue] = useState('');
   const [countdown, setCountdown] = useState(60);
+  const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const setUser = useAuthStore((s) => s.setUser);
+  const navigate = useAppStore((s) => s.navigate);
 
-  const digits = phoneInput.replace(/\D/g, '');
-  const isPhoneValid = isValidTunisianPhone(digits);
+  const isEmailValid = isValidEmail(emailInput);
 
-  // Countdown timer for resend
   useEffect(() => {
     if (step !== 'otp' || countdown <= 0) return;
     const timer = setInterval(() => {
@@ -49,112 +45,151 @@ function LoginModalContent({ onOpenChange }: { onOpenChange: (open: boolean) => 
     return () => clearInterval(timer);
   }, [step, countdown]);
 
-  const handlePhoneSubmit = () => {
-    if (!isPhoneValid) return;
-    setStep('otp');
-    toast({
-      title: 'Code envoyé',
-      description: `Un code de vérification a été envoyé au +216 ${phoneInput}`,
-    });
+  const sendCode = async () => {
+    if (!isEmailValid) return;
+    setLoading(true);
+    try {
+      const res = await fetch('/api/auth/send-email-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: emailInput.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        toast({
+          title: 'Erreur',
+          description: data.error || 'Impossible d’envoyer le code',
+          variant: 'destructive',
+        });
+        setLoading(false);
+        return;
+      }
+      setStep('otp');
+      setCountdown(60);
+      setOtpValue('');
+      toast({
+        title: 'Code envoyé',
+        description: `Vérifiez votre boîte : ${emailInput.trim()}`,
+      });
+    } catch {
+      toast({ title: 'Erreur réseau', variant: 'destructive' });
+    }
+    setLoading(false);
   };
 
   const handleOTPComplete = useCallback(
-    (value: string) => {
-      if (value.length === 6) {
-        // Simulate success
-        setTimeout(() => {
+    async (value: string) => {
+      if (value.length !== 6 || loading) return;
+      setLoading(true);
+      try {
+        const res = await fetch('/api/auth/otp-login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: emailInput.trim(),
+            code: value,
+            action: 'login',
+          }),
+        });
+        const data = await res.json();
+
+        if (res.ok && data.success) {
+          setUser(data.user);
           onOpenChange(false);
+          toast({ title: 'Connexion réussie !', description: 'Bienvenue sur Carely.tn' });
+          const logged = useAuthStore.getState().user;
+          navigate(logged && isAdmin(logged) ? 'admin' : 'dashboard');
+          return;
+        }
+
+        if (data.isNewUser) {
           toast({
-            title: 'Connexion réussie !',
-            description: 'Bienvenue sur 9arini.tn',
+            title: 'Nouveau compte',
+            description: 'Complétez votre profil depuis la page Connexion du site.',
           });
-        }, 500);
+          onOpenChange(false);
+          navigate('login');
+          return;
+        }
+
+        toast({
+          title: 'Code invalide',
+          description: data.error || 'Réessayez',
+          variant: 'destructive',
+        });
+        setOtpValue('');
+      } catch {
+        toast({ title: 'Erreur réseau', variant: 'destructive' });
+        setOtpValue('');
       }
+      setLoading(false);
     },
-    [onOpenChange, toast]
+    [emailInput, loading, navigate, onOpenChange, setUser, toast]
   );
 
   const handleResend = () => {
-    if (countdown > 0) return;
-    setCountdown(60);
-    toast({
-      title: 'Code renvoyé',
-      description: 'Un nouveau code de vérification a été envoyé.',
-    });
+    if (countdown > 0 || loading) return;
+    void sendCode();
   };
 
   return (
     <>
-      {/* Brown accent top */}
       <div className="h-1 rounded-t-2xl bg-[#78350F]" />
 
       <div className="px-6 pb-6 pt-4">
         <DialogHeader className="text-left">
           <DialogTitle className="text-xl font-bold text-[#09090B]">
-            {step === 'phone' ? 'Se connecter' : 'Vérification'}
+            {step === 'email' ? 'Se connecter' : 'Vérification'}
           </DialogTitle>
           <DialogDescription className="text-sm text-[#71717A]">
-            {step === 'phone'
-              ? 'Entrez votre numéro de téléphone tunisien'
-              : `Entrez le code envoyé au +216 ${phoneInput}`}
+            {step === 'email'
+              ? 'Entrez votre adresse e-mail'
+              : `Code envoyé à ${emailInput.trim()}`}
           </DialogDescription>
         </DialogHeader>
 
-        {step === 'phone' ? (
-          <div className="mt-6">
-            {/* Phone Input */}
-            <div className="flex items-center gap-0 rounded-xl border border-[#E4E4E7] bg-[#F4F4F5] p-1 transition-colors focus-within:border-[#78350F] focus-within:ring-2 focus-within:ring-[#78350F]/20">
-              <div className="flex items-center gap-1.5 rounded-lg bg-white px-3 py-2.5 text-sm font-medium text-[#09090B]">
-                <span className="text-base">🇹🇳</span>
-                <span className="text-[#71717A]">+216</span>
-              </div>
-              <Input
-                type="tel"
-                value={phoneInput}
-                onChange={(e) => {
-                  const raw = e.target.value;
-                  const formatted = formatPhoneNumber(raw);
-                  setPhoneInput(formatted);
-                }}
-                placeholder="XX XXX XXX"
-                maxLength={11}
-                className="h-11 flex-1 border-0 bg-transparent text-base font-semibold shadow-none focus-visible:ring-0"
-              />
-            </div>
-
-            {/* Validation hint */}
-            {digits.length > 0 && !isPhoneValid && (
-              <p className="mt-2 text-xs text-[#ef4444]">
-                Le numéro doit commencer par 2, 5 ou 9 et contenir 8 chiffres
-              </p>
+        {step === 'email' ? (
+          <div className="mt-6 space-y-4">
+            <Input
+              type="email"
+              value={emailInput}
+              onChange={(e) => setEmailInput(e.target.value)}
+              placeholder="vous@exemple.com"
+              className="h-11 text-base"
+              dir="ltr"
+              autoComplete="email"
+            />
+            {!isEmailValid && emailInput.length > 0 && (
+              <p className="text-xs text-[#ef4444]">Adresse e-mail invalide</p>
             )}
-
-            {/* Submit Button */}
             <Button
-              onClick={handlePhoneSubmit}
-              disabled={!isPhoneValid}
-              className="mt-4 h-12 w-full rounded-full bg-[#78350F] text-base font-bold text-white hover:bg-[#92400E] disabled:opacity-40"
+              onClick={() => void sendCode()}
+              disabled={!isEmailValid || loading}
+              className="h-12 w-full rounded-full bg-[#78350F] text-base font-bold text-white hover:bg-[#92400E] disabled:opacity-40"
             >
-              Envoyer le code
+              {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  Envoi…
+                </span>
+              ) : (
+                'Envoyer le code'
+              )}
             </Button>
-
-            <p className="mt-4 text-center text-xs text-[#A1A1AA]">
-              En continuant, vous acceptez nos{' '}
-              <a href="#" className="underline hover:text-[#78350F]">
-                Conditions d&apos;utilisation
-              </a>
+            <p className="text-center text-xs text-[#A1A1AA]">
+              Connexion sécurisée par e-mail (Resend)
             </p>
           </div>
         ) : (
           <div className="mt-6">
-            {/* OTP Input */}
             <InputOTP
               maxLength={6}
               value={otpValue}
               onChange={(value) => {
                 setOtpValue(value);
-                handleOTPComplete(value);
+                if (value.length === 6) void handleOTPComplete(value);
               }}
+              disabled={loading}
               containerClassName="justify-center"
             >
               <InputOTPGroup>
@@ -170,17 +205,21 @@ function LoginModalContent({ onOpenChange }: { onOpenChange: (open: boolean) => 
               </InputOTPGroup>
             </InputOTP>
 
-            {/* Resend */}
+            {loading && (
+              <div className="mt-4 flex justify-center">
+                <Loader2 className="h-6 w-6 animate-spin text-[#78350F]" />
+              </div>
+            )}
+
             <div className="mt-4 text-center">
               {countdown > 0 ? (
                 <p className="text-xs text-[#A1A1AA]">
                   Renvoyer dans{' '}
-                  <span className="font-bold text-[#78350F]">
-                    {countdown}s
-                  </span>
+                  <span className="font-bold text-[#78350F]">{countdown}s</span>
                 </p>
               ) : (
                 <button
+                  type="button"
                   onClick={handleResend}
                   className="text-xs font-bold text-[#78350F] hover:underline"
                 >
@@ -189,17 +228,17 @@ function LoginModalContent({ onOpenChange }: { onOpenChange: (open: boolean) => 
               )}
             </div>
 
-            {/* Back Button */}
             <Button
+              type="button"
               onClick={() => {
-                setStep('phone');
+                setStep('email');
                 setOtpValue('');
               }}
               variant="ghost"
               className="mt-4 w-full text-sm font-medium text-[#71717A] hover:bg-[#F4F4F5] hover:text-[#09090B]"
             >
               <ArrowLeft className="mr-2 size-4" />
-              Modifier le numéro
+              Modifier l’e-mail
             </Button>
           </div>
         )}
@@ -212,7 +251,6 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-[400px] rounded-2xl border-[#E4E4E7] p-0 sm:p-0">
-        {/* Key forces remount when modal opens, resetting all state */}
         <LoginModalContent key={open ? 'open' : 'closed'} onOpenChange={onOpenChange} />
       </DialogContent>
     </Dialog>

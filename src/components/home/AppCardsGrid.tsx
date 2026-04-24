@@ -25,23 +25,32 @@ interface Product {
   externalUrl: string | null
 }
 
-const FALLBACK_APPS = [
+const FALLBACK_QUSTODIO_CARD_ID = 'fallback-qustodio-static'
+
+/** DB/API غير متاحة — بطاقة تفتح صفحة Qustodio المدمجة */
+const FALLBACK_APPS: Product[] = [
   {
-    emoji: '🛡️',
+    id: FALLBACK_QUSTODIO_CARD_ID,
+    slug: 'qustodio',
     name: 'Qustodio',
     nameAr: 'Qustodio',
     description: 'حماية أطفالك على النت',
+    descriptionAr: 'حماية أطفالك على النت',
     price: 89,
     currency: 'TND',
     priceLabel: 'من 89 دت / سنة',
     isActive: true,
     route: 'qustodio-app',
+    externalUrl: null,
+    emoji: '🛡️',
     imageUrl: null,
+    sortOrder: 0,
+    features: [],
   },
 ]
 
 export default function AppCardsGrid() {
-  const { navigate, setSelectedProductId } = useAppStore()
+  const { navigate, openProductDetail } = useAppStore()
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -53,10 +62,10 @@ export default function AppCardsGrid() {
           const data = await res.json()
           setProducts(data.data || [])
         } else {
-          setProducts(FALLBACK_APPS as Product[])
+          setProducts(FALLBACK_APPS)
         }
       } catch {
-        setProducts(FALLBACK_APPS as Product[])
+        setProducts(FALLBACK_APPS)
       } finally {
         setLoading(false)
       }
@@ -99,21 +108,30 @@ export default function AppCardsGrid() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {products.map((product) => {
               const isComingSoon = product.slug === 'coming-soon'
+              const goToProduct = () => {
+                if (isComingSoon) return
+                if (product.externalUrl) {
+                  window.open(product.externalUrl, '_blank')
+                  return
+                }
+                if (
+                  product.id === FALLBACK_QUSTODIO_CARD_ID &&
+                  product.route === 'qustodio-app'
+                ) {
+                  navigate('qustodio-app')
+                  return
+                }
+                if (product.id) {
+                  openProductDetail(product.id)
+                }
+              }
               return (
                 <div
                   key={product.id}
                   className={`product-card group cursor-pointer ${
                     isComingSoon ? 'opacity-50 grayscale pointer-events-none' : ''
                   }`}
-                  onClick={() => {
-                    if (isComingSoon) return
-                    if (product.externalUrl) {
-                      window.open(product.externalUrl, '_blank')
-                    } else {
-                      setSelectedProductId(product.id)
-                      navigate('product-detail')
-                    }
-                  }}
+                  onClick={goToProduct}
                 >
                   {/* ── Image Area ── */}
                   <div className="relative w-full aspect-square overflow-hidden rounded-t-2xl bg-gradient-to-br from-carely-mint to-carely-light">
@@ -191,12 +209,7 @@ export default function AppCardsGrid() {
                         className="w-full bg-carely-dark text-white font-bold py-3 rounded-xl text-sm transition-all duration-200 hover:bg-carely-green hover:shadow-lg hover:shadow-carely-green/20"
                         onClick={(e) => {
                           e.stopPropagation()
-                          if (product.externalUrl) {
-                            window.open(product.externalUrl, '_blank')
-                          } else {
-                            setSelectedProductId(product.id)
-                            navigate('product-detail')
-                          }
+                          goToProduct()
                         }}
                       >
                         <span>شوف التفاصيل</span>

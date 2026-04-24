@@ -1,34 +1,58 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { validateSuperAdminSession, createSuperAdminSession } from '@/lib/session';
+import { getCfContext } from '@/lib/cf-context';
+import { normalizeEmail, verifyAndConsumeChallenge } from '@/lib/email-otp-kv';
 
-const SUPERADMIN_EMAIL = process.env.SUPERADMIN_EMAIL || 'admin@carely.tn';
-const SUPERADMIN_PASSWORD = process.env.SUPERADMIN_PASSWORD || 'carely2025';
+const SUPERADMIN_EMAIL = normalizeEmail(
+  process.env.SUPERADMIN_EMAIL || 'admin@carely.tn'
+);
 
+/**
+ * POST /api/superadmin-login
+ * Body: { email: string, code: string } — code from email (Resend)
+ */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { email, password } = body;
+    const emailNorm = normalizeEmail(typeof body.email === 'string' ? body.email : '');
+    const code = typeof body.code === 'string' ? body.code.trim() : '';
 
-    if (!email || !password) {
+    if (!emailNorm || !code) {
       return NextResponse.json(
-        { success: false, error: 'البريد وكلمة المرور مطلوبان' },
+        { success: false, error: 'البريد والكود مطلوبان' },
         { status: 400 }
       );
     }
 
-    if (email !== SUPERADMIN_EMAIL || password !== SUPERADMIN_PASSWORD) {
+    if (emailNorm !== SUPERADMIN_EMAIL) {
       return NextResponse.json(
         { success: false, error: 'بيانات الدخول غير صحيحة' },
         { status: 401 }
       );
     }
 
-    const token = await createSuperAdminSession(email);
+    if (code.length !== 6 || !/^\d{6}$/.test(code)) {
+      return NextResponse.json(
+        { success: false, error: 'أدخل الكود المكوّن من 6 أرقام' },
+        { status: 400 }
+      );
+    }
+
+    const { kv } = getCfContext();
+    const ok = await verifyAndConsumeChallenge(kv, 'superadmin', emailNorm, code);
+    if (!ok) {
+      return NextResponse.json(
+        { success: false, error: 'الكود غير صحيح أو منتهي' },
+        { status: 401 }
+      );
+    }
+
+    const token = await createSuperAdminSession(emailNorm);
 
     return NextResponse.json({
       success: true,
       token,
-      email,
+      email: emailNorm,
     });
   } catch {
     return NextResponse.json(
@@ -54,6 +78,5 @@ export async function GET(request: NextRequest) {
 }
 
 export async function DELETE() {
-  // Client discards token — KV handles auto-expiry
   return NextResponse.json({ success: true });
 }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getCfContext } from "@/lib/cf-context";
 import { eq } from "drizzle-orm";
 import { users } from "@/db/schema";
+import { toAuthUser } from "@/lib/auth-user";
 
 export async function GET(request: NextRequest) {
   try {
@@ -26,11 +27,9 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const { password: _, ...userWithoutPassword } = user;
-
     return NextResponse.json({
       success: true,
-      user: userWithoutPassword,
+      user: toAuthUser(user),
     });
   } catch (error) {
     console.error("Session check error:", error);

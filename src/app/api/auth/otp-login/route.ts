@@ -2,123 +2,136 @@ import { NextRequest, NextResponse } from "next/server";
 import { getCfContext } from "@/lib/cf-context";
 import { eq } from "drizzle-orm";
 import { users } from "@/db/schema";
-import { verifyIdToken, normalizePhoneForDb } from "@/lib/verify-firebase-token";
+import { normalizePhoneForDb } from "@/lib/verify-firebase-token";
+import { toAuthUser } from "@/lib/auth-user";
+import {
+  normalizeEmail,
+  verifyAndConsumeChallenge,
+  setRegisterPending,
+  hasRegisterPending,
+  clearRegisterPending,
+} from "@/lib/email-otp-kv";
 
 /**
  * POST /api/auth/otp-login
- * Body: { idToken: string, action?: "login" | "register", name?, address?, wilaya? }
- *
- * IMPORTANT: Phone number comes from the Firebase token, NOT from the client body.
- * Firebase guarantees the phone is correct (E.164) because it sent the SMS and
- * verified the OTP. The client cannot spoof this.
- *
- * All phones in DB are stored as: "+216 XX XXX XXXX" (consistent format)
+ * Body:
+ *  - login: { email, code, action: "login" }
+ *  - register: { email, action: "register", name, phone, address?, wilaya? }
+ *    (after OTP verified once; register-pending KV flag must exist)
  */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { idToken, action = "login", name, address, wilaya } = body;
+    const action = body.action === "register" ? "register" : "login";
+    const emailNorm = normalizeEmail(typeof body.email === "string" ? body.email : "");
 
-    if (!idToken) {
+    if (!emailNorm || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailNorm)) {
       return NextResponse.json(
-        { success: false, error: "رمز التحقق غير موجود" },
+        { success: false, error: "بريد إلكتروني غير صالح" },
         { status: 400 }
       );
     }
 
-    // ── Verify Firebase token server-side ──
-    const firebaseUser = await verifyIdToken(idToken);
-    if (!firebaseUser) {
-      return NextResponse.json(
-        { success: false, error: "رمز التحقق غير صالح أو منتهي. أعد المحاولة." },
-        { status: 401 }
-      );
-    }
+    const { db, kv } = getCfContext();
 
-    // Normalize Firebase phone to DB format: "+216 XX XXX XXXX"
-    const dbPhone = normalizePhoneForDb(firebaseUser.phoneNumber);
-
-    console.log("[otp-login] Firebase phone:", firebaseUser.phoneNumber, "→ DB phone:", dbPhone, "| action:", action);
-
-    const { db } = getCfContext();
-
-    // ── LOGIN ──
     if (action === "login") {
-      const user = await db.select().from(users).where(eq(users.phone, dbPhone)).get();
-
-      if (!user) {
-        // New user — tell client to show profile form
-        return NextResponse.json({
-          success: false,
-          isNewUser: true,
-          error: "رقم جديد — أكمل بروفايلك",
-        });
-      }
-
-      // Update Firebase UID
-      await db.update(users).set({ firebaseUid: firebaseUser.uid }).where(eq(users.id, user.id));
-
-      const { password: _, ...userWithoutPassword } = user;
-
-      return NextResponse.json({
-        success: true,
-        user: { ...userWithoutPassword, firebaseUid: firebaseUser.uid },
-      });
-    }
-
-    // ── REGISTER ──
-    if (action === "register") {
-      if (!name || !name.trim()) {
+      const code = typeof body.code === "string" ? body.code.trim() : "";
+      if (code.length !== 6 || !/^\d{6}$/.test(code)) {
         return NextResponse.json(
-          { success: false, error: "الاسم لازم" },
+          { success: false, error: "أدخل الكود المكوّن من 6 أرقام" },
           { status: 400 }
         );
       }
 
-      const now = new Date().toISOString();
+      const ok = await verifyAndConsumeChallenge(kv, "customer", emailNorm, code);
+      if (!ok) {
+        return NextResponse.json(
+          { success: false, error: "الكود غير صحيح أو منتهي" },
+          { status: 401 }
+        );
+      }
 
-      // Check if user already exists
-      const existingUser = await db.select().from(users).where(eq(users.phone, dbPhone)).get();
+      const user = await db.select().from(users).where(eq(users.email, emailNorm)).get();
 
-      if (existingUser) {
-        // User already exists — log them in instead
-        await db.update(users).set({ firebaseUid: firebaseUser.uid }).where(eq(users.id, existingUser.id));
-        const { password: _, ...userWithoutPassword } = existingUser;
+      if (!user) {
+        await setRegisterPending(kv, emailNorm);
         return NextResponse.json({
-          success: true,
-          user: { ...userWithoutPassword, firebaseUid: firebaseUser.uid },
+          success: false,
+          isNewUser: true,
+          error: "بريد جديد — أكمل بروفايلك",
         });
       }
 
-      // Create new user
-      const newUserId = crypto.randomUUID();
-      await db.insert(users).values({
-        id: newUserId,
-        name: name.trim(),
-        phone: dbPhone,
-        address: address?.trim() || null,
-        wilaya: wilaya?.trim() || null,
-        role: "customer",
-        firebaseUid: firebaseUser.uid,
-        createdAt: now,
-        updatedAt: now,
+      return NextResponse.json({
+        success: true,
+        user: toAuthUser(user),
       });
+    }
 
-      const newUser = await db.select().from(users).where(eq(users.id, newUserId)).get();
-      const { password: _, ...userWithoutPassword } = newUser!;
+    // ── REGISTER ──
+    const name = typeof body.name === "string" ? body.name : "";
+    const phoneRaw = typeof body.phone === "string" ? body.phone : "";
+    const address = typeof body.address === "string" ? body.address : undefined;
+    const wilaya = typeof body.wilaya === "string" ? body.wilaya : undefined;
 
-      console.log("[otp-login] New user created:", newUser!.id, newUser!.name, newUser!.phone);
+    if (!name.trim()) {
+      return NextResponse.json({ success: false, error: "الاسم لازم" }, { status: 400 });
+    }
 
+    const phoneDigits = phoneRaw.replace(/[^\d]/g, "");
+    if (phoneDigits.length !== 8 || !/^[259]/.test(phoneDigits)) {
       return NextResponse.json(
-        { success: true, user: userWithoutPassword },
-        { status: 201 }
+        { success: false, error: "أدخل رقم هاتف تونسي صحيح (8 أرقام)" },
+        { status: 400 }
       );
     }
 
-    return NextResponse.json(
-      { success: false, error: "إجراء غير معروف" },
-      { status: 400 }
-    );
+    const pendingOk = await hasRegisterPending(kv, emailNorm);
+    if (!pendingOk) {
+      return NextResponse.json(
+        { success: false, error: "انتهت جلسة التحقق. أعد إرسال الكود." },
+        { status: 401 }
+      );
+    }
+
+    const dbPhone = normalizePhoneForDb(phoneDigits);
+
+    const existingEmail = await db.select().from(users).where(eq(users.email, emailNorm)).get();
+    if (existingEmail) {
+      await clearRegisterPending(kv, emailNorm);
+      return NextResponse.json({ success: true, user: toAuthUser(existingEmail) });
+    }
+
+    const phoneTaken = await db.select().from(users).where(eq(users.phone, dbPhone)).get();
+    if (phoneTaken) {
+      return NextResponse.json(
+        { success: false, error: "رقم الهاتف مسجّل بحساب آخر" },
+        { status: 409 }
+      );
+    }
+
+    const now = new Date().toISOString();
+    const newUserId = crypto.randomUUID();
+
+    await db.insert(users).values({
+      id: newUserId,
+      name: name.trim(),
+      email: emailNorm,
+      phone: dbPhone,
+      address: address?.trim() || null,
+      wilaya: wilaya?.trim() || null,
+      role: "customer",
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    await clearRegisterPending(kv, emailNorm);
+
+    const newUser = await db.select().from(users).where(eq(users.id, newUserId)).get();
+
+    console.log("[otp-login] New user:", newUser!.id, newUser!.email, newUser!.phone);
+
+    return NextResponse.json({ success: true, user: toAuthUser(newUser!) }, { status: 201 });
   } catch (error) {
     console.error("[otp-login] Error:", error);
     return NextResponse.json(

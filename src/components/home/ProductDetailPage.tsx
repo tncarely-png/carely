@@ -676,31 +676,52 @@ function LoadingSkeleton() {
 // ────────────────────────────────────────────
 
 export default function ProductDetailPage() {
-  const { navigate, openWhatsAppPopup, selectedProductId } = useAppStore();
+  const { navigate, openWhatsAppPopup, selectedProductId, setSelectedProductId } =
+    useAppStore();
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!selectedProductId) {
+    const fromUrl =
+      typeof window !== 'undefined'
+        ? new URLSearchParams(window.location.search).get('id')
+        : null;
+    const effectiveId = selectedProductId ?? fromUrl;
+
+    if (!effectiveId) {
       navigate('home');
       return;
     }
 
+    if (fromUrl && selectedProductId !== fromUrl) {
+      setSelectedProductId(fromUrl);
+    }
+
+    let cancelled = false;
+
     async function loadProduct() {
+      setLoading(true);
       try {
-        const res = await fetch(`/api/products/${selectedProductId}`);
+        const res = await fetch(`/api/products/${effectiveId}`);
         if (res.ok) {
           const data = await res.json();
-          setProduct(data.data || null);
+          if (!cancelled) {
+            setProduct(data.data || null);
+          }
+        } else if (!cancelled) {
+          setProduct(null);
         }
       } catch {
-        // silent
+        if (!cancelled) setProduct(null);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     }
     loadProduct();
-  }, [selectedProductId, navigate]);
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedProductId, navigate, setSelectedProductId]);
 
   const sections = useMemo(() => {
     if (!product) return [];
