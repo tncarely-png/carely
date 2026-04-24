@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getCfContext } from "@/lib/cf-context";
+import { getCfContextAsync } from "@/lib/cf-context";
 import { eq } from "drizzle-orm";
 import { users } from "@/db/schema";
 import { normalizePhoneForDb } from "@/lib/verify-firebase-token";
@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { db, kv } = getCfContext();
+    const { db, kv } = await getCfContextAsync();
 
     if (action === "login") {
       const code = typeof body.code === "string" ? body.code.trim() : "";

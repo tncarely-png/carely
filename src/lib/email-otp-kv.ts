@@ -3,13 +3,18 @@
  */
 
 import type { KVNamespace } from "@cloudflare/workers-types";
+import { getWorkerEnvVar } from "@/lib/cf-env";
 
 export function normalizeEmail(email: string): string {
   return email.trim().toLowerCase();
 }
 
 function otpPepper(): string {
-  return process.env.OTP_PEPPER || process.env.RESEND_API_KEY || "carely-dev-otp-pepper";
+  return (
+    getWorkerEnvVar("OTP_PEPPER") ||
+    getWorkerEnvVar("RESEND_API_KEY") ||
+    "carely-dev-otp-pepper"
+  );
 }
 
 export async function hashOtp(emailNorm: string, code: string): Promise<string> {

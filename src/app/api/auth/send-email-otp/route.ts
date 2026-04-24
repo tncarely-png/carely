@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getCfContext } from "@/lib/cf-context";
+import { getCfContextAsync } from "@/lib/cf-context";
 import {
   normalizeEmail,
   randomOtpCode,
@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { kv } = getCfContext();
+    const { kv, env } = await getCfContextAsync();
 
     const allowed = await checkSendRateLimit(kv, emailNorm);
     if (!allowed) {
@@ -40,7 +40,11 @@ export async function POST(request: NextRequest) {
     const codeHash = await hashOtp(emailNorm, code);
     await putChallenge(kv, "customer", emailNorm, codeHash);
 
-    const sent = await sendOtpEmail({ to: emailNorm, code });
+    const sent = await sendOtpEmail({
+      to: emailNorm,
+      code,
+      cfEnv: env as Record<string, unknown>,
+    });
     if (!sent.ok) {
       return NextResponse.json({ success: false, error: sent.error }, { status: 502 });
     }
@@ -48,8 +52,19 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true });
   } catch (e) {
     console.error("[send-email-otp]", e);
+    const msg = e instanceof Error ? e.message : String(e);
+    if (msg.includes("CF context not available")) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "إرسال الكود يحتاج Cloudflare (KV). محلياً: شغّل `bun run preview` بعد build، أو انشر على Cloudflare. أمر `next dev` وحده لا يدعم الـ API.",
+        },
+        { status: 503 }
+      );
+    }
     return NextResponse.json(
-      { success: false, error: "حصل مشكل في المخدم" },
+      { success: false, error: "حصل مشكل في المخدم. راجع السجلات." },
       { status: 500 }
     );
   }

@@ -3,24 +3,70 @@
  * Without a verified domain, use onboarding@resend.dev as From (Resend default).
  */
 
+import { getWorkerEnvVar } from "@/lib/cf-env";
+
 const RESEND_API = "https://api.resend.com/emails";
 
-export function defaultResendFrom(): string {
-  return process.env.RESEND_FROM_EMAIL?.trim() || "Carely <onboarding@resend.dev>";
+function pickEnv(
+  cfEnv: Record<string, unknown> | undefined,
+  key: string
+): string | undefined {
+  if (!cfEnv) return undefined;
+  const v = cfEnv[key];
+  return typeof v === "string" && v.length > 0 ? v : undefined;
+}
+
+export function defaultResendFrom(
+  cfEnv?: Record<string, unknown>
+): string {
+  return (
+    pickEnv(cfEnv, "RESEND_FROM_EMAIL")?.trim() ||
+    getWorkerEnvVar("RESEND_FROM_EMAIL")?.trim() ||
+    "Carely <onboarding@resend.dev>"
+  );
+}
+
+function mapResendErrorBody(status: number, body: string): string {
+  try {
+    const j = JSON.parse(body) as { message?: string };
+    const msg = (j.message || "").toLowerCase();
+    if (status === 403 && msg.includes("verify")) {
+      return "تأكد من إعداد النطاق في Resend، أو أرسل لبريد موثّق في لوحة Resend.";
+    }
+    if (msg.includes("only send testing emails to your own email")) {
+      return "وضع الاختبار في Resend: أرسل الكود فقط لبريدك المسجّل في Resend، أو فعّل نطاقاً.";
+    }
+  } catch {
+    /* use generic */
+  }
+  if (status === 401 || status === 403) {
+    return "مفتاح Resend غير صالح أو مرفوض. تحقق من RESEND_API_KEY في Cloudflare.";
+  }
+  if (status === 422) {
+    return "عنوان المرسل أو المستلم غير مقبول لدى Resend.";
+  }
+  return "تعذر إرسال البريد. حاول لاحقاً.";
 }
 
 export async function sendOtpEmail(params: {
   to: string;
   code: string;
   subject?: string;
+  /** Worker `env` from `getCfContextAsync()` — required for RESEND_API_KEY on Cloudflare. */
+  cfEnv?: Record<string, unknown>;
 }): Promise<{ ok: true } | { ok: false; error: string }> {
-  const key = process.env.RESEND_API_KEY;
+  const key =
+    pickEnv(params.cfEnv, "RESEND_API_KEY") || getWorkerEnvVar("RESEND_API_KEY");
   if (!key) {
-    console.error("[resend-mail] RESEND_API_KEY is not set");
-    return { ok: false, error: "Email service not configured" };
+    console.error("[resend-mail] RESEND_API_KEY is not set (cfEnv / worker env / process.env)");
+    return {
+      ok: false,
+      error:
+        "RESEND_API_KEY missing. In Cloudflare: Workers → your worker → Settings → Variables and secrets → add secret RESEND_API_KEY (or wrangler secret put RESEND_API_KEY), then redeploy.",
+    };
   }
 
-  const from = defaultResendFrom();
+  const from = defaultResendFrom(params.cfEnv);
   const subject = params.subject ?? "كود الدخول — Carely.tn";
 
   const res = await fetch(RESEND_API, {
@@ -46,7 +92,7 @@ export async function sendOtpEmail(params: {
   if (!res.ok) {
     const text = await res.text();
     console.error("[resend-mail] API error:", res.status, text);
-    return { ok: false, error: "تعذر إرسال البريد. حاول لاحقاً." };
+    return { ok: false, error: mapResendErrorBody(res.status, text) };
   }
 
   return { ok: true };

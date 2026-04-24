@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { validateSuperAdminSession, createSuperAdminSession } from '@/lib/session';
-import { getCfContext } from '@/lib/cf-context';
+import { getCfContextAsync } from '@/lib/cf-context';
 import { normalizeEmail, verifyAndConsumeChallenge } from '@/lib/email-otp-kv';
+import { getWorkerEnvVar } from '@/lib/cf-env';
 
-const SUPERADMIN_EMAIL = normalizeEmail(
-  process.env.SUPERADMIN_EMAIL || 'admin@carely.tn'
-);
+function superadminEmail(): string {
+  return normalizeEmail(getWorkerEnvVar('SUPERADMIN_EMAIL') || 'admin@carely.tn');
+}
 
 /**
  * POST /api/superadmin-login
@@ -24,7 +25,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (emailNorm !== SUPERADMIN_EMAIL) {
+    if (emailNorm !== superadminEmail()) {
       return NextResponse.json(
         { success: false, error: 'بيانات الدخول غير صحيحة' },
         { status: 401 }
@@ -38,7 +39,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { kv } = getCfContext();
+    const { kv } = await getCfContextAsync();
     const ok = await verifyAndConsumeChallenge(kv, 'superadmin', emailNorm, code);
     if (!ok) {
       return NextResponse.json(
