@@ -17,6 +17,8 @@ import { sendOtpEmail } from "@/lib/resend-mail";
  * Body: { email: string }
  */
 export async function POST(request: NextRequest) {
+  const requestId = crypto.randomUUID().slice(0, 8);
+
   try {
     let body: { email?: string };
     try {
@@ -37,9 +39,36 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { kv, env } = await getOtpMailContextAsync();
+    let ctx: Awaited<ReturnType<typeof getOtpMailContextAsync>>;
+    try {
+      ctx = await getOtpMailContextAsync();
+    } catch (e) {
+      console.error("[send-email-otp] context", requestId, e);
+      const { ar, en, status } = publicErrorMessage(e);
+      return NextResponse.json(
+        { success: false, error: ar, errorEn: en, step: "context", requestId },
+        { status }
+      );
+    }
 
-    const allowed = await checkSendRateLimit(kv, emailNorm);
+    const { kv, env } = ctx;
+
+    let allowed: boolean;
+    try {
+      allowed = await checkSendRateLimit(kv, emailNorm);
+    } catch (e) {
+      console.error("[send-email-otp] rate-limit", requestId, e);
+      return NextResponse.json(
+        {
+          success: false,
+          error: "تعذر الوصول إلى Cloudflare KV لحفظ محاولات الإرسال.",
+          errorEn: "Cloudflare KV failed during rate-limit check.",
+          step: "rate-limit",
+          requestId,
+        },
+        { status: 500 }
+      );
+    }
     if (!allowed) {
       return NextResponse.json(
         { success: false, error: "انتظر قليلاً قبل طلب كود جديد" },
@@ -48,28 +77,84 @@ export async function POST(request: NextRequest) {
     }
 
     const code = randomOtpCode();
-    const codeHash = await hashOtp(emailNorm, code);
-    await putChallenge(kv, "customer", emailNorm, codeHash);
-
-    const sent = await sendOtpEmail({
-      to: emailNorm,
-      code,
-      cfEnv: env as Record<string, unknown>,
-    });
-    if (!sent.ok) {
-      return NextResponse.json({ success: false, error: sent.error }, { status: 502 });
+    let codeHash: string;
+    try {
+      codeHash = await hashOtp(emailNorm, code);
+    } catch (e) {
+      console.error("[send-email-otp] hash", requestId, e);
+      return NextResponse.json(
+        {
+          success: false,
+          error: "تعذر تجهيز كود التحقق.",
+          errorEn: "Failed to hash OTP code.",
+          step: "hash",
+          requestId,
+        },
+        { status: 500 }
+      );
     }
 
-    return NextResponse.json({ success: true });
+    try {
+      await putChallenge(kv, "customer", emailNorm, codeHash);
+    } catch (e) {
+      console.error("[send-email-otp] kv-put", requestId, e);
+      return NextResponse.json(
+        {
+          success: false,
+          error: "تعذر حفظ كود التحقق في Cloudflare KV.",
+          errorEn: "Cloudflare KV failed while saving OTP challenge.",
+          step: "kv-put",
+          requestId,
+        },
+        { status: 500 }
+      );
+    }
+
+    let sent: Awaited<ReturnType<typeof sendOtpEmail>>;
+    try {
+      sent = await sendOtpEmail({
+        to: emailNorm,
+        code,
+        cfEnv: env as Record<string, unknown>,
+      });
+    } catch (e) {
+      console.error("[send-email-otp] resend-throw", requestId, e);
+      return NextResponse.json(
+        {
+          success: false,
+          error: "تعذر الاتصال بخدمة Resend لإرسال البريد.",
+          errorEn: "Resend request threw before returning a response.",
+          step: "resend-fetch",
+          requestId,
+        },
+        { status: 502 }
+      );
+    }
+    if (!sent.ok) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: sent.error,
+          errorEn: "Resend rejected the email request.",
+          step: "resend-api",
+          requestId,
+        },
+        { status: 502 }
+      );
+    }
+
+    return NextResponse.json({ success: true, requestId });
   } catch (e) {
-    console.error("[send-email-otp]", e);
+    console.error("[send-email-otp] unexpected", requestId, e);
     const { ar, en, status } = publicErrorMessage(e);
     const payload: {
       success: false;
       error: string;
       errorEn: string;
+      step: "unexpected";
+      requestId: string;
       detail?: string;
-    } = { success: false, error: ar, errorEn: en };
+    } = { success: false, error: ar, errorEn: en, step: "unexpected", requestId };
     if (process.env.NODE_ENV !== "production") {
       payload.detail = e instanceof Error ? e.message : String(e);
     }
