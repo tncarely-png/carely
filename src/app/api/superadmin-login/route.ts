@@ -1,12 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { validateSuperAdminSession, createSuperAdminSession } from '@/lib/session';
-import { getCfContextAsync } from '@/lib/cf-context';
+import { getOtpMailContextAsync, publicErrorMessage } from '@/lib/cf-context';
 import { normalizeEmail, verifyAndConsumeChallenge } from '@/lib/email-otp-kv';
-import { getWorkerEnvVar } from '@/lib/cf-env';
-
-function superadminEmail(): string {
-  return normalizeEmail(getWorkerEnvVar('SUPERADMIN_EMAIL') || 'admin@carely.tn');
-}
 
 /**
  * POST /api/superadmin-login
@@ -25,13 +20,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (emailNorm !== superadminEmail()) {
-      return NextResponse.json(
-        { success: false, error: 'بيانات الدخول غير صحيحة' },
-        { status: 401 }
-      );
-    }
-
     if (code.length !== 6 || !/^\d{6}$/.test(code)) {
       return NextResponse.json(
         { success: false, error: 'أدخل الكود المكوّن من 6 أرقام' },
@@ -39,7 +27,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { kv } = await getCfContextAsync();
+    const { kv, env: rawEnv } = await getOtpMailContextAsync();
+    const env = rawEnv as Record<string, unknown>;
+    const expectedAdmin = normalizeEmail(
+      (typeof env.SUPERADMIN_EMAIL === 'string' && env.SUPERADMIN_EMAIL) || 'admin@carely.tn'
+    );
+
+    if (emailNorm !== expectedAdmin) {
+      return NextResponse.json(
+        { success: false, error: 'بيانات الدخول غير صحيحة' },
+        { status: 401 }
+      );
+    }
     const ok = await verifyAndConsumeChallenge(kv, 'superadmin', emailNorm, code);
     if (!ok) {
       return NextResponse.json(
@@ -55,11 +54,10 @@ export async function POST(request: NextRequest) {
       token,
       email: emailNorm,
     });
-  } catch {
-    return NextResponse.json(
-      { success: false, error: 'حدث خطأ في المخدم' },
-      { status: 500 }
-    );
+  } catch (e) {
+    console.error('[superadmin-login]', e);
+    const { ar, en, status } = publicErrorMessage(e);
+    return NextResponse.json({ success: false, error: ar, errorEn: en }, { status });
   }
 }
 
