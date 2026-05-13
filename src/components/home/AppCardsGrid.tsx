@@ -36,9 +36,9 @@ const FALLBACK_APPS: Product[] = [
     nameAr: 'QStudio',
     description: 'حماية أطفالك على النت',
     descriptionAr: 'حماية أطفالك على النت',
-    price: 89,
+    price: 390,
     currency: 'TND',
-    priceLabel: 'من 89 دت / سنة',
+    priceLabel: 'من 390 دت / سنة',
     isActive: true,
     route: 'qstudio-app',
     externalUrl: null,
@@ -180,29 +180,9 @@ export default function AppCardsGrid() {
                     </h3>
 
                     {/* Description */}
-                    <p className="text-sm text-carely-gray mb-3 line-clamp-2 leading-relaxed min-h-[2.5rem]">
+                    <p className="text-sm text-carely-gray mb-4 line-clamp-2 leading-relaxed min-h-[2.5rem]">
                       {product.descriptionAr || product.description}
                     </p>
-
-                    {/* Price */}
-                    {product.price > 0 && (
-                      <div className="mb-4">
-                        {product.priceLabel ? (
-                          <span className="text-xl font-extrabold text-carely-green">
-                            {product.priceLabel}
-                          </span>
-                        ) : (
-                          <div className="flex items-baseline gap-1">
-                            <span className="text-xl font-extrabold text-carely-green">
-                              {product.price.toFixed(2)}
-                            </span>
-                            <span className="text-sm text-carely-gray font-medium">
-                              {product.currency || 'دت'}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    )}
 
                     {/* CTA */}
                     {!isComingSoon && (

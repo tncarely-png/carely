@@ -90,8 +90,7 @@ CREATE TABLE IF NOT EXISTS `settings` (
   `updated_at` text NOT NULL
 );
 
--- Seed WhatsApp agents
+-- Seed WhatsApp agents (Chafik only — active)
 INSERT OR IGNORE INTO `whatsapp_agents` (`id`, `name`, `phone`, `gender`, `is_active`, `title`, `emoji`)
 VALUES
-  ('agent-1', 'Maram', '+21652013035', 'female', 1, 'الوكيلة الأولى', '👩'),
-  ('agent-2', 'Chafik', '+21650496159', 'male', 0, 'الوكيل الثاني', '👨');
+  ('agent-1', 'Chafik', '+21650496159', 'male', 1, 'الدعم', '👨');

@@ -17,20 +17,11 @@ interface AgentInfo {
 const FALLBACK_AGENTS: AgentInfo[] = [
   {
     id: '1',
-    name: 'Maram',
-    phone: '21652013035',
-    gender: 'female',
-    isActive: true,
-    title: 'الوكيلة الأولى',
-    emoji: '👩',
-  },
-  {
-    id: '2',
     name: 'Chafik',
-    phone: '21626107128',
+    phone: '21650496159',
     gender: 'male',
-    isActive: false,
-    title: 'الوكيل الثاني',
+    isActive: true,
+    title: 'الدعم',
     emoji: '👨',
   },
 ];
@@ -63,7 +54,10 @@ export function WhatsAppAgentPopup({
             seen.add(a.id);
             return true;
           });
-          setAgents(unique.slice(0, 2));
+          const filtered = unique.filter(
+            (a: AgentInfo) => a.name?.trim().toLowerCase() !== 'maram'
+          );
+          setAgents(filtered.length > 0 ? filtered : FALLBACK_AGENTS);
         }
       })
       .catch(() => {
@@ -130,7 +124,7 @@ export function WhatsAppAgentPopup({
             </div>
             <h3 className="text-lg font-extrabold text-white">تواصل معانا 💬</h3>
             <p className="text-sm text-green-100 mt-1">
-              اختر الوكيل المتاح للتواصل على واتساب
+              Chafik متاح للتواصل على واتساب
             </p>
           </div>
 
@@ -138,12 +132,7 @@ export function WhatsAppAgentPopup({
           <div className="p-4">
             {loading ? (
               <div className="flex flex-col gap-3 py-4">
-                {[1, 2].map((i) => (
-                  <div
-                    key={i}
-                    className="h-20 bg-gray-100 rounded-xl animate-pulse"
-                  />
-                ))}
+                <div className="h-20 bg-gray-100 rounded-xl animate-pulse" />
               </div>
             ) : (
               <div className="flex flex-col gap-3">

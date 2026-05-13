@@ -44,6 +44,7 @@ import {
 } from '@/components/ui/table';
 import { useAppStore } from '@/store';
 import { PLANS, SUBSCRIPTION_STATUS, ORDER_STATUS, getWhatsAppLink } from '@/lib/constants';
+import { PaymentMethodDisplay } from '@/components/dashboard/PaymentMethodDisplay';
 
 interface UserData {
   id: string;
@@ -531,7 +532,9 @@ export default function AdminUserDetail() {
                         </Badge>
                       </TableCell>
                       <TableCell className="font-bold">{order.amountTnd.toFixed(2)} دت</TableCell>
-                      <TableCell className="text-sm text-carely-gray">{order.paymentMethod}</TableCell>
+                      <TableCell>
+                        <PaymentMethodDisplay methodId={order.paymentMethod} compact />
+                      </TableCell>
                       <TableCell>
                         <Badge className={ORDER_STATUS[order.status as keyof typeof ORDER_STATUS]?.color || 'bg-gray-100 text-gray-800'}>
                           {ORDER_STATUS[order.status as keyof typeof ORDER_STATUS]?.label || order.status}

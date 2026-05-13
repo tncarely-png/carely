@@ -62,7 +62,6 @@ export default function Footer() {
             <ul className="flex flex-col gap-3">
               {[
                 { label: 'الرئيسية', page: 'home' as const },
-                { label: 'الأسعار', page: 'pricing' as const },
                 { label: 'المميزات', page: 'features' as const },
                 { label: 'الأسئلة الشائعة', page: 'faq' as const },
               ].map((item) => (

@@ -3,6 +3,8 @@
 import { useEffect } from 'react';
 import { useAppStore } from '@/store';
 import { PLANS, PAYMENT_METHODS } from '@/lib/constants';
+import { PaymentProviderLogo } from '@/components/dashboard/PaymentProviderLogo';
+import { notifyDashboardDataChanged } from '@/lib/dashboard-sync';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { MessageCircle, Clock, LayoutDashboard } from 'lucide-react';
@@ -20,6 +22,10 @@ export default function CheckoutSuccessPage() {
       navigate('checkout');
     }
   }, [selectedPlanKey, navigate]);
+
+  useEffect(() => {
+    if (selectedPlanKey) notifyDashboardDataChanged();
+  }, [selectedPlanKey]);
 
   const plan = selectedPlanKey ? PLANS[selectedPlanKey] : null;
   const pm = PAYMENT_METHODS.find((p) => p.id === selectedPaymentMethod);
@@ -66,9 +72,18 @@ export default function CheckoutSuccessPage() {
                   {plan ? `${plan.priceTnd} دت` : '—'}
                 </span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-carely-gray">طريقة الدفع</span>
-                <span className="font-semibold text-carely-dark">{pm?.name || '—'}</span>
+              <div className="flex justify-between items-center gap-2">
+                <span className="text-carely-gray shrink-0">طريقة الدفع</span>
+                <span className="font-semibold text-carely-dark inline-flex items-center gap-2 min-w-0 justify-end">
+                  {pm ? (
+                    <>
+                      <PaymentProviderLogo domain={pm.logoDomain} label={pm.nameAr} className="h-7 w-7 shrink-0" size={48} />
+                      <span className="truncate">{pm.nameAr}</span>
+                    </>
+                  ) : (
+                    '—'
+                  )}
+                </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-carely-gray">الحالة</span>

@@ -1,11 +1,7 @@
 'use client'
 
-import { useAppStore } from '@/store'
 import { Button } from '@/components/ui/button'
-
 export default function FinalCTA() {
-  const { navigate } = useAppStore()
-
   return (
     <section className="relative overflow-hidden blur-contained py-16 md:py-20">
       {/* Background gradient */}
@@ -20,16 +16,17 @@ export default function FinalCTA() {
           جاهز تسوّق مع Carely؟
         </h2>
         <p className="text-lg sm:text-xl text-white/80 mb-8 leading-relaxed">
-          شوف المنتجات والأسعار، أو كلمنا على واتساب باش نساعدك تختار
+          شوف منتجاتنا، أو كلمنا على واتساب باش نساعدك تختار
         </p>
         <Button
           size="lg"
           className="bg-white text-carely-green hover:bg-gray-100 font-bold rounded-full px-8 py-3 text-base shadow-lg hover:shadow-xl transition-all duration-200 hover:-translate-y-0.5"
           onClick={() => {
-            navigate('pricing')
+            const el = document.getElementById('app-cards-section')
+            if (el) el.scrollIntoView({ behavior: 'smooth' })
           }}
         >
-          شوف المنتجات والأسعار
+          شوف المنتجات
         </Button>
         <p className="text-sm text-white/50 mt-4">
           تفعيل فوري • دفع بالدينار التونسي • دعم على واتساب

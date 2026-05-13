@@ -25,6 +25,7 @@ import {
 } from '@/components/ui/table';
 import { useAppStore } from '@/store';
 import { PLANS, ORDER_STATUS } from '@/lib/constants';
+import { PaymentMethodDisplay } from '@/components/dashboard/PaymentMethodDisplay';
 
 interface OrderRow {
   id: string;
@@ -68,7 +69,14 @@ export default function AdminOrders() {
       const res = await fetch(`/api/orders?${params.toString()}`);
       if (!res.ok) throw new Error('فشل تحميل البيانات');
       const data = await res.json();
-      setOrders(Array.isArray(data) ? data : []);
+      const list = Array.isArray(data)
+        ? data
+        : Array.isArray(data?.data)
+          ? data.data
+          : Array.isArray(data?.orders)
+            ? data.orders
+            : [];
+      setOrders(list);
     } catch {
       setError('حدث خطأ أثناء تحميل الطلبات');
     } finally {
@@ -238,7 +246,9 @@ export default function AdminOrders() {
                         </Badge>
                       </TableCell>
                       <TableCell className="font-bold">{order.amountTnd.toFixed(2)} دت</TableCell>
-                      <TableCell className="text-sm text-carely-gray">{order.paymentMethod}</TableCell>
+                      <TableCell>
+                        <PaymentMethodDisplay methodId={order.paymentMethod} compact />
+                      </TableCell>
                       <TableCell className="text-sm text-carely-gray font-mono">{order.paymentRef || '—'}</TableCell>
                       <TableCell>
                         <Badge className={ORDER_STATUS[order.status as keyof typeof ORDER_STATUS]?.color || 'bg-gray-100 text-gray-800'}>

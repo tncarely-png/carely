@@ -1,8 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuthStore, useAppStore } from '@/store';
-import { PLANS, PAYMENT_METHODS, ORDER_STATUS } from '@/lib/constants';
+import { PLANS, ORDER_STATUS } from '@/lib/constants';
+import { PaymentMethodDisplay } from '@/components/dashboard/PaymentMethodDisplay';
+import { subscribeDashboardDataChanged } from '@/lib/dashboard-sync';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -25,9 +27,10 @@ export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    async function fetchOrders() {
+  const fetchOrders = useCallback(
+    async (opts?: { silent?: boolean }) => {
       if (!user?.id) return;
+      if (!opts?.silent) setLoading(true);
       try {
         const res = await fetch(`/api/orders?userId=${user.id}`);
         const data = await res.json();
@@ -37,19 +40,34 @@ export default function OrdersPage() {
       } finally {
         setLoading(false);
       }
-    }
+    },
+    [user?.id]
+  );
+
+  useEffect(() => {
     fetchOrders();
-  }, [user?.id]);
+  }, [fetchOrders]);
+
+  useEffect(() => {
+    const onRefresh = () => fetchOrders({ silent: true });
+    const onFocus = () => fetchOrders({ silent: true });
+    const onVis = () => {
+      if (document.visibilityState === 'visible') fetchOrders({ silent: true });
+    };
+    const unsub = subscribeDashboardDataChanged(onRefresh);
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onVis);
+    return () => {
+      unsub();
+      window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onVis);
+    };
+  }, [fetchOrders]);
 
   const getStatusBadge = (status: string) => {
     const info = ORDER_STATUS[status as keyof typeof ORDER_STATUS];
     if (info) return <Badge className={info.color}>{info.label}</Badge>;
     return <Badge className="bg-gray-100 text-gray-800">{status}</Badge>;
-  };
-
-  const getPaymentMethodName = (method: string) => {
-    const pm = PAYMENT_METHODS.find((p) => p.id === method);
-    return pm ? `${pm.icon} ${pm.nameAr}` : method;
   };
 
   const getPlanName = (plan: string) => {
@@ -118,7 +136,7 @@ export default function OrdersPage() {
                             {order.amountTnd} دت
                           </td>
                           <td className="p-3 text-sm text-carely-gray">
-                            {getPaymentMethodName(order.paymentMethod)}
+                            <PaymentMethodDisplay methodId={order.paymentMethod} />
                           </td>
                           <td className="p-3">{getStatusBadge(order.status)}</td>
                           <td className="p-3 text-xs text-carely-gray">
@@ -153,7 +171,7 @@ export default function OrdersPage() {
                     <span className="font-bold text-carely-green">{order.amountTnd} دت</span>
                   </div>
                   <div className="flex items-center justify-between text-xs text-carely-gray">
-                    <span>{getPaymentMethodName(order.paymentMethod)}</span>
+                    <PaymentMethodDisplay methodId={order.paymentMethod} />
                     <span>
                       {new Date(order.createdAt).toLocaleDateString('ar-TN')}
                     </span>

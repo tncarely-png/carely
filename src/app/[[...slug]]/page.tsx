@@ -288,7 +288,7 @@ export default function RootPage() {
   }, [])
 
   // Determine if we need the main layout (Navbar + Footer)
-  // Note: product-detail and qstudio-app render their own Navbar/Footer
+  // Note: product-detail renders its own Navbar/Footer inside the page
   const needsLayout = !currentPage.startsWith('superadmin') &&
     !currentPage.startsWith('admin') &&
     currentPage !== 'login' &&
@@ -297,8 +297,7 @@ export default function RootPage() {
     currentPage !== 'checkout-success' &&
     currentPage !== 'privacy-policy' &&
     currentPage !== 'terms-of-service' &&
-    currentPage !== 'product-detail' &&
-    currentPage !== 'qstudio-app'
+    currentPage !== 'product-detail'
 
   return (
     <div className="min-h-screen flex flex-col">

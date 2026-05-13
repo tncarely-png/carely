@@ -4,6 +4,7 @@ import {
   type AuthUser,
   authUserFromResponseJson,
 } from "@/lib/auth-user";
+import type { PaymentMethodId } from "@/lib/constants";
 
 export type { AuthUser };
 export type { UserRole } from "@/lib/auth-user";
@@ -47,7 +48,7 @@ export type PageRoute =
 interface AppState {
   currentPage: PageRoute;
   selectedPlan: "silver" | "gold" | null;
-  selectedPaymentMethod: "flouci" | "virement" | "ccp" | null;
+  selectedPaymentMethod: PaymentMethodId | null;
   selectedPlanName: string;
   selectedUserId: string | null;
   selectedSubscriptionId: string | null;
@@ -59,7 +60,7 @@ interface AppState {
   /** Sets product id, goes to product-detail, updates URL to /product-detail?id=… */
   openProductDetail: (productId: string) => void;
   setSelectedPlan: (plan: "silver" | "gold" | null) => void;
-  setSelectedPaymentMethod: (method: "flouci" | "virement" | "ccp" | null) => void;
+  setSelectedPaymentMethod: (method: PaymentMethodId | null) => void;
   setSelectedPlanName: (name: string) => void;
   setSelectedUserId: (id: string | null) => void;
   setSelectedSubscriptionId: (id: string | null) => void;

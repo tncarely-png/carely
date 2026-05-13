@@ -28,6 +28,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { PLANS, ORDER_STATUS } from '@/lib/constants';
+import { PaymentMethodDisplay } from '@/components/dashboard/PaymentMethodDisplay';
 
 interface Order {
   id: string;
@@ -208,7 +209,9 @@ export default function SuperAdminOrders() {
                       </span>
                     </TableCell>
                     <TableCell className="font-bold">{order.amountTnd.toFixed(2)} دت</TableCell>
-                    <TableCell className="text-sm" style={{ color: '#888888' }}>{order.paymentMethod}</TableCell>
+                    <TableCell>
+                      <PaymentMethodDisplay methodId={order.paymentMethod} compact className="text-[#888888]" />
+                    </TableCell>
                     <TableCell>
                       {order.receiptUrl ? (
                         <button

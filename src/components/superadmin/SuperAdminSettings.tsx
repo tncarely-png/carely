@@ -32,7 +32,7 @@ export default function SuperAdminSettings() {
   const [success, setSuccess] = useState<string | null>(null);
 
   // WhatsApp agent
-  const [activeAgent, setActiveAgent] = useState<string>('maram');
+  const [activeAgent, setActiveAgent] = useState<string>('chafik');
   const [switchingAgent, setSwitchingAgent] = useState(false);
 
   useEffect(() => {
@@ -66,8 +66,8 @@ export default function SuperAdminSettings() {
     try {
       const res = await fetch('/api/whatsapp-agent');
       if (res.ok) {
-        const data = await res.json();
-        setActiveAgent(data.key || 'maram');
+        await res.json();
+        setActiveAgent('chafik');
       }
     } catch {
       // silent
@@ -197,13 +197,13 @@ export default function SuperAdminSettings() {
         <h3 className="text-lg font-extrabold mb-6" style={{ color: '#000000' }}>
           💬 وكيل الواتساب السريع
         </h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 max-w-md">
           {[
-            { key: 'maram', name: 'Maram 👩', phone: '+21652013035' },
             { key: 'chafik', name: 'Chafik 👨', phone: '+21650496159' },
           ].map((agent) => (
             <button
               key={agent.key}
+              type="button"
               onClick={() => handleAgentSwitch(agent.key)}
               disabled={switchingAgent}
               className="p-4 rounded-xl text-right transition-all"
@@ -216,7 +216,7 @@ export default function SuperAdminSettings() {
               <p className="font-bold text-base">{agent.name}</p>
               <p className="text-sm mt-1" dir="ltr">{agent.phone}</p>
               {activeAgent === agent.key && (
-                <p className="text-xs mt-2 font-bold">● مفعل</p>
+                <p className="text-xs mt-2 font-bold">● متاح — مفعّل</p>
               )}
             </button>
           ))}

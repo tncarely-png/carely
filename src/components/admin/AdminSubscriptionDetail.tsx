@@ -248,8 +248,8 @@ export default function AdminSubscriptionDetail() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="silver">🥈 Silver — 89 دت</SelectItem>
-                  <SelectItem value="gold">🥇 Gold — 149 دت</SelectItem>
+                  <SelectItem value="silver">🥈 Silver — 390 دت</SelectItem>
+                  <SelectItem value="gold">🥇 Gold — 590 دت</SelectItem>
                 </SelectContent>
               </Select>
             </div>

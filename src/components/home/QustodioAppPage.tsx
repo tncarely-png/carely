@@ -4,7 +4,7 @@ import { useAppStore } from '@/store'
 import { PLANS } from '@/lib/constants'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Check, ArrowLeft } from 'lucide-react'
+import { Check } from 'lucide-react'
 import FeaturesGrid from './FeaturesGrid'
 import FaqAccordion from './FaqAccordion'
 
@@ -23,18 +23,6 @@ function QustodioHero() {
       <div className="absolute top-10 right-10 w-64 h-64 bg-carely-green/5 rounded-full blur-3xl" />
 
       <div className="relative mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 text-center overflow-hidden">
-        {/* Back button */}
-        <div className="mb-6">
-          <Button
-            variant="ghost"
-            className="text-carely-gray hover:text-carely-green font-medium"
-            onClick={() => navigate('home')}
-          >
-            <ArrowLeft className="size-4 ml-1" />
-            <span>الرئيسية</span>
-          </Button>
-        </div>
-
         {/* Icon */}
         <div className="mb-6 inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-carely-green/10">
           <span className="text-5xl">🛡️</span>
@@ -190,7 +178,7 @@ function QustodioCTA() {
               navigate('checkout')
             }}
           >
-            اشتري الآن — ابدأ من 89 دت
+            اشتري الآن — من {PLANS.silver.priceTnd} دت
           </Button>
           <Button
             size="lg"

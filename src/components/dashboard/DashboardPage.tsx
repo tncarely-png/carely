@@ -9,6 +9,7 @@ import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { MessageCircle, Mail, ClipboardList, ShoppingBag, RefreshCw, AlertTriangle } from 'lucide-react';
 import { PLANS, SUBSCRIPTION_STATUS } from '@/lib/constants';
+import { subscribeDashboardDataChanged } from '@/lib/dashboard-sync';
 
 interface Subscription {
   id: string;
@@ -32,24 +33,46 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
-  const fetchSub = useCallback(async () => {
-    if (!user?.id) return;
-    setError(false);
-    try {
-      const res = await fetch(`/api/subscriptions?userId=${user.id}`);
-      const data = await res.json();
-      if (data.subscriptions && data.subscriptions.length > 0) {
-        setSubscription(data.subscriptions[0]);
+  const fetchSub = useCallback(
+    async (opts?: { silent?: boolean }) => {
+      if (!user?.id) return;
+      setError(false);
+      if (!opts?.silent) setLoading(true);
+      try {
+        const res = await fetch(`/api/subscriptions?userId=${user.id}`);
+        const data = await res.json();
+        if (data.subscriptions && data.subscriptions.length > 0) {
+          setSubscription(data.subscriptions[0]);
+        } else {
+          setSubscription(null);
+        }
+      } catch {
+        setError(true);
+      } finally {
+        setLoading(false);
       }
-    } catch {
-      setError(true);
-    } finally {
-      setLoading(false);
-    }
-  }, [user?.id]);
+    },
+    [user?.id]
+  );
 
   useEffect(() => {
     fetchSub();
+  }, [fetchSub]);
+
+  useEffect(() => {
+    const onRefresh = () => fetchSub({ silent: true });
+    const onFocus = () => fetchSub({ silent: true });
+    const onVis = () => {
+      if (document.visibilityState === 'visible') fetchSub({ silent: true });
+    };
+    const unsub = subscribeDashboardDataChanged(onRefresh);
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onVis);
+    return () => {
+      unsub();
+      window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onVis);
+    };
   }, [fetchSub]);
 
   const getDaysRemaining = () => {
@@ -105,7 +128,7 @@ export default function DashboardPage() {
             <p className="text-carely-gray mb-6">تأكد من اتصالك بالإنترنت وجرب مرة أخرى</p>
             <Button
               className="carely-btn-primary text-base"
-              onClick={fetchSub}
+              onClick={() => fetchSub()}
             >
               <RefreshCw className="h-5 w-5 ml-2" />
               أعد المحاولة

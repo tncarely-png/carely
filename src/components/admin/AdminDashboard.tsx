@@ -112,12 +112,21 @@ export default function AdminDashboard() {
 
       if (ordersRes.ok) {
         const data = await ordersRes.json();
-        setRecentOrders(Array.isArray(data) ? data.slice(0, 10) : []);
+        const list = Array.isArray(data)
+          ? data
+          : Array.isArray(data?.data)
+            ? data.data
+            : [];
+        setRecentOrders(list.slice(0, 10));
       }
 
       if (subsRes.ok) {
         const data = await subsRes.json();
-        const subs = Array.isArray(data) ? data : [];
+        const subs = Array.isArray(data?.subscriptions)
+          ? data.subscriptions
+          : Array.isArray(data)
+            ? data
+            : [];
         const now = new Date();
         const thirtyDaysFromNow = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
         const expiring = subs

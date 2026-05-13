@@ -2,7 +2,9 @@
 
 import { useState, useRef, useCallback } from 'react';
 import { useAppStore, useAuthStore } from '@/store';
-import { PLANS, PAYMENT_METHODS } from '@/lib/constants';
+import { PLANS, PAYMENT_METHODS, type PaymentMethodId } from '@/lib/constants';
+import { PaymentProviderLogo } from '@/components/dashboard/PaymentProviderLogo';
+import { notifyDashboardDataChanged } from '@/lib/dashboard-sync';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -17,9 +19,6 @@ import {
   ImageIcon,
   X,
   MessageCircle,
-  Smartphone,
-  Landmark,
-  Mail,
   Clock,
 } from 'lucide-react';
 
@@ -30,17 +29,9 @@ const STEPS = [
   { id: 4, label: 'في الانتظار' },
 ];
 
-const PAYMENT_ICONS: Record<string, React.ReactNode> = {
-  flouci: <Smartphone className="h-6 w-6 text-carely-green" />,
-  virement: <Landmark className="h-6 w-6 text-carely-green" />,
-  ccp: <Mail className="h-6 w-6 text-carely-green" />,
-};
-
-const PAYMENT_LABELS: Record<string, string> = {
-  flouci: 'Flouci',
-  virement: 'Virement Bancaire',
-  ccp: 'CCP',
-};
+const PAYMENT_LABELS = Object.fromEntries(
+  PAYMENT_METHODS.map((p) => [p.id, p.name])
+) as Record<PaymentMethodId, string>;
 
 export default function CheckoutPage() {
   const user = useAuthStore((s) => s.user);
@@ -51,7 +42,7 @@ export default function CheckoutPage() {
 
   const [currentStep, setCurrentStep] = useState(1);
   const [selectedPlanKey, setSelectedPlanKey] = useState<'silver' | 'gold' | null>(null);
-  const [selectedPayment, setSelectedPayment] = useState<'flouci' | 'virement' | 'ccp' | null>(null);
+  const [selectedPayment, setSelectedPayment] = useState<PaymentMethodId | null>(null);
   const [receiptFile, setReceiptFile] = useState<string | null>(null);
   const [receiptName, setReceiptName] = useState('');
   const [loading, setLoading] = useState(false);
@@ -78,7 +69,7 @@ export default function CheckoutPage() {
     setSelectedPlanName(PLANS[key].displayName);
   };
 
-  const handleSelectPayment = (method: 'flouci' | 'virement' | 'ccp') => {
+  const handleSelectPayment = (method: PaymentMethodId) => {
     setSelectedPayment(method);
     setSelectedPaymentMethod(method);
   };
@@ -134,6 +125,12 @@ export default function CheckoutPage() {
 
     setError('');
     setLoading(true);
+    const idemStorageKey = 'carely-checkout-order-idempotency';
+    let idempotencyKey = sessionStorage.getItem(idemStorageKey);
+    if (!idempotencyKey) {
+      idempotencyKey = crypto.randomUUID();
+      sessionStorage.setItem(idemStorageKey, idempotencyKey);
+    }
     try {
       const res = await fetch('/api/orders', {
         method: 'POST',
@@ -143,12 +140,15 @@ export default function CheckoutPage() {
           plan: selectedPlanKey,
           paymentMethod: selectedPayment,
           receiptData: receiptFile,
+          idempotencyKey,
         }),
       });
 
       const data = await res.json();
 
       if (data.success) {
+        sessionStorage.removeItem(idemStorageKey);
+        notifyDashboardDataChanged();
         setCurrentStep(4);
       } else {
         setError('حصل مشكل أثناء إرسال الطلب. جرب مرة أخرى');
@@ -336,19 +336,24 @@ export default function CheckoutPage() {
               className={`carely-card cursor-pointer transition-all hover:shadow-md ${
                 isSelected ? 'ring-2 ring-carely-green bg-carely-mint' : ''
               }`}
-              onClick={() => handleSelectPayment(pm.id as 'flouci' | 'virement' | 'ccp')}
+              onClick={() => handleSelectPayment(pm.id)}
             >
               <CardContent className="p-4 flex items-center gap-4">
                 <div
-                  className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                  className={`w-12 h-12 rounded-xl flex items-center justify-center p-1.5 ${
                     isSelected ? 'bg-carely-green/10' : 'bg-gray-50'
                   }`}
                 >
-                  {PAYMENT_ICONS[pm.id]}
+                  <PaymentProviderLogo
+                    domain={pm.logoDomain}
+                    label={pm.nameAr}
+                    className="h-9 w-9"
+                    size={64}
+                  />
                 </div>
-                <div className="flex-1">
-                  <p className="font-bold text-carely-dark text-sm">{pm.name}</p>
-                  <p className="text-xs text-carely-gray mt-0.5">{pm.description}</p>
+                <div className="flex-1 min-w-0 text-right">
+                  <p className="font-bold text-carely-dark text-sm">{pm.nameAr}</p>
+                  <p className="text-xs text-carely-gray mt-0.5 leading-relaxed">{pm.description}</p>
                 </div>
                 <div
                   className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
@@ -371,7 +376,7 @@ export default function CheckoutPage() {
           <p className="text-sm text-carely-dark font-semibold">
             💬 تقدر ترسل المبلغ مباشرة على واتساب
           </p>
-          <Button variant="outline" className="carely-btn-outline h-9 text-xs mt-2" onClick={() => openWhatsAppPopup(`مرحبا، نحب ندفع بالمبلغ ل${PAYMENT_LABELS[selectedPayment]}`)}>
+          <Button variant="outline" className="carely-btn-outline h-9 text-xs mt-2" onClick={() => openWhatsAppPopup(`مرحبا، نحب ندفع بالمبلغ عبر ${PAYMENT_LABELS[selectedPayment]}`)}>
               <MessageCircle className="h-3.5 w-3.5 ml-1" />
               أرسل على واتساب
           </Button>
@@ -500,10 +505,22 @@ export default function CheckoutPage() {
                     {selectedPlan.icon} {selectedPlan.displayName}
                   </span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-carely-gray">طريقة الدفع</span>
-                  <span className="font-bold text-carely-dark">
-                    {selectedPm?.name || '—'}
+                <div className="flex justify-between items-center gap-2">
+                  <span className="text-carely-gray shrink-0">طريقة الدفع</span>
+                  <span className="font-bold text-carely-dark inline-flex items-center gap-2 min-w-0">
+                    {selectedPm ? (
+                      <>
+                        <PaymentProviderLogo
+                          domain={selectedPm.logoDomain}
+                          label={selectedPm.nameAr}
+                          className="h-7 w-7 shrink-0"
+                          size={48}
+                        />
+                        <span className="truncate">{selectedPm.nameAr}</span>
+                      </>
+                    ) : (
+                      '—'
+                    )}
                   </span>
                 </div>
                 <Separator />
@@ -606,10 +623,22 @@ export default function CheckoutPage() {
                     {selectedPlan ? `${selectedPlan.priceTnd} دت` : '—'}
                   </span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-carely-gray">طريقة الدفع</span>
-                  <span className="font-semibold text-carely-dark">
-                    {selectedPm?.name || '—'}
+                <div className="flex justify-between items-center gap-2">
+                  <span className="text-carely-gray shrink-0">طريقة الدفع</span>
+                  <span className="font-semibold text-carely-dark inline-flex items-center gap-2 min-w-0">
+                    {selectedPm ? (
+                      <>
+                        <PaymentProviderLogo
+                          domain={selectedPm.logoDomain}
+                          label={selectedPm.nameAr}
+                          className="h-7 w-7 shrink-0"
+                          size={48}
+                        />
+                        <span className="truncate">{selectedPm.nameAr}</span>
+                      </>
+                    ) : (
+                      '—'
+                    )}
                   </span>
                 </div>
                 <div className="flex justify-between">

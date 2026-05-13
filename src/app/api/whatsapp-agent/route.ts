@@ -56,7 +56,7 @@ export async function PUT(request: NextRequest) {
     const { db, kv } = getCfContext();
     const body = await request.json();
     
-    // Accept both `agentId` (UUID) and `agent` (name key like 'maram')
+    // Accept both `agentId` (UUID) and `agent` (first name key, e.g. 'chafik')
     let agentId = body.agentId;
     const agentKey = body.agent;
 

@@ -595,7 +595,7 @@ export default function SuperAdminProducts() {
                   type="number"
                   value={form.price}
                   onChange={(e) => setForm(prev => ({ ...prev, price: parseFloat(e.target.value) || 0 }))}
-                  placeholder="89"
+                  placeholder="390"
                   dir="ltr"
                   className="rounded-xl"
                   style={{ border: '1px solid #e0e0e0' }}
@@ -603,12 +603,12 @@ export default function SuperAdminProducts() {
               </div>
               <div>
                 <Label className="block text-sm font-bold mb-2" style={{ color: '#000000' }}>
-                  نص السعر (مثال: من 89 دت / سنة)
+                  نص السعر (مثال: من 390 دت / سنة)
                 </Label>
                 <Input
                   value={form.priceLabel}
                   onChange={(e) => setForm(prev => ({ ...prev, priceLabel: e.target.value }))}
-                  placeholder="من 89 دت / سنة"
+                  placeholder="من 390 دت / سنة"
                   className="rounded-xl"
                   style={{ border: '1px solid #e0e0e0' }}
                 />

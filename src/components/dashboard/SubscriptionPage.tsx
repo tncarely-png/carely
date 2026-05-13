@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuthStore } from '@/store';
 import { PLANS } from '@/lib/constants';
+import { subscribeDashboardDataChanged } from '@/lib/dashboard-sync';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -70,23 +71,46 @@ export default function SubscriptionPage() {
   const [loading, setLoading] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
 
-  useEffect(() => {
-    async function fetchSub() {
+  const fetchSub = useCallback(
+    async (opts?: { silent?: boolean }) => {
       if (!user?.id) return;
+      if (!opts?.silent) setLoading(true);
       try {
         const res = await fetch(`/api/subscriptions?userId=${user.id}`);
         const data = await res.json();
         if (data.subscriptions && data.subscriptions.length > 0) {
           setSubscription(data.subscriptions[0]);
+        } else {
+          setSubscription(null);
         }
       } catch {
         // silent
       } finally {
         setLoading(false);
       }
-    }
+    },
+    [user?.id]
+  );
+
+  useEffect(() => {
     fetchSub();
-  }, [user?.id]);
+  }, [fetchSub]);
+
+  useEffect(() => {
+    const onRefresh = () => fetchSub({ silent: true });
+    const onFocus = () => fetchSub({ silent: true });
+    const onVis = () => {
+      if (document.visibilityState === 'visible') fetchSub({ silent: true });
+    };
+    const unsub = subscribeDashboardDataChanged(onRefresh);
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onVis);
+    return () => {
+      unsub();
+      window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onVis);
+    };
+  }, [fetchSub]);
 
   if (loading) {
     return (

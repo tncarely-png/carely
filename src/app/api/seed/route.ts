@@ -166,15 +166,16 @@ export async function GET() {
         descriptionAr: 'حماية أطفالك على النت — تحكم أبوي كامل',
         emoji: '🛡️',
         imageUrl: null,
-        price: 89,
+        price: 390,
         currency: 'TND',
-        priceLabel: 'من 89 دت / سنة',
+        priceLabel: 'Silver 390 دت — Gold 590 دت / سنة',
         features: JSON.stringify([
-          'حجب المواقع غير اللائقة',
-          'تحديد وقت الشاشة',
-          'تقارير أسبوعية',
-          'دعم فني بالتونسي',
-          'تفعيل فوري بعد الدفع',
+          'فلترة المواقع وتصنيف المحتوى',
+          'حدود زمنية للشاشة والتطبيقات',
+          'تقارير نشاط يومية وأسبوعية',
+          'إيقاف الإنترنت مؤقتاً (Pause)',
+          'تتبع الموقع',
+          'تنبيهات ومراقبة متقدمة في Gold',
         ]),
         landingSections: JSON.stringify([
           {
@@ -183,8 +184,8 @@ export async function GET() {
             title: 'QStudio',
             subtitle: 'تطبيق حماية أطفال قوي وسهل الاستعمال',
             description: 'حجب المواقع، مراقبة الشاشة، تتبع الموقع، وتقارير يومية — كلو من هاتفك',
-            price: 89,
-            priceLabel: 'من 89 دت / سنة',
+            price: 390,
+            priceLabel: 'Silver 390 دت — Gold 590 دت / سنة',
             ctaText: 'اشتري الآن',
           },
           {
@@ -255,9 +256,6 @@ export async function GET() {
       },
     ]);
 
-    // Seed landing page settings
-    await db.insert(products).values; // not needed, we seed settings separately
-
     // Create default landing page content settings
     const defaultSettings = [
       { key: 'hero_title', value: 'متجر Carely.tn 🛍️' },
@@ -268,10 +266,10 @@ export async function GET() {
       { key: 'cta_secondary_text', value: 'تواصل معانا' },
       { key: 'store_name', value: 'Carely.tn' },
       { key: 'store_tagline', value: 'متجر التطبيقات المدفوعة للعيلة التونسية' },
-      { key: 'whatsapp_number', value: '21626107128' },
+      { key: 'whatsapp_number', value: '21650496159' },
       { key: 'contact_email', value: 'contact@carely.tn' },
-      { key: 'silver_price', value: '89' },
-      { key: 'gold_price', value: '149' },
+      { key: 'silver_price', value: '390' },
+      { key: 'gold_price', value: '590' },
     ];
 
     // Create settings table entries via raw SQL to avoid drizzle issues
@@ -400,7 +398,7 @@ export async function GET() {
         userId: customerData[0].id,
         subscriptionId: sub1Id,
         plan: 'silver',
-        amountTnd: 89,
+        amountTnd: 390,
         paymentMethod: 'flouci',
         paymentRef: 'FL-001234',
         status: 'paid',
@@ -413,7 +411,7 @@ export async function GET() {
         userId: customerData[1].id,
         subscriptionId: sub2Id,
         plan: 'gold',
-        amountTnd: 149,
+        amountTnd: 590,
         paymentMethod: 'flouci',
         paymentRef: 'FL-ABCXYZ',
         status: 'paid',
@@ -426,7 +424,7 @@ export async function GET() {
         userId: customerData[2].id,
         subscriptionId: sub3Id,
         plan: 'silver',
-        amountTnd: 89,
+        amountTnd: 390,
         paymentMethod: 'ccp',
         status: 'paid',
         paidAt: fourHundredDaysAgo,
@@ -438,7 +436,7 @@ export async function GET() {
         userId: customerData[3].id,
         subscriptionId: sub4Id,
         plan: 'gold',
-        amountTnd: 149,
+        amountTnd: 590,
         paymentMethod: 'flouci',
         status: 'pending',
         createdAt: now,
@@ -448,7 +446,7 @@ export async function GET() {
         id: crypto.randomUUID(),
         userId: customerData[4].id,
         plan: 'silver',
-        amountTnd: 89,
+        amountTnd: 390,
         paymentMethod: 'virement',
         status: 'pending',
         createdAt: now,
@@ -456,24 +454,15 @@ export async function GET() {
       },
     ]);
 
-    // Create default WhatsApp agents
+    // Create default WhatsApp agent (Chafik only)
     await db.insert(whatsappAgents).values([
-      {
-        id: crypto.randomUUID(),
-        name: 'Maram',
-        phone: '+21652013035',
-        gender: 'female',
-        isActive: true,
-        title: 'الوكيلة الأولى',
-        emoji: '👩',
-      },
       {
         id: crypto.randomUUID(),
         name: 'Chafik',
         phone: '+21650496159',
         gender: 'male',
-        isActive: false,
-        title: 'الوكيل الثاني',
+        isActive: true,
+        title: 'الدعم',
         emoji: '👨',
       },
     ]);
