@@ -63,6 +63,10 @@ export async function POST(request: NextRequest) {
           success: false,
           error: "تعذر الوصول إلى Cloudflare KV لحفظ محاولات الإرسال.",
           errorEn: "Cloudflare KV failed during rate-limit check.",
+          hintAr:
+            "اربط مساحة KV باسم المتغير carely-kv في مشروع Workers أو Pages (الإعدادات → Bindings). مفتاح Resend لا يغني عن هذا الربط.",
+          hintEn:
+            "Attach a KV namespace to this deployment with binding name `carely-kv` (same as wrangler.toml). RESEND_API_KEY does not replace KV.",
           step: "rate-limit",
           requestId,
         },
@@ -103,6 +107,10 @@ export async function POST(request: NextRequest) {
           success: false,
           error: "تعذر حفظ كود التحقق في Cloudflare KV.",
           errorEn: "Cloudflare KV failed while saving OTP challenge.",
+          hintAr:
+            "تحقق من ربط carely-kv وأن نفس مساحة KV مفعّلة على البيئة المنشورة (Workers أو Pages → Bindings).",
+          hintEn:
+            "Verify KV binding `carely-kv` exists on the deployed Worker/Pages project and matches wrangler.toml.",
           step: "kv-put",
           requestId,
         },
