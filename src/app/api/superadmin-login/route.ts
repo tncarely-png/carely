@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { validateSuperAdminSession, createSuperAdminSession } from '@/lib/session';
-import { getOtpMailContextAsync, publicErrorMessage } from '@/lib/cf-context';
-import { normalizeEmail, verifyAndConsumeChallenge } from '@/lib/email-otp-kv';
+import { getCfContextAsync, publicErrorMessage } from '@/lib/cf-context';
+import { normalizeEmail } from '@/lib/email-otp-kv';
+import { verifyAndConsumeChallengeDb } from '@/lib/email-otp-db';
 
 /**
  * POST /api/superadmin-login
@@ -27,7 +28,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { kv, env: rawEnv } = await getOtpMailContextAsync();
+    const { db, env: rawEnv } = await getCfContextAsync();
     const env = rawEnv as Record<string, unknown>;
     const expectedAdmin = normalizeEmail(
       (typeof env.SUPERADMIN_EMAIL === 'string' && env.SUPERADMIN_EMAIL) || 'admin@carely.tn'
@@ -39,7 +40,7 @@ export async function POST(request: NextRequest) {
         { status: 401 }
       );
     }
-    const ok = await verifyAndConsumeChallenge(kv, 'superadmin', emailNorm, code);
+    const ok = await verifyAndConsumeChallengeDb(db, 'superadmin', emailNorm, code);
     if (!ok) {
       return NextResponse.json(
         { success: false, error: 'الكود غير صحيح أو منتهي' },

@@ -19,6 +19,7 @@ import {
   ImageIcon,
   X,
   MessageCircle,
+  Smartphone,
   Clock,
 } from 'lucide-react';
 

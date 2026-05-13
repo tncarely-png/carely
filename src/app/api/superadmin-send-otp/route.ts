@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getOtpMailContextAsync, publicErrorMessage } from "@/lib/cf-context";
+import { getCfContextAsync, publicErrorMessage } from "@/lib/cf-context";
 import {
   normalizeEmail,
   randomOtpCode,
   hashOtp,
-  putChallenge,
-  checkSendRateLimit,
 } from "@/lib/email-otp-kv";
+import { checkSendRateLimitDb, putChallengeDb } from "@/lib/email-otp-db";
 import { sendOtpEmail } from "@/lib/resend-mail";
 
 /**
@@ -18,7 +17,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const emailNorm = normalizeEmail(typeof body.email === "string" ? body.email : "");
 
-    const { kv, env: rawEnv } = await getOtpMailContextAsync();
+    const { db, env: rawEnv } = await getCfContextAsync();
     const env = rawEnv as Record<string, unknown>;
     const expectedAdmin = normalizeEmail(
       (typeof env.SUPERADMIN_EMAIL === "string" && env.SUPERADMIN_EMAIL) || "admin@carely.tn"
@@ -31,7 +30,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const allowed = await checkSendRateLimit(kv, `sa:${emailNorm}`);
+    const allowed = await checkSendRateLimitDb(db, `sa:${emailNorm}`);
     if (!allowed) {
       return NextResponse.json(
         { success: false, error: "انتظر قليلاً قبل طلب كود جديد" },
@@ -41,7 +40,7 @@ export async function POST(request: NextRequest) {
 
     const code = randomOtpCode();
     const codeHash = await hashOtp(emailNorm, code);
-    await putChallenge(kv, "superadmin", emailNorm, codeHash);
+    await putChallengeDb(db, "superadmin", emailNorm, codeHash);
 
     const sent = await sendOtpEmail({
       to: emailNorm,

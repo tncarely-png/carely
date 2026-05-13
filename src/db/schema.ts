@@ -144,6 +144,26 @@ export const settings = sqliteTable("settings", {
 });
 
 // ═══════════════════════════════════════════
+// EMAIL OTP (D1 — avoids KV binding issues on deploy)
+// ═══════════════════════════════════════════
+export const otpSendRateLimit = sqliteTable("otp_send_rate_limit", {
+  rateKey: text("rate_key").primaryKey(),
+  expiresAt: integer("expires_at", { mode: "number" }).notNull(),
+});
+
+export const otpChallenge = sqliteTable("otp_challenge", {
+  id: text("id").primaryKey(),
+  codeHash: text("code_hash").notNull(),
+  attempts: integer("attempts", { mode: "number" }).notNull().default(0),
+  expiresAt: integer("expires_at", { mode: "number" }).notNull(),
+});
+
+export const otpRegisterPending = sqliteTable("otp_register_pending", {
+  emailNorm: text("email_norm").primaryKey(),
+  expiresAt: integer("expires_at", { mode: "number" }).notNull(),
+});
+
+// ═══════════════════════════════════════════
 // EXPORT ALL
 // ═══════════════════════════════════════════
 export type User = typeof users.$inferSelect;

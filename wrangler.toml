@@ -11,6 +11,7 @@ directory = ".open-next/assets"
 binding = "carely-db"
 database_name = "carely-db"
 database_id = "4ce1b942-b175-4592-8eb7-705cdd2a8ede"
+migrations_dir = "src/db/migrations"
 
 [[kv_namespaces]]
 binding = "carely-kv"

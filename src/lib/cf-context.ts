@@ -59,37 +59,6 @@ export async function getCfContextAsync(): Promise<CfContext> {
   }
 }
 
-/**
- * OTP email routes only need KV + Worker `env` (Resend key). Skips D1 init — avoids failures
- * if D1 binding is missing on Pages / misnamed while KV is OK.
- */
-export async function getOtpMailContextAsync(): Promise<{
-  kv: KVNamespace;
-  env: Record<string, unknown>;
-}> {
-  try {
-    const ctx = await getCloudflareContext({ async: true });
-    const raw = ctx.env as Record<string, unknown>;
-    const kv = raw["carely-kv"] as KVNamespace | undefined;
-    if (!kv) {
-      throw new Error(
-        "Missing KV binding 'carely-kv'. In Cloudflare, attach the same KV namespace as in wrangler.toml and redeploy."
-      );
-    }
-    return { kv, env: raw };
-  } catch (e) {
-    const m = e instanceof Error ? e.message : String(e);
-    if (m.includes("carely-kv") || m.includes("KV binding")) throw e;
-    throw new Error(
-      m.includes("getCloudflareContext") ||
-        m.includes("not available") ||
-        m.includes("OpenNext")
-        ? "CF context not available. For local dev use OpenNext preview, or deploy to Cloudflare."
-        : m
-    );
-  }
-}
-
 export function publicErrorMessage(e: unknown): { ar: string; en: string; status: number } {
   const msg = e instanceof Error ? e.message : String(e);
   if (

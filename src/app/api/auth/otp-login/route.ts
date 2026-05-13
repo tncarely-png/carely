@@ -4,13 +4,13 @@ import { eq } from "drizzle-orm";
 import { users } from "@/db/schema";
 import { normalizePhoneForDb } from "@/lib/verify-firebase-token";
 import { toAuthUser } from "@/lib/auth-user";
+import { normalizeEmail } from "@/lib/email-otp-kv";
 import {
-  normalizeEmail,
-  verifyAndConsumeChallenge,
-  setRegisterPending,
-  hasRegisterPending,
-  clearRegisterPending,
-} from "@/lib/email-otp-kv";
+  verifyAndConsumeChallengeDb,
+  setRegisterPendingDb,
+  hasRegisterPendingDb,
+  clearRegisterPendingDb,
+} from "@/lib/email-otp-db";
 
 /**
  * POST /api/auth/otp-login
@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { db, kv } = await getCfContextAsync();
+    const { db } = await getCfContextAsync();
 
     if (action === "login") {
       const code = typeof body.code === "string" ? body.code.trim() : "";
@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      const ok = await verifyAndConsumeChallenge(kv, "customer", emailNorm, code);
+      const ok = await verifyAndConsumeChallengeDb(db, "customer", emailNorm, code);
       if (!ok) {
         return NextResponse.json(
           { success: false, error: "الكود غير صحيح أو منتهي" },
@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
       const user = await db.select().from(users).where(eq(users.email, emailNorm)).get();
 
       if (!user) {
-        await setRegisterPending(kv, emailNorm);
+        await setRegisterPendingDb(db, emailNorm);
         return NextResponse.json({
           success: false,
           isNewUser: true,
@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const pendingOk = await hasRegisterPending(kv, emailNorm);
+    const pendingOk = await hasRegisterPendingDb(db, emailNorm);
     if (!pendingOk) {
       return NextResponse.json(
         { success: false, error: "انتهت جلسة التحقق. أعد إرسال الكود." },
@@ -98,7 +98,7 @@ export async function POST(request: NextRequest) {
 
     const existingEmail = await db.select().from(users).where(eq(users.email, emailNorm)).get();
     if (existingEmail) {
-      await clearRegisterPending(kv, emailNorm);
+      await clearRegisterPendingDb(db, emailNorm);
       return NextResponse.json({ success: true, user: toAuthUser(existingEmail) });
     }
 
@@ -125,7 +125,7 @@ export async function POST(request: NextRequest) {
       updatedAt: now,
     });
 
-    await clearRegisterPending(kv, emailNorm);
+    await clearRegisterPendingDb(db, emailNorm);
 
     const newUser = await db.select().from(users).where(eq(users.id, newUserId)).get();
 

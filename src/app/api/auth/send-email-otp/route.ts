@@ -1,20 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
-import {
-  getOtpMailContextAsync,
-  publicErrorMessage,
-} from "@/lib/cf-context";
+import { getCfContextAsync, publicErrorMessage } from "@/lib/cf-context";
 import {
   normalizeEmail,
   randomOtpCode,
   hashOtp,
-  putChallenge,
-  checkSendRateLimit,
 } from "@/lib/email-otp-kv";
+import { checkSendRateLimitDb, putChallengeDb } from "@/lib/email-otp-db";
 import { sendOtpEmail } from "@/lib/resend-mail";
 
 /**
  * POST /api/auth/send-email-otp
  * Body: { email: string }
+ *
+ * OTP state lives on D1 (not KV) so login works when KV is unbound on Workers/Pages.
  */
 export async function POST(request: NextRequest) {
   const requestId = crypto.randomUUID().slice(0, 8);
@@ -39,9 +37,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    let ctx: Awaited<ReturnType<typeof getOtpMailContextAsync>>;
+    let db: Awaited<ReturnType<typeof getCfContextAsync>>["db"];
+    let env: Record<string, unknown>;
     try {
-      ctx = await getOtpMailContextAsync();
+      const ctx = await getCfContextAsync();
+      db = ctx.db;
+      env = ctx.env as Record<string, unknown>;
     } catch (e) {
       console.error("[send-email-otp] context", requestId, e);
       const { ar, en, status } = publicErrorMessage(e);
@@ -51,22 +52,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { kv, env } = ctx;
-
     let allowed: boolean;
     try {
-      allowed = await checkSendRateLimit(kv, emailNorm);
+      allowed = await checkSendRateLimitDb(db, emailNorm);
     } catch (e) {
-      console.error("[send-email-otp] rate-limit", requestId, e);
+      console.error("[send-email-otp] rate-limit-db", requestId, e);
       return NextResponse.json(
         {
           success: false,
-          error: "تعذر الوصول إلى Cloudflare KV لحفظ محاولات الإرسال.",
-          errorEn: "Cloudflare KV failed during rate-limit check.",
-          hintAr:
-            "اربط مساحة KV باسم المتغير carely-kv في مشروع Workers أو Pages (الإعدادات → Bindings). مفتاح Resend لا يغني عن هذا الربط.",
-          hintEn:
-            "Attach a KV namespace to this deployment with binding name `carely-kv` (same as wrangler.toml). RESEND_API_KEY does not replace KV.",
+          error: "تعذر تسجيل حد الإرسال. تحقق من قاعدة D1 والترحيلات.",
+          errorEn: "D1 rate-limit write failed. Run `wrangler d1 migrations apply carely-db --remote`.",
           step: "rate-limit",
           requestId,
         },
@@ -99,19 +94,15 @@ export async function POST(request: NextRequest) {
     }
 
     try {
-      await putChallenge(kv, "customer", emailNorm, codeHash);
+      await putChallengeDb(db, "customer", emailNorm, codeHash);
     } catch (e) {
-      console.error("[send-email-otp] kv-put", requestId, e);
+      console.error("[send-email-otp] challenge-db", requestId, e);
       return NextResponse.json(
         {
           success: false,
-          error: "تعذر حفظ كود التحقق في Cloudflare KV.",
-          errorEn: "Cloudflare KV failed while saving OTP challenge.",
-          hintAr:
-            "تحقق من ربط carely-kv وأن نفس مساحة KV مفعّلة على البيئة المنشورة (Workers أو Pages → Bindings).",
-          hintEn:
-            "Verify KV binding `carely-kv` exists on the deployed Worker/Pages project and matches wrangler.toml.",
-          step: "kv-put",
+          error: "تعذر حفظ كود التحقق. تحقق من قاعدة D1 والترحيلات.",
+          errorEn: "D1 OTP challenge write failed. Run D1 migrations (0003_otp_d1.sql).",
+          step: "challenge",
           requestId,
         },
         { status: 500 }
@@ -123,7 +114,7 @@ export async function POST(request: NextRequest) {
       sent = await sendOtpEmail({
         to: emailNorm,
         code,
-        cfEnv: env as Record<string, unknown>,
+        cfEnv: env,
       });
     } catch (e) {
       console.error("[send-email-otp] resend-throw", requestId, e);
