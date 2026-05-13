@@ -8,8 +8,8 @@ export const WILAYAS = [
 export const PLANS = {
   silver: {
     id: "silver",
-    name: "Qustodio Silver",
-    displayName: "Qustodio Silver",
+    name: "QStudio Silver",
+    displayName: "QStudio Silver",
     nameAr: "كيرلي سيلفر",
     icon: "🥈",
     devices: 5,
@@ -27,8 +27,8 @@ export const PLANS = {
   },
   gold: {
     id: "gold",
-    name: "Qustodio Gold",
-    displayName: "Qustodio Gold",
+    name: "QStudio Gold",
+    displayName: "QStudio Gold",
     nameAr: "كيرلي ڨولد",
     icon: "🥇",
     devices: 10,

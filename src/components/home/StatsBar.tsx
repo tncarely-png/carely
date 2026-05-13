@@ -6,8 +6,8 @@ const STATS = [
   {
     icon: Shield,
     emoji: '🛡️',
-    value: 'تطبيق واحد موثوق',
-    label: 'حسابات أصلية ومضمونة',
+    value: 'حسابات رسمية',
+    label: 'اشتراكات موثوقة',
   },
   {
     icon: MessageCircle,

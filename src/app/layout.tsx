@@ -3,12 +3,12 @@ import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 
 export const metadata: Metadata = {
-  title: "Carely.tn — متجر اشتراكات حماية الأطفال 🛡️",
-  description: "اشتري اشتراك Qustodio بالدينار التونسي — حماية أطفالك على الإنترنت من Carely.tn. دفع آمن، تفعيل فوري، دعم واتساب.",
-  keywords: ["Carely", "carely", "qustodio", "حماية الأطفال", "تونس", "دينار تونسي", "اشتراك", "parental control"],
+  title: "Carely.tn — متجر التطبيقات المدفوعة",
+  description: "متجر Carely.tn — حسابات واشتراكات تطبيقات مدفوعة بالدينار التونسي. دفع واضح، دعم واتساب.",
+  keywords: ["Carely", "carely", "متجر تطبيقات", "تونس", "دينار تونسي", "اشتراك"],
   openGraph: {
-    title: "Carely.tn — متجر اشتراكات حماية الأطفال",
-    description: "اشتري اشتراك Qustodio بالدينار التونسي — حماية أطفالك على الإنترنت",
+    title: "Carely.tn — متجر التطبيقات المدفوعة",
+    description: "حسابات واشتراكات رسمية بالدينار التونسي — دعم واتساب من تونس",
     type: "website",
     locale: "ar_TN",
     url: "https://carely.tn",

@@ -25,22 +25,22 @@ interface Product {
   externalUrl: string | null
 }
 
-const FALLBACK_QUSTODIO_CARD_ID = 'fallback-qustodio-static'
+const FALLBACK_QSTUDIO_CARD_ID = 'fallback-qstudio-static'
 
-/** DB/API غير متاحة — بطاقة تفتح صفحة Qustodio المدمجة */
+/** DB/API غير متاحة — بطاقة تفتح صفحة المنتج المدمجة */
 const FALLBACK_APPS: Product[] = [
   {
-    id: FALLBACK_QUSTODIO_CARD_ID,
-    slug: 'qustodio',
-    name: 'Qustodio',
-    nameAr: 'Qustodio',
+    id: FALLBACK_QSTUDIO_CARD_ID,
+    slug: 'qstudio',
+    name: 'QStudio',
+    nameAr: 'QStudio',
     description: 'حماية أطفالك على النت',
     descriptionAr: 'حماية أطفالك على النت',
     price: 89,
     currency: 'TND',
     priceLabel: 'من 89 دت / سنة',
     isActive: true,
-    route: 'qustodio-app',
+    route: 'qstudio-app',
     externalUrl: null,
     emoji: '🛡️',
     imageUrl: null,
@@ -79,10 +79,10 @@ export default function AppCardsGrid() {
         {/* Section Header */}
         <div className="text-center mb-12">
           <h2 className="text-3xl sm:text-4xl font-extrabold text-carely-dark mb-3">
-            تطبيقاتنا الحالية
+            تطبيقاتنا
           </h2>
           <p className="text-carely-gray text-base sm:text-lg">
-            اختار التطبيق المناسب لعيلتك
+            اختار المنتج اللي يناسب عيلتك — التفاصيل والأسعار في صفحة كل منتج
           </p>
         </div>
 
@@ -115,10 +115,11 @@ export default function AppCardsGrid() {
                   return
                 }
                 if (
-                  product.id === FALLBACK_QUSTODIO_CARD_ID &&
+                  (product.id === FALLBACK_QSTUDIO_CARD_ID &&
+                    product.route === 'qstudio-app') ||
                   product.route === 'qustodio-app'
                 ) {
-                  navigate('qustodio-app')
+                  navigate('qstudio-app')
                   return
                 }
                 if (product.id) {

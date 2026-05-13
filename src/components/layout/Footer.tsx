@@ -17,7 +17,7 @@ export default function Footer() {
               <span className="text-2xl font-bold text-gray-400">.tn</span>
             </div>
             <p className="text-sm text-gray-300 leading-relaxed">
-              منصة تونسية لبيع اشتراكات حماية الأطفال — اشتري بالدينار التونسي وفعّل في دقيقتين.
+              متجر تونسي لحسابات واشتراكات التطبيقات المدفوعة — بالدينار، مع دعم على واتساب.
             </p>
             <p className="text-sm text-gray-300 leading-relaxed">
               📍 ولاية الكاف، تونس

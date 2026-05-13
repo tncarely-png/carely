@@ -21,7 +21,7 @@ export type PageRoute =
   | "dashboard-subscription"
   | "dashboard-orders"
   | "dashboard-profile"
-  | "qustodio-app"
+  | "qstudio-app"
   | "product-detail"
   | "checkout"
   | "checkout-success"
@@ -94,8 +94,8 @@ export const useAppStore = create<AppState>((set) => ({
           "",
           `/product-detail?id=${encodeURIComponent(pid)}`
         );
-      } else if (page === "qustodio-app") {
-        window.history.pushState({}, "", "/qustodio-app");
+      } else if (page === "qstudio-app") {
+        window.history.pushState({}, "", "/qstudio-app");
       }
     }
     window.scrollTo({ top: 0, behavior: "smooth" });

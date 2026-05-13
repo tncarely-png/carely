@@ -30,7 +30,7 @@ export default function ProductCards() {
             اختار الباقة المناسبة لعيلتك
           </h2>
           <p className="text-carely-gray text-base sm:text-lg">
-            كل الباقات تشمل سنة كاملة من الحماية
+            باقات QStudio — سنة كاملة من الحماية
           </p>
         </div>
 

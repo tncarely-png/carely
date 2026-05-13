@@ -19,7 +19,6 @@ import {
   HowItWorks,
   FeaturesGrid,
   ProductCards,
-  Testimonials,
   FaqAccordion,
   FinalCTA,
   QustodioAppPage,
@@ -80,12 +79,15 @@ function pathToPage(pathname: string): PageRoute {
   const p = pathname.replace(/^\/+|\/+$/g, '') // strip leading/trailing slashes
   if (!p || p === '/') return 'home'
 
+  // Legacy URL → canonical product page
+  if (p === 'qustodio-app') return 'qstudio-app'
+
   // Direct match first
   const validRoutes: PageRoute[] = [
     'home', 'pricing', 'features', 'faq', 'contact',
     'privacy-policy', 'terms-of-service', 'login',
     'dashboard', 'dashboard-subscription', 'dashboard-orders', 'dashboard-profile',
-    'qustodio-app', 'product-detail',
+    'qstudio-app', 'product-detail',
     'checkout', 'checkout-success',
     'admin', 'admin-users', 'admin-user-detail',
     'admin-subscriptions', 'admin-subscription-detail',
@@ -116,7 +118,6 @@ function HomePage() {
       <StatsBar />
       <HowItWorks />
       <FeaturesGrid />
-      <Testimonials />
       <FaqAccordion />
       <FinalCTA />
     </>
@@ -216,7 +217,7 @@ function AppRouter() {
     features: <FeaturesPage />,
     faq: <FaqAccordion />,
     contact: <ContactView />,
-    'qustodio-app': <QustodioAppPage />,
+    'qstudio-app': <QustodioAppPage />,
     'product-detail': <ProductDetailPage />,
     'checkout': <CheckoutPage />,
     'checkout-success': <CheckoutSuccessPage />,
@@ -287,7 +288,7 @@ export default function RootPage() {
   }, [])
 
   // Determine if we need the main layout (Navbar + Footer)
-  // Note: product-detail and qustodio-app render their own Navbar/Footer
+  // Note: product-detail and qstudio-app render their own Navbar/Footer
   const needsLayout = !currentPage.startsWith('superadmin') &&
     !currentPage.startsWith('admin') &&
     currentPage !== 'login' &&
@@ -297,7 +298,7 @@ export default function RootPage() {
     currentPage !== 'privacy-policy' &&
     currentPage !== 'terms-of-service' &&
     currentPage !== 'product-detail' &&
-    currentPage !== 'qustodio-app'
+    currentPage !== 'qstudio-app'
 
   return (
     <div className="min-h-screen flex flex-col">

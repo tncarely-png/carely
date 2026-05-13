@@ -623,7 +623,7 @@ export default function SuperAdminProducts() {
               <Input
                 value={form.route}
                 onChange={(e) => setForm(prev => ({ ...prev, route: e.target.value }))}
-                placeholder="qustodio-app"
+                placeholder="qstudio-app"
                 dir="ltr"
                 className="rounded-xl"
                 style={{ border: '1px solid #e0e0e0' }}

@@ -41,10 +41,10 @@ function QustodioHero() {
         </div>
 
         <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-carely-dark leading-tight mb-4">
-          Qustodio
+          QStudio
         </h1>
         <p className="text-lg sm:text-xl text-carely-gray max-w-2xl mx-auto mb-4 leading-relaxed">
-          أفضل تطبيق حماية أطفال في العالم — الآن بالدينار التونسي
+          حماية أطفالك على النت — بالدينار التونسي مع Carely.tn
         </p>
         <p className="text-base text-carely-gray max-w-xl mx-auto mb-10 leading-relaxed">
           حجب المواقع، مراقبة الشاشة، تتبع الموقع، وتقارير يومية — كلو من هاتفك
@@ -210,8 +210,8 @@ export default function QustodioAppPage() {
   return (
     <>
       <QustodioHero />
-      <FeaturesGrid />
-      <FaqAccordion />
+      <FeaturesGrid scope="product" />
+      <FaqAccordion scope="product" />
       <QustodioCTA />
     </>
   )

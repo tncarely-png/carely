@@ -159,9 +159,9 @@ export async function GET() {
     await db.insert(products).values([
       {
         id: crypto.randomUUID(),
-        name: 'Qustodio',
-        nameAr: 'كوستوديو',
-        slug: 'qustodio',
+        name: 'QStudio',
+        nameAr: 'QStudio',
+        slug: 'qstudio',
         description: 'Parental control & digital wellbeing for families',
         descriptionAr: 'حماية أطفالك على النت — تحكم أبوي كامل',
         emoji: '🛡️',
@@ -180,8 +180,8 @@ export async function GET() {
           {
             type: 'hero',
             emoji: '🛡️',
-            title: 'Qustodio',
-            subtitle: 'أفضل تطبيق حماية أطفال في العالم',
+            title: 'QStudio',
+            subtitle: 'تطبيق حماية أطفال قوي وسهل الاستعمال',
             description: 'حجب المواقع، مراقبة الشاشة، تتبع الموقع، وتقارير يومية — كلو من هاتفك',
             price: 89,
             priceLabel: 'من 89 دت / سنة',
@@ -230,7 +230,7 @@ export async function GET() {
         ]),
         isActive: true,
         sortOrder: 1,
-        route: 'qustodio-app',
+        route: 'qstudio-app',
         createdAt: now,
         updatedAt: now,
       },

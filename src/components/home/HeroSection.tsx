@@ -15,11 +15,11 @@ interface HeroSettings {
 }
 
 const DEFAULT_HERO: HeroSettings = {
-  hero_title: 'Carely.tn 🛍️',
-  hero_subtitle: 'متجرك لحسابات التطبيقات بالدينار التونسي',
-  hero_description: 'اشتري اشتراكات التطبيقات اللي تحتاجها — دفع بالدينار، تفعيل فوري، ودعم مباشر على واتساب',
-  hero_subdescription: 'نخدمو من تونس لكل تونسي 🇹🇳',
-  cta_primary_text: 'شوف التطبيقات',
+  hero_title: 'متجر Carely.tn 🛍️',
+  hero_subtitle: 'حسابات التطبيقات المدفوعة بالدينار التونسي',
+  hero_description: 'تسوّق اشتراكات رسمية للتطبيقات اللي تحتاجها عيلتك — دفع بالدينار، تفعيل واضح، ودعم مباشر على واتساب',
+  hero_subdescription: 'من تونس لكل تونسي 🇹🇳',
+  cta_primary_text: 'شوف المنتجات',
   cta_secondary_text: 'تواصل معانا',
 }
 

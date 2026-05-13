@@ -7,14 +7,39 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion'
 
-const FAQS = [
+export type FaqAccordionScope = 'store' | 'product'
+
+const STORE_FAQS = [
   {
-    q: 'شنو هو Carely.tn؟',
-    a: 'Carely.tn هي منصة تونسية تبيع اشتراكات Qustodio (أفضل تطبيق حماية أطفال في العالم) بالدينار التونسي. نشتريك، نفعّلك، ونواصل معاك على طول.',
+    q: 'شنو هو متجر Carely؟',
+    a: 'Carely.tn هو متجر تونسي: نبيعو حسابات واشتراكات رسمية لتطبيقات مدفوعة بالدينار التونسي، مع تفعيل ودعم مباشر على واتساب. تختار المنتج، تدفع بالطريقة اللي تناسبك، ونكمّل معاك لحد ما تستعمل الخدمة.',
+  },
+  {
+    q: 'كيفاش نكمّل بعد ما ندفع؟',
+    a: 'بعد تأكيد الدفع، يوصلك التفعيل أو بيانات الدخول حسب المنتج (غالبًا على الإيميل أو عبر واتساب). التفاصيل الدقيقة تلقاها في صفحة كل منتج.',
+  },
+  {
+    q: 'شنو طرق الدفع المتوفرة؟',
+    a: 'نقبل فلوسي، D17، كارت بنكي، تحويل بنكي، وحتى دفع عند الاستلام حسب العرض. كل الطرق متاحة قدر الإمكان.',
+  },
+  {
+    q: 'هل نقدر نستعمل طرق دفع تونسية؟',
+    a: 'أكيد! الدفع بالدينار التونسي هو أساس متجرنا.',
+  },
+  {
+    q: 'إذا مشات في الخدمة، كيفاش نتواصل؟',
+    a: 'تقدر تتواصل معانا على واتساب، على الإيميل contact@carely.tn، أو من خلال صفحة "تواصل معانا" في الموقع. دعمنا بالتونسي 100%.',
+  },
+]
+
+const PRODUCT_FAQS = [
+  {
+    q: 'شنو هو QStudio؟',
+    a: 'QStudio هو تطبيق حماية أطفال متقدّم — تلقى تفاصيلو الكاملة وشرح المميزات في نفس الصفحة. Carely.tn تبيعو بالدينار التونسي مع تفعيل ودعم.',
   },
   {
     q: 'كيفاش نفعّل الاشتراك بعد الدفع؟',
-    a: 'بعد الدفع، يوصلك كود التفعيل على إيميلك مباشرة. تدخل على تطبيق Qustodio وتدخل الكود — العملية تستغرف دقيقتين فقط.',
+    a: 'بعد الدفع، يوصلك كود التفعيل أو بيانات الدخول على إيميلك أو عبر واتساب. تتبع التعليمات اللي نبعثهالك مع المنتج — العملية عادة ما تستغرق دقائق.',
   },
   {
     q: 'شنو الفرق بين Silver و Gold؟',
@@ -30,11 +55,17 @@ const FAQS = [
   },
 ]
 
-export default function FaqAccordion() {
+interface FaqAccordionProps {
+  /** `store`: أسئلة عن متجر Carely فقط. `product`: صفحة QStudio. */
+  scope?: FaqAccordionScope
+}
+
+export default function FaqAccordion({ scope = 'store' }: FaqAccordionProps) {
+  const faqs = scope === 'product' ? PRODUCT_FAQS : STORE_FAQS
+
   return (
     <section className="py-16 md:py-20">
       <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
-        {/* Title */}
         <div className="text-center mb-10">
           <h2 className="text-3xl sm:text-4xl font-extrabold text-carely-dark mb-3">
             أسئلة شايعة
@@ -44,10 +75,9 @@ export default function FaqAccordion() {
           </p>
         </div>
 
-        {/* Accordion */}
         <div className="carely-card p-4 sm:p-6">
           <Accordion type="single" collapsible className="w-full">
-            {FAQS.map((faq, idx) => (
+            {faqs.map((faq, idx) => (
               <AccordionItem
                 key={idx}
                 value={`faq-${idx}`}
