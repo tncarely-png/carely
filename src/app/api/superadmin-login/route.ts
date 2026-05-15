@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { db, env: rawEnv } = await getCfContextAsync();
+    const { db, d1, env: rawEnv } = await getCfContextAsync();
     const env = rawEnv as Record<string, unknown>;
     const expectedAdmin = normalizeEmail(
       (typeof env.SUPERADMIN_EMAIL === 'string' && env.SUPERADMIN_EMAIL) || 'admin@carely.tn'
@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
         { status: 401 }
       );
     }
-    const ok = await verifyAndConsumeChallengeDb(db, 'superadmin', emailNorm, code);
+    const ok = await verifyAndConsumeChallengeDb(db, d1, 'superadmin', emailNorm, code);
     if (!ok) {
       return NextResponse.json(
         { success: false, error: 'الكود غير صحيح أو منتهي' },

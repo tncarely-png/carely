@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const emailNorm = normalizeEmail(typeof body.email === "string" ? body.email : "");
 
-    const { db, env: rawEnv } = await getCfContextAsync();
+    const { db, d1, env: rawEnv } = await getCfContextAsync();
     const env = rawEnv as Record<string, unknown>;
     const expectedAdmin = normalizeEmail(
       (typeof env.SUPERADMIN_EMAIL === "string" && env.SUPERADMIN_EMAIL) || "admin@carely.tn"
@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const allowed = await checkSendRateLimitDb(db, `sa:${emailNorm}`);
+    const allowed = await checkSendRateLimitDb(db, d1, `sa:${emailNorm}`);
     if (!allowed) {
       return NextResponse.json(
         { success: false, error: "انتظر قليلاً قبل طلب كود جديد" },
@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
 
     const code = randomOtpCode();
     const codeHash = await hashOtp(emailNorm, code);
-    await putChallengeDb(db, "superadmin", emailNorm, codeHash);
+    await putChallengeDb(db, d1, "superadmin", emailNorm, codeHash);
 
     const sent = await sendOtpEmail({
       to: emailNorm,

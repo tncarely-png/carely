@@ -18,6 +18,8 @@ interface CfBindings {
 
 export interface CfContext {
   db: ReturnType<typeof getDb>;
+  /** Raw D1 binding — use for DDL / exec when Drizzle batch helpers differ by runtime */
+  d1: D1Database;
   kv: KVNamespace;
   r2: R2Bucket;
   env: CfBindings & Record<string, unknown>;
@@ -25,8 +27,15 @@ export interface CfContext {
 
 function toCfContext(ctx: { env: unknown }): CfContext {
   const env = ctx.env as unknown as CfBindings;
+  const d1 = env["carely-db"];
+  if (!d1) {
+    throw new Error(
+      "Missing D1 binding 'carely-db'. In Cloudflare dashboard attach D1 database carely-db and redeploy."
+    );
+  }
   return {
-    db: getDb(env["carely-db"]),
+    db: getDb(d1),
+    d1,
     kv: env["carely-kv"],
     r2: env["carely-uploads"],
     env: ctx.env as CfContext["env"],
@@ -70,6 +79,13 @@ export function publicErrorMessage(e: unknown): { ar: string; en: string; status
       ar: "الخدمة غير جاهزة في البيئة الحالية. للتجربة المحلية استخدم `bun run preview`، أو جرّب الموقع المنشور على Cloudflare (ليس `next dev` وحدَه).",
       en: "Cloudflare context unavailable. Use deployed site or `bun run preview`, not plain `next dev`.",
       status: 503,
+    };
+  }
+  if (msg.includes("carely-db") || msg.includes("D1 binding")) {
+    return {
+      ar: "الربط مع قاعدة D1 ناقص (carely-db). أضف قاعدة carely-db في إعدادات Worker/Pages ثم أعد النشر.",
+      en: "D1 binding 'carely-db' is missing. Attach the carely-db database in Cloudflare and redeploy.",
+      status: 500,
     };
   }
   if (msg.includes("carely-kv") || msg.includes("KV binding")) {

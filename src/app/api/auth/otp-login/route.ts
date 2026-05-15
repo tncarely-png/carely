@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { db } = await getCfContextAsync();
+    const { db, d1 } = await getCfContextAsync();
 
     if (action === "login") {
       const code = typeof body.code === "string" ? body.code.trim() : "";
@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      const ok = await verifyAndConsumeChallengeDb(db, "customer", emailNorm, code);
+      const ok = await verifyAndConsumeChallengeDb(db, d1, "customer", emailNorm, code);
       if (!ok) {
         return NextResponse.json(
           { success: false, error: "الكود غير صحيح أو منتهي" },
@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
       const user = await db.select().from(users).where(eq(users.email, emailNorm)).get();
 
       if (!user) {
-        await setRegisterPendingDb(db, emailNorm);
+        await setRegisterPendingDb(db, d1, emailNorm);
         return NextResponse.json({
           success: false,
           isNewUser: true,
@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const pendingOk = await hasRegisterPendingDb(db, emailNorm);
+    const pendingOk = await hasRegisterPendingDb(db, d1, emailNorm);
     if (!pendingOk) {
       return NextResponse.json(
         { success: false, error: "انتهت جلسة التحقق. أعد إرسال الكود." },
@@ -98,7 +98,7 @@ export async function POST(request: NextRequest) {
 
     const existingEmail = await db.select().from(users).where(eq(users.email, emailNorm)).get();
     if (existingEmail) {
-      await clearRegisterPendingDb(db, emailNorm);
+      await clearRegisterPendingDb(db, d1, emailNorm);
       return NextResponse.json({ success: true, user: toAuthUser(existingEmail) });
     }
 
@@ -125,7 +125,7 @@ export async function POST(request: NextRequest) {
       updatedAt: now,
     });
 
-    await clearRegisterPendingDb(db, emailNorm);
+    await clearRegisterPendingDb(db, d1, emailNorm);
 
     const newUser = await db.select().from(users).where(eq(users.id, newUserId)).get();
 

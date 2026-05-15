@@ -38,10 +38,12 @@ export async function POST(request: NextRequest) {
     }
 
     let db: Awaited<ReturnType<typeof getCfContextAsync>>["db"];
+    let d1: Awaited<ReturnType<typeof getCfContextAsync>>["d1"];
     let env: Record<string, unknown>;
     try {
       const ctx = await getCfContextAsync();
       db = ctx.db;
+      d1 = ctx.d1;
       env = ctx.env as Record<string, unknown>;
     } catch (e) {
       console.error("[send-email-otp] context", requestId, e);
@@ -54,16 +56,18 @@ export async function POST(request: NextRequest) {
 
     let allowed: boolean;
     try {
-      allowed = await checkSendRateLimitDb(db, emailNorm);
+      allowed = await checkSendRateLimitDb(db, d1, emailNorm);
     } catch (e) {
-      console.error("[send-email-otp] rate-limit-db", requestId, e);
+      const detail = e instanceof Error ? e.message : String(e);
+      console.error("[send-email-otp] rate-limit-db", requestId, detail, e);
       return NextResponse.json(
         {
           success: false,
-          error: "تعذر تسجيل حد الإرسال. تحقق من قاعدة D1 والترحيلات.",
-          errorEn: "D1 rate-limit write failed. Run `wrangler d1 migrations apply carely-db --remote`.",
+          error: "تعذر تسجيل حد الإرسال. تحقق من ربط قاعدة D1 (carely-db) في Cloudflare.",
+          errorEn: "D1 rate-limit failed. Ensure binding carely-db is attached and redeploy.",
           step: "rate-limit",
           requestId,
+          ...(process.env.NODE_ENV !== "production" ? { detail } : {}),
         },
         { status: 500 }
       );
@@ -94,7 +98,7 @@ export async function POST(request: NextRequest) {
     }
 
     try {
-      await putChallengeDb(db, "customer", emailNorm, codeHash);
+      await putChallengeDb(db, d1, "customer", emailNorm, codeHash);
     } catch (e) {
       console.error("[send-email-otp] challenge-db", requestId, e);
       return NextResponse.json(

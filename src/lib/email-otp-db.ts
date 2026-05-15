@@ -1,7 +1,7 @@
 /**
  * Email OTP on D1 — same behaviour as email-otp-kv but no KV binding required.
  *
- * Creates OTP tables on first use if Wrangler migrations were never applied (idempotent).
+ * Creates OTP tables on first use via native D1 (idempotent CREATE IF NOT EXISTS).
  */
 import { eq } from "drizzle-orm";
 import type { AppDB } from "@/db";
@@ -33,104 +33,162 @@ const OTP_D1_DDL = [
   )`,
 ];
 
-let otpSchemaEnsured = false;
+function isD1MissingTable(e: unknown): boolean {
+  const m = e instanceof Error ? e.message : String(e);
+  return /no such table|does not exist|SQLITE_ERROR/i.test(m);
+}
 
-async function ensureOtpD1Schema(db: AppDB): Promise<void> {
-  if (otpSchemaEnsured) return;
-  try {
-    for (const sql of OTP_D1_DDL) {
-      await db.run(sql);
+async function ensureOtpD1Schema(d1: D1Database): Promise<void> {
+  for (const sql of OTP_D1_DDL) {
+    const result = await d1.prepare(sql).run();
+    if (!result.success) {
+      throw new Error(`OTP schema DDL failed (${result.error ?? "unknown"})`);
     }
-    otpSchemaEnsured = true;
-  } catch {
-    otpSchemaEnsured = false;
-    throw;
   }
 }
 
-/** Returns false if rate-limited (too soon). */export async function checkSendRateLimitDb(db: AppDB, emailNorm: string): Promise<boolean> {
-  await ensureOtpD1Schema(db);
-  const key = sendRateLimitKey(emailNorm);
-  const now = Date.now();
-  const row = await db.select().from(otpSendRateLimit).where(eq(otpSendRateLimit.rateKey, key)).get();
-  if (row && row.expiresAt > now) return false;
-  if (row) {
-    await db.delete(otpSendRateLimit).where(eq(otpSendRateLimit.rateKey, key));
+async function withOtpSchema<T>(
+  db: AppDB,
+  d1: D1Database,
+  fn: () => Promise<T>
+): Promise<T> {
+  try {
+    return await fn();
+  } catch (e) {
+    if (!isD1MissingTable(e)) throw e;
+    await ensureOtpD1Schema(d1);
+    return await fn();
   }
-  await db.insert(otpSendRateLimit).values({
-    rateKey: key,
-    expiresAt: now + RATE_LIMIT_MS,
+}
+
+/** Returns false if rate-limited (too soon). */
+export async function checkSendRateLimitDb(
+  db: AppDB,
+  d1: D1Database,
+  emailNorm: string
+): Promise<boolean> {
+  await ensureOtpD1Schema(d1);
+
+  return withOtpSchema(db, d1, async () => {
+    const key = sendRateLimitKey(emailNorm);
+    const now = Date.now();
+    const row = await db
+      .select()
+      .from(otpSendRateLimit)
+      .where(eq(otpSendRateLimit.rateKey, key))
+      .get();
+    if (row && row.expiresAt > now) return false;
+    if (row) {
+      await db.delete(otpSendRateLimit).where(eq(otpSendRateLimit.rateKey, key));
+    }
+    await db.insert(otpSendRateLimit).values({
+      rateKey: key,
+      expiresAt: now + RATE_LIMIT_MS,
+    });
+    return true;
   });
-  return true;
 }
 
 export async function putChallengeDb(
   db: AppDB,
+  d1: D1Database,
   kind: OtpKind,
   emailNorm: string,
   codeHash: string
 ): Promise<void> {
-  await ensureOtpD1Schema(db);
-  const id = challengeKey(kind, emailNorm);
-  const expiresAt = Date.now() + CHALLENGE_TTL_MS;
-  await db.delete(otpChallenge).where(eq(otpChallenge.id, id));
-  await db.insert(otpChallenge).values({ id, codeHash, attempts: 0, expiresAt });
+  await ensureOtpD1Schema(d1);
+
+  await withOtpSchema(db, d1, async () => {
+    const id = challengeKey(kind, emailNorm);
+    const expiresAt = Date.now() + CHALLENGE_TTL_MS;
+    await db.delete(otpChallenge).where(eq(otpChallenge.id, id));
+    await db.insert(otpChallenge).values({ id, codeHash, attempts: 0, expiresAt });
+  });
 }
 
 /** Returns true and deletes the challenge on success. */
 export async function verifyAndConsumeChallengeDb(
   db: AppDB,
+  d1: D1Database,
   kind: OtpKind,
   emailNorm: string,
   code: string
 ): Promise<boolean> {
-  await ensureOtpD1Schema(db);
-  const id = challengeKey(kind, emailNorm);
-  const now = Date.now();
-  const row = await db.select().from(otpChallenge).where(eq(otpChallenge.id, id)).get();
-  if (!row || row.expiresAt < now) {
-    if (row) await db.delete(otpChallenge).where(eq(otpChallenge.id, id));
-    return false;
-  }
+  await ensureOtpD1Schema(d1);
 
-  if (row.attempts >= 5) {
+  return withOtpSchema(db, d1, async () => {
+    const id = challengeKey(kind, emailNorm);
+    const now = Date.now();
+    const row = await db.select().from(otpChallenge).where(eq(otpChallenge.id, id)).get();
+    if (!row || row.expiresAt < now) {
+      if (row) await db.delete(otpChallenge).where(eq(otpChallenge.id, id));
+      return false;
+    }
+
+    if (row.attempts >= 5) {
+      await db.delete(otpChallenge).where(eq(otpChallenge.id, id));
+      return false;
+    }
+
+    const h = await hashOtp(emailNorm, code);
+    if (h !== row.codeHash) {
+      await db
+        .update(otpChallenge)
+        .set({ attempts: row.attempts + 1, expiresAt: Date.now() + CHALLENGE_TTL_MS })
+        .where(eq(otpChallenge.id, id));
+      return false;
+    }
+
     await db.delete(otpChallenge).where(eq(otpChallenge.id, id));
-    return false;
-  }
-
-  const h = await hashOtp(emailNorm, code);
-  if (h !== row.codeHash) {
-    await db
-      .update(otpChallenge)
-      .set({ attempts: row.attempts + 1, expiresAt: Date.now() + CHALLENGE_TTL_MS })
-      .where(eq(otpChallenge.id, id));
-    return false;
-  }
-
-  await db.delete(otpChallenge).where(eq(otpChallenge.id, id));
-  return true;
+    return true;
+  });
 }
 
-export async function setRegisterPendingDb(db: AppDB, emailNorm: string): Promise<void> {
-  await ensureOtpD1Schema(db);
-  const expiresAt = Date.now() + CHALLENGE_TTL_MS;
-  await db.delete(otpRegisterPending).where(eq(otpRegisterPending.emailNorm, emailNorm));
-  await db.insert(otpRegisterPending).values({ emailNorm, expiresAt });
-}
+export async function setRegisterPendingDb(
+  db: AppDB,
+  d1: D1Database,
+  emailNorm: string
+): Promise<void> {
+  await ensureOtpD1Schema(d1);
 
-export async function hasRegisterPendingDb(db: AppDB, emailNorm: string): Promise<boolean> {
-  await ensureOtpD1Schema(db);
-  const now = Date.now();
-  const row = await db.select().from(otpRegisterPending).where(eq(otpRegisterPending.emailNorm, emailNorm)).get();
-  if (!row) return false;
-  if (row.expiresAt < now) {
+  await withOtpSchema(db, d1, async () => {
+    const expiresAt = Date.now() + CHALLENGE_TTL_MS;
     await db.delete(otpRegisterPending).where(eq(otpRegisterPending.emailNorm, emailNorm));
-    return false;
-  }
-  return true;
+    await db.insert(otpRegisterPending).values({ emailNorm, expiresAt });
+  });
 }
 
-export async function clearRegisterPendingDb(db: AppDB, emailNorm: string): Promise<void> {
-  await ensureOtpD1Schema(db);
-  await db.delete(otpRegisterPending).where(eq(otpRegisterPending.emailNorm, emailNorm));
+export async function hasRegisterPendingDb(
+  db: AppDB,
+  d1: D1Database,
+  emailNorm: string
+): Promise<boolean> {
+  await ensureOtpD1Schema(d1);
+
+  return withOtpSchema(db, d1, async () => {
+    const now = Date.now();
+    const row = await db
+      .select()
+      .from(otpRegisterPending)
+      .where(eq(otpRegisterPending.emailNorm, emailNorm))
+      .get();
+    if (!row) return false;
+    if (row.expiresAt < now) {
+      await db.delete(otpRegisterPending).where(eq(otpRegisterPending.emailNorm, emailNorm));
+      return false;
+    }
+    return true;
+  });
+}
+
+export async function clearRegisterPendingDb(
+  db: AppDB,
+  d1: D1Database,
+  emailNorm: string
+): Promise<void> {
+  await ensureOtpD1Schema(d1);
+
+  await withOtpSchema(db, d1, async () => {
+    await db.delete(otpRegisterPending).where(eq(otpRegisterPending.emailNorm, emailNorm));
+  });
 }
