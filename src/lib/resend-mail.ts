@@ -3,7 +3,7 @@
  * Without a verified domain, use onboarding@resend.dev as From (Resend default).
  */
 
-import { getWorkerEnvVar } from "@/lib/cf-env";
+import { getWorkerEnvVar, getWorkerEnvVarAsync } from "@/lib/cf-env";
 
 const RESEND_API = "https://api.resend.com/emails";
 
@@ -55,18 +55,19 @@ export async function sendOtpEmail(params: {
   /** Worker `env` from `getCfContextAsync()` — required for RESEND_API_KEY on Cloudflare. */
   cfEnv?: Record<string, unknown>;
 }): Promise<{ ok: true } | { ok: false; error: string }> {
-  const key =
-    pickEnv(params.cfEnv, "RESEND_API_KEY") || getWorkerEnvVar("RESEND_API_KEY");
+  const key = await getWorkerEnvVarAsync("RESEND_API_KEY", params.cfEnv);
   if (!key) {
-    console.error("[resend-mail] RESEND_API_KEY is not set (cfEnv / worker env / process.env)");
+    console.error("[resend-mail] RESEND_API_KEY is not set (cfEnv / async env / process.env)");
     return {
       ok: false,
       error:
-        "RESEND_API_KEY missing. In Cloudflare: Workers → your worker → Settings → Variables and secrets → add secret RESEND_API_KEY (or wrangler secret put RESEND_API_KEY), then redeploy.",
+        "RESEND_API_KEY missing. In Cloudflare add it as a Secret (not a plain Variable): Workers/Pages → Settings → Variables and secrets → type Secret → name RESEND_API_KEY → Production → redeploy.",
     };
   }
 
-  const from = defaultResendFrom(params.cfEnv);
+  const from =
+    (await getWorkerEnvVarAsync("RESEND_FROM_EMAIL", params.cfEnv))?.trim() ||
+    defaultResendFrom(params.cfEnv);
   const subject = params.subject ?? "كود الدخول — Carely.tn";
 
   const res = await fetch(RESEND_API, {
