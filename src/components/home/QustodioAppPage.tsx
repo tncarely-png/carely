@@ -4,7 +4,9 @@ import { useAppStore } from '@/store'
 import { PLANS } from '@/lib/constants'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import Image from 'next/image'
 import { Check } from 'lucide-react'
+import { PRODUCT_IMAGES, planProductImage } from '@/lib/product-images'
 import FeaturesGrid from './FeaturesGrid'
 import FaqAccordion from './FaqAccordion'
 
@@ -18,14 +20,19 @@ function QustodioHero() {
 
   return (
     <section className="relative overflow-hidden blur-contained py-16 md:py-24">
-      {/* Background */}
       <div className="absolute inset-0 bg-gradient-to-br from-carely-mint via-white to-carely-light/30" />
       <div className="absolute top-10 right-10 w-64 h-64 bg-carely-green/5 rounded-full blur-3xl" />
 
       <div className="relative mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 text-center overflow-hidden">
-        {/* Icon */}
-        <div className="mb-6 inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-carely-green/10">
-          <span className="text-5xl">🛡️</span>
+        <div className="mb-8 mx-auto max-w-xs sm:max-w-sm">
+          <Image
+            src={PRODUCT_IMAGES.qstudioGold}
+            alt="QStudio Gold — حماية رقمية للعائلة"
+            width={400}
+            height={400}
+            className="w-full h-auto drop-shadow-xl"
+            priority
+          />
         </div>
 
         <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-carely-dark leading-tight mb-4">
@@ -38,26 +45,24 @@ function QustodioHero() {
           حجب المواقع، مراقبة الشاشة، تتبع الموقع، وتقارير يومية — كلو من هاتفك
         </p>
 
-        {/* Pricing Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8 items-start max-w-3xl mx-auto">
-          {/* SILVER */}
           <div className="carely-card carely-top-accent p-6 flex flex-col">
+            <Image
+              src={planProductImage('silver')}
+              alt="QStudio Silver"
+              width={280}
+              height={280}
+              className="w-full max-h-40 object-contain mb-4 mx-auto"
+            />
             <div className="mb-4">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-3xl">{PLANS.silver.icon}</span>
-                <div>
-                  <h3 className="text-xl font-extrabold text-carely-dark">
-                    {PLANS.silver.displayName}
-                  </h3>
-                </div>
-              </div>
-              <p className="text-sm text-carely-gray mt-2">
-                مناسبة للعيلة الصغيرة
-              </p>
+              <h3 className="text-xl font-extrabold text-carely-dark">
+                {PLANS.silver.displayName}
+              </h3>
+              <p className="text-sm text-carely-gray mt-2">مناسبة للعيلة الصغيرة</p>
             </div>
 
             <div className="mb-4">
-              <div className="flex items-baseline gap-1">
+              <div className="flex items-baseline gap-1 justify-center md:justify-start">
                 <span className="text-4xl font-extrabold text-carely-green">
                   {PLANS.silver.priceTnd}
                 </span>
@@ -75,7 +80,7 @@ function QustodioHero() {
               </Badge>
             </div>
 
-            <ul className="flex flex-col gap-2.5 mb-6 flex-1">
+            <ul className="flex flex-col gap-2.5 mb-6 flex-1 text-right">
               {PLANS.silver.features.map((feature) => (
                 <li key={feature} className="flex items-start gap-2 text-sm">
                   <Check className="size-4 text-carely-green shrink-0 mt-0.5" />
@@ -93,7 +98,6 @@ function QustodioHero() {
             </Button>
           </div>
 
-          {/* GOLD */}
           <div className="carely-card-featured carely-top-accent-gold p-6 flex flex-col relative">
             <div className="absolute -top-3 left-1/2 -translate-x-1/2">
               <Badge className="bg-carely-gold text-white px-4 py-1 text-sm font-bold shadow-md">
@@ -101,22 +105,23 @@ function QustodioHero() {
               </Badge>
             </div>
 
-            <div className="mb-4 mt-2">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-3xl">{PLANS.gold.icon}</span>
-                <div>
-                  <h3 className="text-xl font-extrabold text-carely-dark">
-                    {PLANS.gold.displayName}
-                  </h3>
-                </div>
-              </div>
-              <p className="text-sm text-carely-gray mt-2">
-                للعيلة اللي تحب الحماية الكاملة
-              </p>
+            <Image
+              src={planProductImage('gold')}
+              alt="QStudio Gold"
+              width={280}
+              height={280}
+              className="w-full max-h-40 object-contain mb-4 mx-auto mt-2"
+            />
+
+            <div className="mb-4">
+              <h3 className="text-xl font-extrabold text-carely-dark">
+                {PLANS.gold.displayName}
+              </h3>
+              <p className="text-sm text-carely-gray mt-2">للعيلة اللي تحب الحماية الكاملة</p>
             </div>
 
             <div className="mb-4">
-              <div className="flex items-baseline gap-1">
+              <div className="flex items-baseline gap-1 justify-center md:justify-start">
                 <span className="text-4xl font-extrabold text-carely-green">
                   {PLANS.gold.priceTnd}
                 </span>
@@ -131,7 +136,7 @@ function QustodioHero() {
               </Badge>
             </div>
 
-            <ul className="flex flex-col gap-2.5 mb-6 flex-1">
+            <ul className="flex flex-col gap-2.5 mb-6 flex-1 text-right">
               {PLANS.gold.features.map((feature) => (
                 <li key={feature} className="flex items-start gap-2 text-sm">
                   <Check className="size-4 text-carely-green shrink-0 mt-0.5" />

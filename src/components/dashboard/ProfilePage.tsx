@@ -10,7 +10,8 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
-import { Loader2, Save, Smartphone, Shield, Mail } from 'lucide-react';
+import { Loader2, Save, Smartphone, Mail, Shield } from 'lucide-react';
+import UserAvatar from '@/components/shared/UserAvatar';
 
 export default function ProfilePage() {
   const user = useAuthStore((s) => s.user);
@@ -80,9 +81,7 @@ export default function ProfilePage() {
       <Card className="carely-card bg-gradient-to-l from-carely-light to-white">
         <CardContent className="p-5">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-full bg-carely-green flex items-center justify-center shrink-0">
-              <Shield className="w-7 h-7 text-white" />
-            </div>
+            <UserAvatar user={user} size={56} className="ring-carely-green/20" />
             <div className="min-w-0 space-y-1">
               <h3 className="text-lg font-bold text-carely-dark truncate">{user.name}</h3>
               {user.email ? (

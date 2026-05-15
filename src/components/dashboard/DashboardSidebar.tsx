@@ -20,6 +20,7 @@ import {
   Menu,
   ShieldCheck,
 } from 'lucide-react';
+import UserAvatar from '@/components/shared/UserAvatar';
 
 const navItems: { id: PageRoute; label: string; icon: React.ReactNode }[] = [
   { id: 'dashboard', label: 'الرئيسية', icon: <LayoutDashboard className="h-5 w-5" /> },
@@ -44,9 +45,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
       {/* User Info */}
       <div className="p-5 pb-3">
         <div className="flex items-center gap-3 mb-1">
-          <div className="w-10 h-10 rounded-full bg-carely-light flex items-center justify-center text-carely-green font-bold text-lg">
-            {user?.name?.charAt(0) || '?'}
-          </div>
+          {user ? <UserAvatar user={user} size={44} /> : null}
           <div className="flex-1 min-w-0">
             <p className="font-bold text-carely-dark text-sm truncate">{user?.name || 'مستخدم'}</p>
             <p className="text-xs text-carely-gray truncate" dir="ltr">
@@ -64,9 +63,10 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
           const isActive = currentPage === item.id;
           return (
             <button
+              type="button"
               key={item.id}
               onClick={() => handleNav(item.id)}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${
+              className={`w-full cursor-pointer touch-target flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${
                 isActive
                   ? 'bg-carely-green text-white shadow-md'
                   : 'text-carely-gray hover:bg-carely-light hover:text-carely-dark'
@@ -87,7 +87,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
               navigate('admin');
               onNavigate?.();
             }}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-carely-dark bg-carely-mint hover:bg-carely-light transition-all border border-carely-green/20"
+            className="w-full cursor-pointer touch-target flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-carely-dark bg-carely-mint hover:bg-carely-light transition-all border border-carely-green/20"
           >
             <ShieldCheck className="h-5 w-5 text-carely-green" />
             لوحة إدارة المتجر
@@ -105,7 +105,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
             logout();
             onNavigate?.();
           }}
-          className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-red-500 hover:bg-red-50 transition-all"
+          className="w-full cursor-pointer touch-target flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-red-500 hover:bg-red-50 transition-all"
         >
           <LogOut className="h-5 w-5" />
           تسجيل الخروج

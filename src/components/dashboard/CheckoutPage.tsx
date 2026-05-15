@@ -2,7 +2,9 @@
 
 import { useState, useRef, useCallback } from 'react';
 import { useAppStore, useAuthStore } from '@/store';
+import Image from 'next/image';
 import { PLANS, PAYMENT_METHODS, type PaymentMethodId } from '@/lib/constants';
+import { planProductImage } from '@/lib/product-images';
 import { PaymentProviderLogo } from '@/components/dashboard/PaymentProviderLogo';
 import { notifyDashboardDataChanged } from '@/lib/dashboard-sync';
 import { Card, CardContent } from '@/components/ui/card';
@@ -241,9 +243,15 @@ export default function CheckoutPage() {
                 </div>
               )}
               <CardContent className="p-5 sm:p-6">
+                <Image
+                  src={planProductImage(key)}
+                  alt={plan.displayName}
+                  width={220}
+                  height={220}
+                  className="w-full max-h-32 object-contain mb-3 mx-auto"
+                />
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="text-3xl">{plan.icon}</div>
-                  <div>
+                  <div className="flex-1 min-w-0">
                     <h3 className="text-lg font-bold text-carely-dark">{plan.displayName}</h3>
                     <p className="text-xs text-carely-gray">{plan.duration}</p>
                   </div>
@@ -666,7 +674,7 @@ export default function CheckoutPage() {
 
   // ─── Main Render ───────────────────────────────────────────
   return (
-    <div className="max-w-2xl mx-auto px-4 py-6" dir="rtl">
+    <div className="max-w-2xl mx-auto w-full min-w-0 px-4 py-6 pb-8 sm:px-6" dir="rtl">
       <StepIndicator />
 
       {currentStep === 1 && <StepPlanSelection />}

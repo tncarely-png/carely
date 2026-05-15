@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react'
 import { useAppStore, useAuthStore } from '@/store'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetHeader } from '@/components/ui/sheet'
-import { Menu, Home, User, HelpCircle, LogOut, X } from 'lucide-react'
+import { Menu, Home, User, HelpCircle, LogOut, LayoutDashboard } from 'lucide-react'
+import UserAvatar from '@/components/shared/UserAvatar'
 
 const NAV_LINKS = [
   { label: 'الرئيسية', page: 'home' as const, icon: Home },
@@ -38,9 +39,10 @@ export default function Navbar() {
             <nav className="hidden md:flex items-center gap-6">
               {NAV_LINKS.map((link) => (
                 <button
+                  type="button"
                   key={link.page}
                   onClick={() => navigate(link.page)}
-                  className={`text-sm font-bold transition-colors hover:text-carely-green ${
+                  className={`cursor-pointer text-sm font-bold transition-colors hover:text-carely-green ${
                     currentPage === link.page
                       ? 'text-carely-green'
                       : 'text-carely-gray'
@@ -89,10 +91,32 @@ export default function Navbar() {
                   </nav>
                   <div className="mt-auto p-4 border-t border-carely-light flex flex-col gap-2">
                     {user ? (
-                      <div className="flex flex-col gap-2">
-                        <p className="text-sm text-carely-gray px-4">
-                          مرحبا، <span className="font-bold text-carely-dark">{user.name}</span>
-                        </p>
+                      <div className="flex flex-col gap-3">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            navigate('dashboard-profile')
+                            setMobileOpen(false)
+                          }}
+                          className="flex items-center gap-3 px-4 py-2 rounded-xl hover:bg-carely-mint"
+                        >
+                          <UserAvatar user={user} size={40} />
+                          <div className="text-right min-w-0">
+                            <p className="text-sm font-bold text-carely-dark truncate">{user.name}</p>
+                            <p className="text-xs text-carely-gray">حسابي</p>
+                          </div>
+                        </button>
+                        <Button
+                          variant="outline"
+                          className="border-carely-green text-carely-green justify-start px-4"
+                          onClick={() => {
+                            navigate('dashboard')
+                            setMobileOpen(false)
+                          }}
+                        >
+                          <LayoutDashboard className="size-4 ml-2" />
+                          لوحة التحكم
+                        </Button>
                         <Button
                           variant="ghost"
                           className="text-red-500 hover:text-red-600 hover:bg-red-50 justify-start px-4"
@@ -126,10 +150,27 @@ export default function Navbar() {
             <div className="flex items-center gap-2 sm:gap-4 shrink-0">
               <div className="flex items-center gap-1.5 sm:gap-3">
                 {user ? (
-                  <div className="hidden sm:flex items-center gap-3">
-                    <span className="text-sm text-carely-gray">
-                      مرحبا، <span className="font-bold text-carely-dark">{user.name}</span>
-                    </span>
+                  <div className="hidden sm:flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="border-carely-green text-carely-green hover:bg-carely-mint rounded-full gap-2"
+                      onClick={() => navigate('dashboard')}
+                    >
+                      <LayoutDashboard className="size-4" />
+                      لوحة التحكم
+                    </Button>
+                    <button
+                      type="button"
+                      onClick={() => navigate('dashboard-profile')}
+                      className="flex items-center gap-2 rounded-full pr-2 hover:bg-carely-mint transition-colors"
+                      title="حسابي"
+                    >
+                      <UserAvatar user={user} size={36} />
+                      <span className="text-sm font-bold text-carely-dark max-w-[100px] truncate">
+                        {user.name}
+                      </span>
+                    </button>
                     <Button
                       variant="ghost"
                       size="sm"
@@ -185,9 +226,10 @@ export default function Navbar() {
             const Icon = link.icon
             return (
               <button
+                type="button"
                 key={link.page}
                 onClick={() => navigate(link.page)}
-                className={`flex flex-col items-center justify-center gap-0.5 px-3 py-1 rounded-xl transition-colors ${
+                className={`touch-target cursor-pointer flex flex-col items-center justify-center gap-0.5 min-w-[4.5rem] px-2 py-1 rounded-xl transition-colors ${
                   currentPage === link.page
                     ? 'text-carely-green'
                     : 'text-gray-400'

@@ -5,6 +5,7 @@ import {
   authUserFromResponseJson,
 } from "@/lib/auth-user";
 import type { PaymentMethodId } from "@/lib/constants";
+import { pageToPath } from "@/lib/routes";
 
 export type { AuthUser };
 export type { UserRole } from "@/lib/auth-user";
@@ -95,8 +96,9 @@ export const useAppStore = create<AppState>((set) => ({
           "",
           `/product-detail?id=${encodeURIComponent(pid)}`
         );
-      } else if (page === "qstudio-app") {
-        window.history.pushState({}, "", "/qstudio-app");
+      } else {
+        const path = pageToPath(page);
+        if (path) window.history.pushState({}, "", path);
       }
     }
     window.scrollTo({ top: 0, behavior: "smooth" });

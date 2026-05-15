@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useAppStore } from '@/store'
 import { Button } from '@/components/ui/button'
 import { ChevronLeft, ShieldCheck } from 'lucide-react'
+import { PRODUCT_IMAGES } from '@/lib/product-images'
 import { Skeleton } from '@/components/ui/skeleton'
 
 interface Product {
@@ -43,7 +44,7 @@ const FALLBACK_APPS: Product[] = [
     route: 'qstudio-app',
     externalUrl: null,
     emoji: '🛡️',
-    imageUrl: null,
+    imageUrl: PRODUCT_IMAGES.qstudioGold,
     sortOrder: 0,
     features: [],
   },

@@ -102,10 +102,36 @@
     @apply bg-carely-mint text-carely-gray overflow-x-hidden;
     max-width: 100vw;
     font-family: 'Baloo Bhaijaan 2', sans-serif;
+    -webkit-tap-highlight-color: transparent;
   }
   h1, h2, h3, h4, h5, h6 {
     color: #1f2937;
     font-weight: 800;
+  }
+
+  /* Pointer on all clickable controls */
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  a[href],
+  label[for],
+  select:not(:disabled),
+  summary,
+  input[type="submit"]:not(:disabled),
+  input[type="button"]:not(:disabled),
+  input[type="reset"]:not(:disabled),
+  input[type="checkbox"]:not(:disabled),
+  input[type="radio"]:not(:disabled),
+  [role="combobox"]:not([aria-disabled="true"]),
+  [role="menuitem"]:not([aria-disabled="true"]),
+  [role="tab"]:not([aria-disabled="true"]) {
+    cursor: pointer;
+  }
+
+  button:disabled,
+  [role="button"][aria-disabled="true"],
+  input:disabled,
+  select:disabled {
+    cursor: not-allowed;
   }
 }
 
@@ -172,6 +198,8 @@
     padding: 10px 28px;
     transition: all 0.2s ease;
     box-shadow: 0 2px 8px rgba(26, 132, 73, 0.25);
+    cursor: pointer;
+    touch-action: manipulation;
   }
   .carely-btn-primary:hover {
     background: linear-gradient(135deg, #15803d, #16a34a);
@@ -186,6 +214,8 @@
     padding: 10px 28px;
     border: 2px solid #1a8449;
     transition: all 0.2s ease;
+    cursor: pointer;
+    touch-action: manipulation;
   }
   .carely-btn-outline:hover {
     background: #1a8449;
@@ -200,6 +230,8 @@
     border: 1px solid #f3f4f6;
     overflow: hidden;
     transition: all 0.3s ease;
+    cursor: pointer;
+    touch-action: manipulation;
   }
   .product-card:hover {
     box-shadow: 0 8px 30px rgba(26, 132, 73, 0.12), 0 4px 12px rgba(0, 0, 0, 0.06);
@@ -216,6 +248,30 @@
   /* ── iOS Safe Area ── */
   .safe-area-bottom {
     padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  /* Space above fixed mobile bottom nav (~3.5rem + safe area) */
+  .mobile-nav-offset {
+    padding-bottom: calc(3.75rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  @media (min-width: 768px) {
+    .mobile-nav-offset {
+      padding-bottom: 0;
+    }
+  }
+
+  /* Minimum touch target (WCAG ~44px) */
+  .touch-target {
+    min-height: 2.75rem;
+    min-width: 2.75rem;
+    touch-action: manipulation;
+  }
+
+  /* Clickable cards / panels */
+  .carely-interactive {
+    cursor: pointer;
+    touch-action: manipulation;
   }
 
   /* ── Scrollbar ── */

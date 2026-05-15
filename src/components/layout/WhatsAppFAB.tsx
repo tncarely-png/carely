@@ -27,9 +27,10 @@ export default function WhatsAppFAB() {
         </div>
       )}
       <button
+        type="button"
         onClick={() => openWhatsAppPopup()}
         aria-label="تواصل معنا على واتساب"
-        className="w-14 h-14 bg-[#25D366] hover:bg-[#20BA5A] rounded-full flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-110"
+        className="touch-target cursor-pointer w-14 h-14 bg-[#25D366] hover:bg-[#20BA5A] rounded-full flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-110"
       >
         <MessageCircle className="size-7 text-white" fill="white" />
       </button>

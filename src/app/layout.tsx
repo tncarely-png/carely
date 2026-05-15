@@ -2,6 +2,12 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover" as const,
+};
+
 export const metadata: Metadata = {
   title: "Carely.tn — متجر التطبيقات المدفوعة",
   description: "متجر Carely.tn — حسابات واشتراكات تطبيقات مدفوعة بالدينار التونسي. دفع واضح، دعم واتساب.",

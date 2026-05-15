@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { MessageCircle, Mail, ClipboardList, ShoppingBag, RefreshCw, AlertTriangle } from 'lucide-react';
+import UserAvatar from '@/components/shared/UserAvatar';
 import { PLANS, SUBSCRIPTION_STATUS } from '@/lib/constants';
 import { subscribeDashboardDataChanged } from '@/lib/dashboard-sync';
 
@@ -142,11 +143,14 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6" dir="rtl">
       {/* Greeting */}
-      <div>
-        <h1 className="text-2xl md:text-3xl font-extrabold text-carely-dark">
-          أهلا، {user?.name}! 👋
-        </h1>
-        <p className="text-carely-gray mt-1">هاهي لوحة التحكم بتاعك</p>
+      <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+        {user ? <UserAvatar user={user} size={56} className="ring-carely-green/30" /> : null}
+        <div>
+          <h1 className="text-2xl md:text-3xl font-extrabold text-carely-dark">
+            أهلا، {user?.name}! 👋
+          </h1>
+          <p className="text-carely-gray mt-1">لوحة التحكم — اشتراكك، الطلبات، والحساب</p>
+        </div>
       </div>
 
       {/* Subscription Status Card */}
@@ -159,7 +163,7 @@ export default function DashboardPage() {
             <p className="text-carely-gray mb-6">ابدأ بحماية عائلتك الرقمية مع Carely.tn</p>
             <Button
               className="carely-btn-primary text-base"
-              onClick={() => navigate('pricing')}
+              onClick={() => navigate('qstudio-app')}
             >
               <ShoppingBag className="h-5 w-5 ml-2" />
               اشتري باقتك الأولى

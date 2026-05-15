@@ -74,41 +74,7 @@ import TermsOfServicePage from '@/components/legal/TermsOfServicePage'
 // Contact Page
 import ContactPage from '@/components/layout/ContactPage'
 
-// ── URL path → PageRoute mapping ──
-function pathToPage(pathname: string): PageRoute {
-  const p = pathname.replace(/^\/+|\/+$/g, '') // strip leading/trailing slashes
-  if (!p || p === '/') return 'home'
-
-  // Legacy URL → canonical product page
-  if (p === 'qustodio-app') return 'qstudio-app'
-
-  // Direct match first
-  const validRoutes: PageRoute[] = [
-    'home', 'pricing', 'features', 'faq', 'contact',
-    'privacy-policy', 'terms-of-service', 'login',
-    'dashboard', 'dashboard-subscription', 'dashboard-orders', 'dashboard-profile',
-    'qstudio-app', 'product-detail',
-    'checkout', 'checkout-success',
-    'admin', 'admin-users', 'admin-user-detail',
-    'admin-subscriptions', 'admin-subscription-detail',
-    'admin-orders', 'admin-licenses', 'admin-license-new',
-    'superadmin-pin-gate', 'superadmin-login',
-    'superadmin', 'superadmin-users', 'superadmin-orders',
-    'superadmin-licenses', 'superadmin-whatsapp',
-    'superadmin-settings', 'superadmin-products', 'superadmin-landing',
-  ]
-
-  if (validRoutes.includes(p as PageRoute)) {
-    return p as PageRoute
-  }
-
-  // Prefix matching for dynamic segments
-  if (p.startsWith('dashboard/')) return 'dashboard'
-  if (p.startsWith('admin/')) return 'admin'
-  if (p.startsWith('superadmin/')) return 'superadmin'
-
-  return 'home'
-}
+import { pathToPage } from '@/lib/routes'
 
 function HomePage() {
   return (
@@ -247,11 +213,15 @@ function AppRouter() {
     }
 
     return (
-      <div className="flex min-h-screen">
-        <DashboardSidebar />
-        <main className="flex-1 overflow-y-auto">
-          {renderDashboardPage()}
-        </main>
+      <div className="min-h-screen bg-gradient-to-b from-carely-mint/50 to-carely-light/30">
+        <div className="mx-auto flex min-h-screen max-w-7xl gap-3 p-3 pt-16 pb-6 md:gap-6 md:p-6 md:pt-6 md:pb-6">
+          <DashboardSidebar />
+          <main className="min-h-[calc(100vh-1.5rem)] flex-1 min-w-0 overflow-x-hidden overflow-y-auto">
+            <div className="rounded-2xl border border-carely-light bg-white p-4 shadow-sm sm:p-6 md:p-8">
+              {renderDashboardPage()}
+            </div>
+          </main>
+        </div>
       </div>
     )
   }
@@ -304,17 +274,19 @@ export default function RootPage() {
       {needsLayout && <Navbar />}
 
       {/* Floating Back to Home button — visible on all pages except home */}
-      {currentPage !== 'home' && (
+      {currentPage !== 'home' && !currentPage.startsWith('dashboard') && (
         <button
+          type="button"
           onClick={() => navigate('home')}
-          className="fixed top-20 left-4 z-50 bg-white rounded-full shadow-lg border border-carely-light hover:border-carely-green hover:shadow-xl transition-all duration-200 hover:-translate-y-0.5 p-3 group"
+          className="fixed top-[4.5rem] left-3 z-40 md:top-20 md:left-4 md:z-50 touch-target cursor-pointer bg-white rounded-full shadow-lg border border-carely-light hover:border-carely-green hover:shadow-xl transition-all duration-200 hover:-translate-y-0.5 p-3 group"
           title="الرئيسية"
+          aria-label="الرئيسية"
         >
           <Home className="size-5 text-carely-gray group-hover:text-carely-green transition-colors" />
         </button>
       )}
 
-      <main className="flex-1">
+      <main className={`flex-1 min-w-0 ${needsLayout ? 'mobile-nav-offset' : ''}`}>
         <AppRouter />
       </main>
 
