@@ -1,17 +1,14 @@
-import qstudioGoldImg from "@/assets/products/qstudio-gold.png";
-import qstudioSilverImg from "@/assets/products/qstudio-silver.png";
-
-/** Bundled QStudio box art (works on Cloudflare Workers + D1 API responses). */
+/** QStudio box art — served from `public/products/` via OpenNext assets. */
 export const PRODUCT_IMAGES = {
-  qstudioGold: qstudioGoldImg.src,
-  qstudioSilver: qstudioSilverImg.src,
+  qstudioGold: "/products/qstudio-gold.png",
+  qstudioSilver: "/products/qstudio-silver.png",
 } as const;
 
 export function planProductImage(plan: "silver" | "gold"): string {
   return plan === "gold" ? PRODUCT_IMAGES.qstudioGold : PRODUCT_IMAGES.qstudioSilver;
 }
 
-/** Fill missing image_url for known products (DB often has null). */
+/** Fill missing image_url for known products (D1 rows often have null). */
 export function resolveProductImageUrl(product: {
   slug?: string | null;
   route?: string | null;

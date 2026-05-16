@@ -6,6 +6,9 @@ on:
   pull_request:
     branches: [main]
 
+env:
+  CLOUDFLARE_ACCOUNT_ID: 913a913e28af5e890082509cb783586c
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -14,10 +17,10 @@ jobs:
 
       - uses: oven-sh/setup-bun@v1
         with:
-          bun-version: latest
+          bun-version: "1.2.15"
 
       - name: Install dependencies
-        run: bun install
+        run: bun install --frozen-lockfile
 
       - name: Build for Cloudflare (OpenNext)
         run: bun run build:cf
@@ -29,10 +32,15 @@ jobs:
           NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: ${{ secrets.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET }}
           NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID }}
 
-      # PRs: verify build only (matches wrangler.toml worker + assets)
+      - name: Verify OpenNext build output
+        run: |
+          test -f .open-next/worker.js
+          test -d .open-next/assets
+          ls -la .open-next/assets/products/ || ls -la public/products/
+
+      # PRs: build only
       - name: Deploy to Cloudflare Workers
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CF_API_TOKEN }}
-          command: deploy
+        run: bunx wrangler deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
