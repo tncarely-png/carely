@@ -131,8 +131,8 @@ export default function Navbar() {
                       </div>
                     ) : (
                       <Button
-                        variant="outline"
-                        className="border-carely-green text-carely-green hover:bg-carely-green hover:text-white w-full"
+                        variant="ghost"
+                        className="carely-btn-outline w-full h-10"
                         onClick={() => {
                           navigate('login')
                           setMobileOpen(false)
@@ -183,17 +183,18 @@ export default function Navbar() {
                   </div>
                 ) : (
                   <Button
-                    variant="outline"
+                    variant="ghost"
                     size="sm"
-                    className="border-carely-green text-carely-green hover:bg-carely-green hover:text-white rounded-full hidden sm:inline-flex"
+                    className="carely-btn-outline rounded-full hidden sm:inline-flex h-9 px-4 py-2 text-sm"
                     onClick={() => navigate('login')}
                   >
                     سجل دخول
                   </Button>
                 )}
                 <Button
+                  variant="ghost"
                   size="sm"
-                  className="carely-btn-primary text-sm"
+                  className="carely-btn-primary text-sm h-9"
                   onClick={() => {
                     if (!user) {
                       setPendingRedirect('checkout')

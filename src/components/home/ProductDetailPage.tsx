@@ -597,6 +597,7 @@ function SectionPricing({ data }: { data: PricingSection }) {
                   </ul>
 
                   <Button
+                    variant="ghost"
                     className={`w-full mt-5 h-11 text-sm font-bold ${
                       plan.featured ? 'carely-btn-primary' : 'carely-btn-outline'
                     }`}

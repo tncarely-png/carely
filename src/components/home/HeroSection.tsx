@@ -98,16 +98,17 @@ export default function HeroSection() {
         {/* CTA Buttons */}
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-10">
           <Button
+            variant="ghost"
             size="lg"
-            className="carely-btn-primary text-base px-8 py-3"
+            className="carely-btn-primary text-base px-8 py-3 h-auto"
             onClick={handleScrollToApps}
           >
             {hero.cta_primary_text}
           </Button>
           <Button
-            variant="outline"
+            variant="ghost"
             size="lg"
-            className="carely-btn-outline text-base px-8 py-3"
+            className="carely-btn-outline text-base px-8 py-3 h-auto"
             onClick={() => navigate('contact')}
           >
             {hero.cta_secondary_text}

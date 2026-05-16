@@ -285,6 +285,7 @@ export default function CheckoutPage() {
                 </ul>
 
                 <Button
+                  variant="ghost"
                   className={`w-full mt-5 h-11 text-sm font-bold ${
                     isSelected
                       ? 'carely-btn-primary'

@@ -189,37 +189,49 @@
     border-radius: 1rem 1rem 0 0;
   }
 
-  /* ── Carely Buttons ── */
-  .carely-btn-primary {
-    background: linear-gradient(135deg, #1a8449, #22c55e);
-    color: #ffffff;
+  /* ── Carely Buttons (override shadcn Button text-primary-foreground) ── */
+  .carely-btn-primary,
+  [data-slot="button"].carely-btn-primary {
+    background: linear-gradient(135deg, #1a8449, #22c55e) !important;
+    background-image: linear-gradient(135deg, #1a8449, #22c55e) !important;
+    color: #ffffff !important;
     font-weight: 700;
     border-radius: 9999px;
     padding: 10px 28px;
+    border: none !important;
     transition: all 0.2s ease;
     box-shadow: 0 2px 8px rgba(26, 132, 73, 0.25);
     cursor: pointer;
     touch-action: manipulation;
   }
-  .carely-btn-primary:hover {
-    background: linear-gradient(135deg, #15803d, #16a34a);
+  .carely-btn-primary:hover,
+  [data-slot="button"].carely-btn-primary:hover {
+    background: linear-gradient(135deg, #15803d, #16a34a) !important;
+    background-image: linear-gradient(135deg, #15803d, #16a34a) !important;
+    color: #ffffff !important;
     transform: translateY(-1px);
     box-shadow: 0 4px 16px rgba(26, 132, 73, 0.35);
   }
-  .carely-btn-outline {
-    background: transparent;
-    color: #1a8449;
+  .carely-btn-outline,
+  [data-slot="button"].carely-btn-outline {
+    background: transparent !important;
+    background-image: none !important;
+    color: #1a8449 !important;
     font-weight: 700;
     border-radius: 9999px;
     padding: 10px 28px;
-    border: 2px solid #1a8449;
+    border: 2px solid #1a8449 !important;
     transition: all 0.2s ease;
     cursor: pointer;
     touch-action: manipulation;
+    box-shadow: none;
   }
-  .carely-btn-outline:hover {
-    background: #1a8449;
-    color: #ffffff;
+  .carely-btn-outline:hover,
+  [data-slot="button"].carely-btn-outline:hover {
+    background: #1a8449 !important;
+    background-image: none !important;
+    color: #ffffff !important;
+    border-color: #1a8449 !important;
   }
 
   /* ── Product Card ── */
