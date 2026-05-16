@@ -182,7 +182,7 @@ export async function GET() {
         description: 'Parental control & digital wellbeing for families',
         descriptionAr: 'حماية أطفالك على النت — تحكم أبوي كامل',
         emoji: '🛡️',
-        imageUrl: null,
+        imageUrl: '/products/qstudio-gold.png',
         price: 390,
         currency: 'TND',
         priceLabel: 'Silver 390 دت — Gold 590 دت / سنة',

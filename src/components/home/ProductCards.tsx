@@ -5,6 +5,7 @@ import { PLANS } from '@/lib/constants'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Check } from 'lucide-react'
+import { planProductImage } from '@/lib/product-images'
 
 export default function ProductCards() {
   const { navigate, setSelectedPlan, setPendingRedirect } = useAppStore()
@@ -38,6 +39,15 @@ export default function ProductCards() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8 items-start">
           {/* SILVER CARD */}
           <div className="carely-card carely-top-accent p-6 flex flex-col">
+            <img
+              src={planProductImage('silver')}
+              alt="QStudio Silver"
+              width={220}
+              height={220}
+              className="w-full max-h-36 object-contain mb-4 mx-auto"
+              loading="lazy"
+              decoding="async"
+            />
             {/* Header */}
             <div className="mb-4">
               <div className="flex items-center gap-2 mb-1">
@@ -105,6 +115,16 @@ export default function ProductCards() {
                 ⭐ الأكثر شراءً
               </Badge>
             </div>
+
+            <img
+              src={planProductImage('gold')}
+              alt="QStudio Gold"
+              width={220}
+              height={220}
+              className="w-full max-h-36 object-contain mb-4 mx-auto mt-2"
+              loading="lazy"
+              decoding="async"
+            />
 
             {/* Header */}
             <div className="mb-4 mt-2">

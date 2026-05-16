@@ -2,7 +2,6 @@
 
 import { useState, useRef, useCallback } from 'react';
 import { useAppStore, useAuthStore } from '@/store';
-import Image from 'next/image';
 import { PLANS, PAYMENT_METHODS, type PaymentMethodId } from '@/lib/constants';
 import { planProductImage } from '@/lib/product-images';
 import { PaymentProviderLogo } from '@/components/dashboard/PaymentProviderLogo';
@@ -243,12 +242,14 @@ export default function CheckoutPage() {
                 </div>
               )}
               <CardContent className="p-5 sm:p-6">
-                <Image
+                <img
                   src={planProductImage(key)}
                   alt={plan.displayName}
                   width={220}
                   height={220}
                   className="w-full max-h-32 object-contain mb-3 mx-auto"
+                  loading="lazy"
+                  decoding="async"
                 />
                 <div className="flex items-center gap-3 mb-4">
                   <div className="flex-1 min-w-0">

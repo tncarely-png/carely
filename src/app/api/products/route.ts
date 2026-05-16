@@ -2,12 +2,21 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCfContext } from '@/lib/cf-context';
 import { eq } from 'drizzle-orm';
 import { products } from '@/db/schema';
+import { resolveProductImageUrl } from '@/lib/product-images';
 
 function parseProduct(p: Record<string, unknown>) {
-  return {
+  const row = {
     ...p,
     features: p.features ? JSON.parse(p.features as string) : [],
     landingSections: p.landingSections ? JSON.parse(p.landingSections as string) : [],
+  };
+  return {
+    ...row,
+    imageUrl: resolveProductImageUrl({
+      slug: row.slug as string | undefined,
+      route: row.route as string | undefined,
+      imageUrl: row.imageUrl as string | undefined,
+    }),
   };
 }
 

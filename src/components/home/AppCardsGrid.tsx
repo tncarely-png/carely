@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useAppStore } from '@/store'
 import { Button } from '@/components/ui/button'
 import { ChevronLeft, ShieldCheck } from 'lucide-react'
-import { PRODUCT_IMAGES } from '@/lib/product-images'
+import { PRODUCT_IMAGES, resolveProductImageUrl } from '@/lib/product-images'
 import { Skeleton } from '@/components/ui/skeleton'
 
 interface Product {
@@ -61,7 +61,13 @@ export default function AppCardsGrid() {
         const res = await fetch('/api/products')
         if (res.ok) {
           const data = await res.json()
-          setProducts(data.data || [])
+          const rows: Product[] = data.data || []
+          setProducts(
+            rows.map((p) => ({
+              ...p,
+              imageUrl: resolveProductImageUrl(p) ?? p.imageUrl,
+            }))
+          )
         } else {
           setProducts(FALLBACK_APPS)
         }

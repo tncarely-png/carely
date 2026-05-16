@@ -4,7 +4,6 @@ import { useAppStore } from '@/store'
 import { PLANS } from '@/lib/constants'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import Image from 'next/image'
 import { Check } from 'lucide-react'
 import { PRODUCT_IMAGES, planProductImage } from '@/lib/product-images'
 import FeaturesGrid from './FeaturesGrid'
@@ -25,13 +24,14 @@ function QustodioHero() {
 
       <div className="relative mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 text-center overflow-hidden">
         <div className="mb-8 mx-auto max-w-xs sm:max-w-sm">
-          <Image
+          <img
             src={PRODUCT_IMAGES.qstudioGold}
             alt="QStudio Gold — حماية رقمية للعائلة"
             width={400}
             height={400}
             className="w-full h-auto drop-shadow-xl"
-            priority
+            loading="eager"
+            decoding="async"
           />
         </div>
 
@@ -47,12 +47,14 @@ function QustodioHero() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8 items-start max-w-3xl mx-auto">
           <div className="carely-card carely-top-accent p-6 flex flex-col">
-            <Image
+            <img
               src={planProductImage('silver')}
               alt="QStudio Silver"
               width={280}
               height={280}
               className="w-full max-h-40 object-contain mb-4 mx-auto"
+              loading="lazy"
+              decoding="async"
             />
             <div className="mb-4">
               <h3 className="text-xl font-extrabold text-carely-dark">
@@ -105,12 +107,14 @@ function QustodioHero() {
               </Badge>
             </div>
 
-            <Image
+            <img
               src={planProductImage('gold')}
               alt="QStudio Gold"
               width={280}
               height={280}
               className="w-full max-h-40 object-contain mb-4 mx-auto mt-2"
+              loading="lazy"
+              decoding="async"
             />
 
             <div className="mb-4">
