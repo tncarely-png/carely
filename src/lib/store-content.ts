@@ -2,8 +2,6 @@
  * Public storefront copy & media — controlled in code (not SuperAdmin DB).
  * Deploy updates the live site; D1 `settings` table does not override the home hero.
  */
-import { PRODUCT_IMAGES } from "@/lib/product-images";
-
 export const HERO_CONTENT = {
   hero_title: "متجر Carely.tn 🛍️",
   hero_subtitle: "حسابات التطبيقات المدفوعة بالدينار التونسي",
@@ -12,7 +10,6 @@ export const HERO_CONTENT = {
   hero_subdescription: "من تونس لكل تونسي 🇹🇳",
   cta_primary_text: "شوف المنتجات",
   cta_secondary_text: "تواصل معانا",
-  hero_image: PRODUCT_IMAGES.qstudioGold,
 } as const;
 
 export const TRUST_BADGES = [

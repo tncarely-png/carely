@@ -43,8 +43,7 @@ export async function POST() {
       success: true,
       updated,
       heroNote:
-        "Home hero text/image is from src/lib/store-content.ts (not D1 settings).",
-      heroImage: HERO_CONTENT.hero_image,
+        "Home hero text is from src/lib/store-content.ts (not D1 settings).",
     });
   } catch (error) {
     console.error("[sync-public-ui] Error:", error);

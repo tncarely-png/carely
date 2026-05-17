@@ -52,30 +52,28 @@ function qstudioCardFromCode(): Product {
 
 const FALLBACK_APPS: Product[] = [qstudioCardFromCode()]
 
+/** Home store: only QStudio (hide SuperAdmin duplicate / product-detail rows). */
 function normalizeStoreProducts(rows: Product[]): Product[] {
-  const mapped = rows.map((p) => ({
-    ...p,
-    imageUrl: resolveProductImageUrl(p) ?? p.imageUrl ?? null,
-  }))
-  const hasQstudio = mapped.some(
-    (p) =>
-      p.slug === 'qstudio' ||
-      p.slug === 'qustodio' ||
-      p.route === 'qstudio-app' ||
-      p.route === 'qustodio-app'
-  )
-  if (!hasQstudio) {
-    return [qstudioCardFromCode(), ...mapped]
+  const qstudio = rows.find((p) => {
+    const slug = (p.slug ?? '').toLowerCase()
+    return slug === 'qstudio' || p.route === 'qstudio-app'
+  })
+
+  if (qstudio) {
+    return [
+      {
+        ...qstudio,
+        name: 'QStudio',
+        nameAr: 'QStudio',
+        slug: 'qstudio',
+        route: 'qstudio-app',
+        imageUrl:
+          resolveProductImageUrl(qstudio) ?? QSTUDIO_STORE_CARD.imageUrl,
+      },
+    ]
   }
-  return mapped.map((p) =>
-    p.slug === 'qstudio' || p.slug === 'qustodio' || p.route === 'qstudio-app'
-      ? {
-          ...p,
-          imageUrl: p.imageUrl || QSTUDIO_STORE_CARD.imageUrl,
-          route: 'qstudio-app',
-        }
-      : p
-  )
+
+  return [qstudioCardFromCode()]
 }
 
 export default function AppCardsGrid() {

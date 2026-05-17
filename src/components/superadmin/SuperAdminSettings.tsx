@@ -32,7 +32,7 @@ export default function SuperAdminSettings() {
   const [success, setSuccess] = useState<string | null>(null);
 
   // WhatsApp agent
-  const [activeAgent, setActiveAgent] = useState<string>('chafik');
+  const [activeAgent, setActiveAgent] = useState<string>('maram');
   const [switchingAgent, setSwitchingAgent] = useState(false);
 
   useEffect(() => {
@@ -66,8 +66,9 @@ export default function SuperAdminSettings() {
     try {
       const res = await fetch('/api/whatsapp-agent');
       if (res.ok) {
-        await res.json();
-        setActiveAgent('chafik');
+        const data = await res.json();
+        const name = (data.activeAgent?.name || 'Maram').toLowerCase();
+        setActiveAgent(name);
       }
     } catch {
       // silent
@@ -199,6 +200,7 @@ export default function SuperAdminSettings() {
         </h3>
         <div className="grid grid-cols-1 gap-4 max-w-md">
           {[
+            { key: 'maram', name: 'Maram 👩', phone: '+21652013035' },
             { key: 'chafik', name: 'Chafik 👨', phone: '+21650496159' },
           ].map((agent) => (
             <button

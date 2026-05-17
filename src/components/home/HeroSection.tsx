@@ -24,16 +24,8 @@ export default function HeroSection() {
       <div className="absolute top-1/2 left-1/3 w-40 h-40 bg-carely-light/60 rounded-full blur-2xl" />
 
       <div className="relative mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 text-center">
-        <div className="mb-6 mx-auto max-w-[220px] sm:max-w-xs">
-          <img
-            src={HERO_CONTENT.hero_image}
-            alt="QStudio — حماية رقمية للعائلة"
-            width={320}
-            height={320}
-            className="w-full h-auto drop-shadow-xl mx-auto"
-            loading="eager"
-            decoding="async"
-          />
+        <div className="mb-6 inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-carely-green/10 mx-auto">
+          <span className="text-4xl">🛍️</span>
         </div>
 
         <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold text-carely-dark leading-tight mb-4">

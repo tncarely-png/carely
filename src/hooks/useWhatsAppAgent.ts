@@ -9,15 +9,15 @@ interface WhatsAppAgent {
 }
 
 const DEFAULT_AGENT: WhatsAppAgent = {
-  name: 'Chafik',
-  phone: '+21650496159',
-  key: 'chafik',
+  name: 'Maram',
+  phone: '+21652013035',
+  key: 'maram',
 }
 
 /**
  * Hook to fetch the currently active WhatsApp agent.
  * Returns the agent info and a helper function to generate WhatsApp links.
- * Falls back to Chafik if the API fails.
+ * Falls back to Maram if the API fails.
  */
 export function useWhatsAppAgent() {
   const [agent, setAgent] = useState<WhatsAppAgent>(DEFAULT_AGENT)

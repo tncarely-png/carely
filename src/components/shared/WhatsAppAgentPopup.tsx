@@ -16,11 +16,20 @@ interface AgentInfo {
 
 const FALLBACK_AGENTS: AgentInfo[] = [
   {
-    id: '1',
-    name: 'Chafik',
-    phone: '21650496159',
-    gender: 'male',
+    id: 'maram',
+    name: 'Maram',
+    phone: '+21652013035',
+    gender: 'female',
     isActive: true,
+    title: 'الوكيلة الأولى',
+    emoji: '👩',
+  },
+  {
+    id: 'chafik',
+    name: 'Chafik',
+    phone: '+21650496159',
+    gender: 'male',
+    isActive: false,
     title: 'الدعم',
     emoji: '👨',
   },
@@ -54,10 +63,7 @@ export function WhatsAppAgentPopup({
             seen.add(a.id);
             return true;
           });
-          const filtered = unique.filter(
-            (a: AgentInfo) => a.name?.trim().toLowerCase() !== 'maram'
-          );
-          setAgents(filtered.length > 0 ? filtered : FALLBACK_AGENTS);
+          setAgents(unique.length > 0 ? unique : FALLBACK_AGENTS);
         }
       })
       .catch(() => {
@@ -124,7 +130,9 @@ export function WhatsAppAgentPopup({
             </div>
             <h3 className="text-lg font-extrabold text-white">تواصل معانا 💬</h3>
             <p className="text-sm text-green-100 mt-1">
-              Chafik متاح للتواصل على واتساب
+              {activeAgent
+                ? `${activeAgent.name} متاح للتواصل على واتساب`
+                : 'اختر الوكيل المتاح للتواصل على واتساب'}
             </p>
           </div>
 

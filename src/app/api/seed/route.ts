@@ -471,14 +471,22 @@ export async function GET() {
       },
     ]);
 
-    // Create default WhatsApp agent (Chafik only)
     await db.insert(whatsappAgents).values([
+      {
+        id: crypto.randomUUID(),
+        name: 'Maram',
+        phone: '+21652013035',
+        gender: 'female',
+        isActive: true,
+        title: 'الوكيلة الأولى',
+        emoji: '👩',
+      },
       {
         id: crypto.randomUUID(),
         name: 'Chafik',
         phone: '+21650496159',
         gender: 'male',
-        isActive: true,
+        isActive: false,
         title: 'الدعم',
         emoji: '👨',
       },

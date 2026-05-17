@@ -33,7 +33,13 @@ export async function GET(request: NextRequest) {
     }
 
     const result = await query.orderBy(products.sortOrder).all();
-    const formatted = result.map(parseProduct);
+    const formatted = result
+      .map(parseProduct)
+      .filter((p) => {
+        const slug = ((p.slug as string) ?? '').toLowerCase();
+        const route = ((p.route as string) ?? '').toLowerCase();
+        return slug === 'qstudio' || slug === 'coming-soon' || route === 'qstudio-app';
+      });
 
     return NextResponse.json({ success: true, data: formatted });
   } catch (error) {
