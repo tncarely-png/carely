@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react'
 import { useAppStore } from '@/store'
 import { Button } from '@/components/ui/button'
 import { ChevronLeft, ShieldCheck } from 'lucide-react'
-import { PRODUCT_IMAGES, resolveProductImageUrl } from '@/lib/product-images'
+import { resolveProductImageUrl } from '@/lib/product-images'
+import { QSTUDIO_STORE_CARD } from '@/lib/store-content'
 import { Skeleton } from '@/components/ui/skeleton'
 
 interface Product {
@@ -28,27 +29,54 @@ interface Product {
 
 const FALLBACK_QSTUDIO_CARD_ID = 'fallback-qstudio-static'
 
-/** DB/API غير متاحة — بطاقة تفتح صفحة المنتج المدمجة */
-const FALLBACK_APPS: Product[] = [
-  {
+function qstudioCardFromCode(): Product {
+  return {
     id: FALLBACK_QSTUDIO_CARD_ID,
-    slug: 'qstudio',
-    name: 'QStudio',
-    nameAr: 'QStudio',
-    description: 'حماية أطفالك على النت',
-    descriptionAr: 'حماية أطفالك على النت',
-    price: 390,
-    currency: 'TND',
-    priceLabel: 'من 390 دت / سنة',
+    slug: QSTUDIO_STORE_CARD.slug,
+    name: QSTUDIO_STORE_CARD.name,
+    nameAr: QSTUDIO_STORE_CARD.nameAr,
+    description: QSTUDIO_STORE_CARD.description,
+    descriptionAr: QSTUDIO_STORE_CARD.descriptionAr,
+    price: QSTUDIO_STORE_CARD.price,
+    currency: QSTUDIO_STORE_CARD.currency,
+    priceLabel: QSTUDIO_STORE_CARD.priceLabel,
     isActive: true,
-    route: 'qstudio-app',
+    route: QSTUDIO_STORE_CARD.route,
     externalUrl: null,
-    emoji: '🛡️',
-    imageUrl: PRODUCT_IMAGES.qstudioGold,
+    emoji: QSTUDIO_STORE_CARD.emoji,
+    imageUrl: QSTUDIO_STORE_CARD.imageUrl,
     sortOrder: 0,
     features: [],
-  },
-]
+  }
+}
+
+const FALLBACK_APPS: Product[] = [qstudioCardFromCode()]
+
+function normalizeStoreProducts(rows: Product[]): Product[] {
+  const mapped = rows.map((p) => ({
+    ...p,
+    imageUrl: resolveProductImageUrl(p) ?? p.imageUrl ?? null,
+  }))
+  const hasQstudio = mapped.some(
+    (p) =>
+      p.slug === 'qstudio' ||
+      p.slug === 'qustodio' ||
+      p.route === 'qstudio-app' ||
+      p.route === 'qustodio-app'
+  )
+  if (!hasQstudio) {
+    return [qstudioCardFromCode(), ...mapped]
+  }
+  return mapped.map((p) =>
+    p.slug === 'qstudio' || p.slug === 'qustodio' || p.route === 'qstudio-app'
+      ? {
+          ...p,
+          imageUrl: p.imageUrl || QSTUDIO_STORE_CARD.imageUrl,
+          route: 'qstudio-app',
+        }
+      : p
+  )
+}
 
 export default function AppCardsGrid() {
   const { navigate, openProductDetail } = useAppStore()
@@ -62,12 +90,7 @@ export default function AppCardsGrid() {
         if (res.ok) {
           const data = await res.json()
           const rows: Product[] = data.data || []
-          setProducts(
-            rows.map((p) => ({
-              ...p,
-              imageUrl: resolveProductImageUrl(p) ?? p.imageUrl,
-            }))
-          )
+          setProducts(normalizeStoreProducts(rows))
         } else {
           setProducts(FALLBACK_APPS)
         }

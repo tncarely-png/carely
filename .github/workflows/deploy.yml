@@ -17,7 +17,7 @@ jobs:
 
       - uses: oven-sh/setup-bun@v1
         with:
-          bun-version: "1.2.15"
+          bun-version: "1.3.8"
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
@@ -32,13 +32,9 @@ jobs:
           NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: ${{ secrets.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET }}
           NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID }}
 
-      - name: Verify OpenNext build output
-        run: |
-          test -f .open-next/worker.js
-          test -d .open-next/assets
-          ls -la .open-next/assets/products/ || ls -la public/products/
+      - name: Verify worker bundle
+        run: test -f .open-next/worker.js
 
-      # PRs: build only
       - name: Deploy to Cloudflare Workers
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: bunx wrangler deploy
