@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getCfContext } from "@/lib/cf-context";
 import { eq } from "drizzle-orm";
 import { products } from "@/db/schema";
-import { HERO_CONTENT, QSTUDIO_STORE_CARD } from "@/lib/store-content";
+import { QSTUDIO_STORE_CARD } from "@/lib/store-content";
 
 /**
  * POST — align production D1 product rows with code defaults (image_url, route).

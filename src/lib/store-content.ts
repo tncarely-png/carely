@@ -1,3 +1,5 @@
+import { PRODUCT_IMAGES } from "@/lib/product-images";
+
 /**
  * Public storefront copy & media — controlled in code (not SuperAdmin DB).
  * Deploy updates the live site; D1 `settings` table does not override the home hero.
