@@ -13,6 +13,7 @@ export const users = sqliteTable("users", {
   wilaya: text("wilaya"),
   password: text("password"),
   firebaseUid: text("firebase_uid").unique(),
+  clerkUserId: text("clerk_user_id").unique(),
   role: text("role").notNull().default("customer"),
   createdAt: text("created_at").notNull(),
   updatedAt: text("updated_at").notNull(),

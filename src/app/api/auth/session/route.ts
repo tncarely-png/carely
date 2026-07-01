@@ -1,25 +1,18 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getCfContext } from "@/lib/cf-context";
-import { eq } from "drizzle-orm";
-import { users } from "@/db/schema";
-import { toAuthUser } from "@/lib/auth-user";
+import { NextResponse } from "next/server";
+import { auth } from "@clerk/nextjs/server";
+import { getAuthUserForClerkSession } from "@/lib/clerk-d1";
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
-    const { searchParams } = new URL(request.url);
-    const userId = searchParams.get("userId");
-
-    if (!userId) {
+    const { userId: clerkUserId } = await auth();
+    if (!clerkUserId) {
       return NextResponse.json(
-        { success: false, error: "userId is required" },
-        { status: 400 }
+        { success: false, error: "Not signed in" },
+        { status: 401 }
       );
     }
 
-    const { db } = getCfContext();
-
-    const user = await db.select().from(users).where(eq(users.id, userId)).get();
-
+    const user = await getAuthUserForClerkSession(clerkUserId);
     if (!user) {
       return NextResponse.json(
         { success: false, error: "Session invalid: user not found" },
@@ -27,10 +20,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    return NextResponse.json({
-      success: true,
-      user: toAuthUser(user),
-    });
+    return NextResponse.json({ success: true, user });
   } catch (error) {
     console.error("Session check error:", error);
     return NextResponse.json(

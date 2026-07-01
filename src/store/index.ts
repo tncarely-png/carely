@@ -131,8 +131,7 @@ interface AuthState {
   lastError: string | null;
   setUser: (user: AuthUser | Record<string, unknown> | null) => void;
   setLoading: (loading: boolean) => void;
-  otpLogin: (email: string, code: string) => Promise<boolean>;
-  /** Re-fetch user from DB (after tab restore / stale cache). Clears user if invalid. */
+  /** Re-fetch D1 profile for the signed-in Clerk user. */
   refreshUser: () => Promise<void>;
   logout: () => void;
   updateProfile: (data: {
@@ -167,13 +166,9 @@ export const useAuthStore = create<AuthState>()(
       setLoading: (isLoading) => set({ isLoading }),
 
       refreshUser: async () => {
-        const id = get().user?.id;
-        if (!id) return;
         set({ isLoading: true });
         try {
-          const res = await fetch(
-            `/api/auth/session?userId=${encodeURIComponent(id)}`
-          );
+          const res = await fetch("/api/auth/session");
           const data = await res.json();
           if (res.ok && data.success && data.user) {
             const u = authUserFromResponseJson(data.user);
@@ -185,36 +180,6 @@ export const useAuthStore = create<AuthState>()(
           set({ user: null, isLoading: false, lastError: null });
         } catch {
           set({ user: null, isLoading: false, lastError: null });
-        }
-      },
-
-      otpLogin: async (email: string, code: string) => {
-        try {
-          const res = await fetch("/api/auth/otp-login", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email, code, action: "login" }),
-          });
-          const data = await res.json();
-
-          if (!res.ok) {
-            set({ lastError: data.error || "حصل مشكل في تسجيل الدخول" });
-            return false;
-          }
-
-          if (data.success && data.user) {
-            const u = authUserFromResponseJson(data.user);
-            if (u) {
-              set({ user: u, isLoading: false, lastError: null });
-              return true;
-            }
-          }
-
-          set({ lastError: data.error || "حصل مشكل في تسجيل الدخول" });
-          return false;
-        } catch {
-          set({ lastError: "ما نقدرش نتواصل مع المخدم" });
-          return false;
         }
       },
 

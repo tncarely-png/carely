@@ -24,6 +24,7 @@ bucket_name = "carely-uploads"
 
 [vars]
 NEXT_PUBLIC_FIREBASE_PROJECT_ID = "carely-9e601"
+# Clerk: set NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY here; CLERK_SECRET_KEY via `wrangler secret put CLERK_SECRET_KEY`
 # Secrets (do not commit): wrangler secret put RESEND_API_KEY
 # Optional: RESEND_FROM_EMAIL — defaults to Carely <onboarding@resend.dev> until you verify a domain
 # SUPERADMIN_PIN is set as a secret in CF Dashboard (not here for security)

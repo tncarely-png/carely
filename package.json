@@ -17,6 +17,8 @@
     "db:seed:prod": "bunx wrangler d1 execute carely-db --remote --file=db/migrations/0001_initial.sql"
   },
   "dependencies": {
+    "@clerk/nextjs": "^7.5.12",
+    "@clerk/ui": "^1.24.1",
     "@cloudflare/workers-types": "^4.20260412.1",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",

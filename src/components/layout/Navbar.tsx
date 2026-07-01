@@ -4,7 +4,9 @@ import { useState, useEffect } from 'react'
 import { useAppStore, useAuthStore } from '@/store'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetHeader } from '@/components/ui/sheet'
-import { Menu, Home, User, HelpCircle, LogOut, LayoutDashboard } from 'lucide-react'
+import { Menu, Home, User, HelpCircle } from 'lucide-react'
+import { ClerkAuthButtons } from '@/components/auth/ClerkAuthButtons'
+import { Show } from '@clerk/nextjs'
 import UserAvatar from '@/components/shared/UserAvatar'
 
 const NAV_LINKS = [
@@ -15,7 +17,7 @@ const NAV_LINKS = [
 
 export default function Navbar() {
   const { navigate, currentPage, setPendingRedirect } = useAppStore()
-  const { user, logout } = useAuthStore()
+  const user = useAuthStore((s) => s.user)
   const [scrolled, setScrolled] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
 
@@ -27,7 +29,6 @@ export default function Navbar() {
 
   return (
     <>
-      {/* Desktop & Mobile Top Navbar */}
       <header
         className={`sticky top-0 z-40 bg-white transition-shadow duration-200 ${
           scrolled ? 'shadow-md' : ''
@@ -35,7 +36,6 @@ export default function Navbar() {
       >
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 overflow-hidden">
           <div className="flex h-16 items-center justify-between gap-2">
-            {/* Left: Nav Links (RTL - start side) */}
             <nav className="hidden md:flex items-center gap-6">
               {NAV_LINKS.map((link) => (
                 <button
@@ -53,7 +53,6 @@ export default function Navbar() {
               ))}
             </nav>
 
-            {/* Left: Mobile hamburger (RTL - start side) */}
             <div className="md:hidden">
               <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
                 <SheetTrigger asChild>
@@ -90,8 +89,8 @@ export default function Navbar() {
                     })}
                   </nav>
                   <div className="mt-auto p-4 border-t border-carely-light flex flex-col gap-2">
-                    {user ? (
-                      <div className="flex flex-col gap-3">
+                    <Show when="signed-in">
+                      {user && (
                         <button
                           type="button"
                           onClick={() => {
@@ -106,91 +105,19 @@ export default function Navbar() {
                             <p className="text-xs text-carely-gray">حسابي</p>
                           </div>
                         </button>
-                        <Button
-                          variant="outline"
-                          className="border-carely-green text-carely-green justify-start px-4"
-                          onClick={() => {
-                            navigate('dashboard')
-                            setMobileOpen(false)
-                          }}
-                        >
-                          <LayoutDashboard className="size-4 ml-2" />
-                          لوحة التحكم
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          className="text-red-500 hover:text-red-600 hover:bg-red-50 justify-start px-4"
-                          onClick={() => {
-                            logout()
-                            setMobileOpen(false)
-                          }}
-                        >
-                          <LogOut className="size-4 ml-2" />
-                          خروج
-                        </Button>
-                      </div>
-                    ) : (
-                      <Button
-                        variant="ghost"
-                        className="carely-btn-outline w-full h-10"
-                        onClick={() => {
-                          navigate('login')
-                          setMobileOpen(false)
-                        }}
-                      >
-                        سجل دخول
-                      </Button>
-                    )}
+                      )}
+                    </Show>
+                    <ClerkAuthButtons variant="mobile" onNavigate={() => setMobileOpen(false)} />
                   </div>
                 </SheetContent>
               </Sheet>
             </div>
 
-            {/* Right: Logo (RTL - end side) */}
             <div className="flex items-center gap-2 sm:gap-4 shrink-0">
               <div className="flex items-center gap-1.5 sm:gap-3">
-                {user ? (
-                  <div className="hidden sm:flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="border-carely-green text-carely-green hover:bg-carely-mint rounded-full gap-2"
-                      onClick={() => navigate('dashboard')}
-                    >
-                      <LayoutDashboard className="size-4" />
-                      لوحة التحكم
-                    </Button>
-                    <button
-                      type="button"
-                      onClick={() => navigate('dashboard-profile')}
-                      className="flex items-center gap-2 rounded-full pr-2 hover:bg-carely-mint transition-colors"
-                      title="حسابي"
-                    >
-                      <UserAvatar user={user} size={36} />
-                      <span className="text-sm font-bold text-carely-dark max-w-[100px] truncate">
-                        {user.name}
-                      </span>
-                    </button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-red-500 hover:text-red-600 hover:bg-red-50"
-                      onClick={logout}
-                    >
-                      <LogOut className="size-4 ml-1" />
-                      خروج
-                    </Button>
-                  </div>
-                ) : (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="carely-btn-outline rounded-full hidden sm:inline-flex h-9 px-4 py-2 text-sm"
-                    onClick={() => navigate('login')}
-                  >
-                    سجل دخول
-                  </Button>
-                )}
+                <div className="hidden sm:flex items-center gap-2">
+                  <ClerkAuthButtons />
+                </div>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -220,7 +147,6 @@ export default function Navbar() {
         </div>
       </header>
 
-      {/* Mobile Bottom Nav */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t-2 border-carely-green safe-area-bottom">
         <div className="flex items-center justify-around h-14 px-2">
           {NAV_LINKS.map((link) => {
