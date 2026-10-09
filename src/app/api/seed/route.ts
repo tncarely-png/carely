@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getCfContext } from '@/lib/cf-context';
 import { eq } from 'drizzle-orm';
-import { users, subscriptions, orders, licenses, whatsappAgents, products } from '@/db/schema';
+import { users, subscriptions, orders, licenses, products } from '@/db/schema';
 
 // Schema SQL for auto-setup
 const SCHEMA_SQL = `
@@ -468,27 +468,6 @@ export async function GET() {
         status: 'pending',
         createdAt: now,
         updatedAt: now,
-      },
-    ]);
-
-    await db.insert(whatsappAgents).values([
-      {
-        id: crypto.randomUUID(),
-        name: 'Maram',
-        phone: '+21652013035',
-        gender: 'female',
-        isActive: true,
-        title: 'الوكيلة الأولى',
-        emoji: '👩',
-      },
-      {
-        id: crypto.randomUUID(),
-        name: 'Chafik',
-        phone: '+21650496159',
-        gender: 'male',
-        isActive: false,
-        title: 'الدعم',
-        emoji: '👨',
       },
     ]);
 

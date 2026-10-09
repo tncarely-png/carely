@@ -127,12 +127,7 @@ export const CONTACT_EMAIL = "contact@carely.tn";
 export const STORE_DESCRIPTION = "نبيعو حسابات مدفوعة آمنة لتطبيقات العيلة — من ولاية الكاف، مع إرشاد ودعم على الواتساب";
 export const STORE_TAGLINE = "متجر التطبيقات المدفوعة للعيلة التونسية — من ولاية الكاف، حسابات آمنة مع دعم على الواتساب";
 
-/**
- * Generate a WhatsApp link with the static WHATSAPP_NUMBER.
- * NOTE: For dynamic agent routing (client-side), prefer using the
- * `useWhatsAppAgent` hook from `@/hooks/useWhatsAppAgent` instead.
- * This function is kept as a fallback for server-side use only.
- */
+/** Generate the direct Carely customer-support WhatsApp link. */
 export function getWhatsAppLink(message?: string) {
   const msg = message || "مرحبا، أريد الاستفسار عن اشتراك Carely.tn";
   return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`;

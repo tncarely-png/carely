@@ -41,7 +41,6 @@ export type PageRoute =
   | "superadmin-users"
   | "superadmin-orders"
   | "superadmin-licenses"
-  | "superadmin-whatsapp"
   | "superadmin-settings"
   | "superadmin-products"
   | "superadmin-landing";

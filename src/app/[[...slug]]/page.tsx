@@ -9,7 +9,7 @@ import { Home } from 'lucide-react'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
 import WhatsAppFAB from '@/components/layout/WhatsAppFAB'
-import { WhatsAppAgentPopup } from '@/components/shared/WhatsAppAgentPopup'
+import { WhatsAppSupportPopup } from '@/components/shared/WhatsAppSupportPopup'
 
 // Home sections
 import {
@@ -61,7 +61,6 @@ import {
   SuperAdminUsers,
   SuperAdminOrders,
   SuperAdminLicenses,
-  SuperAdminWhatsApp,
   SuperAdminSettings,
   SuperAdminProducts,
   SuperAdminLandingPage,
@@ -124,7 +123,6 @@ function AppRouter() {
         case 'superadmin-users': return <SuperAdminUsers />
         case 'superadmin-orders': return <SuperAdminOrders />
         case 'superadmin-licenses': return <SuperAdminLicenses />
-        case 'superadmin-whatsapp': return <SuperAdminWhatsApp />
         case 'superadmin-settings': return <SuperAdminSettings />
         case 'superadmin-products': return <SuperAdminProducts />
         case 'superadmin-landing': return <SuperAdminLandingPage />
@@ -293,7 +291,7 @@ export default function RootPage() {
       {needsLayout && <Footer />}
       {needsLayout && <WhatsAppFAB />}
 
-      <WhatsAppAgentPopup
+      <WhatsAppSupportPopup
         open={whatsappPopupOpen}
         onClose={closeWhatsAppPopup}
         message={whatsappPopupMessage}

@@ -31,13 +31,8 @@ export default function SuperAdminSettings() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  // WhatsApp agent
-  const [activeAgent, setActiveAgent] = useState<string>('maram');
-  const [switchingAgent, setSwitchingAgent] = useState(false);
-
   useEffect(() => {
     loadSettings();
-    loadActiveAgent();
   }, []);
 
   const loadSettings = async () => {
@@ -62,19 +57,6 @@ export default function SuperAdminSettings() {
     }
   };
 
-  const loadActiveAgent = async () => {
-    try {
-      const res = await fetch('/api/whatsapp-agent');
-      if (res.ok) {
-        const data = await res.json();
-        const name = (data.activeAgent?.name || 'Maram').toLowerCase();
-        setActiveAgent(name);
-      }
-    } catch {
-      // silent
-    }
-  };
-
   const handleSave = async () => {
     setSaving(true);
     setSuccess(null);
@@ -95,25 +77,6 @@ export default function SuperAdminSettings() {
       setError('فشل حفظ الإعدادات');
     } finally {
       setSaving(false);
-    }
-  };
-
-  const handleAgentSwitch = async (agent: string) => {
-    if (activeAgent === agent) return;
-    setSwitchingAgent(true);
-    try {
-      const res = await fetch('/api/whatsapp-agent', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ agent }),
-      });
-      if (res.ok) {
-        setActiveAgent(agent);
-      }
-    } catch {
-      // silent
-    } finally {
-      setSwitchingAgent(false);
     }
   };
 
@@ -193,37 +156,6 @@ export default function SuperAdminSettings() {
         </div>
       </div>
 
-      {/* WhatsApp Agent Quick Toggle */}
-      <div className="sa-card p-6">
-        <h3 className="text-lg font-extrabold mb-6" style={{ color: '#000000' }}>
-          💬 وكيل الواتساب السريع
-        </h3>
-        <div className="grid grid-cols-1 gap-4 max-w-md">
-          {[
-            { key: 'maram', name: 'Maram 👩', phone: '+21652013035' },
-            { key: 'chafik', name: 'Chafik 👨', phone: '+21650496159' },
-          ].map((agent) => (
-            <button
-              key={agent.key}
-              type="button"
-              onClick={() => handleAgentSwitch(agent.key)}
-              disabled={switchingAgent}
-              className="p-4 rounded-xl text-right transition-all"
-              style={{
-                background: activeAgent === agent.key ? '#000000' : '#f5f5f5',
-                color: activeAgent === agent.key ? '#ffffff' : '#666666',
-                border: activeAgent === agent.key ? '2px solid #000000' : '1px solid #e5e5e5',
-              }}
-            >
-              <p className="font-bold text-base">{agent.name}</p>
-              <p className="text-sm mt-1" dir="ltr">{agent.phone}</p>
-              {activeAgent === agent.key && (
-                <p className="text-xs mt-2 font-bold">● متاح — مفعّل</p>
-              )}
-            </button>
-          ))}
-        </div>
-      </div>
     </div>
   );
 }

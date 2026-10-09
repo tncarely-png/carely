@@ -14,7 +14,6 @@ const navItems = [
   { id: 'superadmin-users' as const, label: 'المستخدمون', emoji: '👥' },
   { id: 'superadmin-orders' as const, label: 'الطلبات', emoji: '📋' },
   { id: 'superadmin-licenses' as const, label: 'التراخيص', emoji: '🔑' },
-  { id: 'superadmin-whatsapp' as const, label: 'واتساب', emoji: '💬' },
   { id: 'superadmin-settings' as const, label: 'الإعدادات', emoji: '⚙️' },
 ];
 
