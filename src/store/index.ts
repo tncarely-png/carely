@@ -152,7 +152,8 @@ export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
       user: null,
-      isLoading: false,
+      // Keep protected routes from redirecting before Clerk has resolved the session.
+      isLoading: true,
       lastError: null,
 
       setUser: (user) =>

@@ -108,6 +108,7 @@ function ContactView() {
 function AppRouter() {
   const { currentPage } = useAppStore()
   const user = useAuthStore((s) => s.user)
+  const authLoading = useAuthStore((s) => s.isLoading)
 
   // ── SuperAdmin routes ──
   if (currentPage === 'superadmin-pin-gate') {
@@ -196,6 +197,16 @@ function AppRouter() {
 
   // ── Dashboard routes ──
   if (currentPage.startsWith('dashboard')) {
+    if (authLoading) {
+      return (
+        <div className="flex min-h-[70vh] items-center justify-center px-4 py-12 bg-gradient-to-b from-carely-mint/50 to-carely-light/30">
+          <div className="rounded-2xl border border-carely-light bg-white px-8 py-10 text-center shadow-sm" dir="rtl">
+            <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-4 border-carely-light border-t-carely-green" aria-hidden="true" />
+            <p className="font-semibold text-carely-dark">جاري تحميل لوحة التحكم...</p>
+          </div>
+        </div>
+      )
+    }
     if (!user) {
       return <LoginPage />
     }
